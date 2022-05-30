@@ -138,6 +138,7 @@ namespace TinyLang {
 				case Block: VisitBlock((Block)node); return null;
 				case Literal: return VisitLiteral((Literal)node);
 				case BinOp: return VisitBinOp((BinOp)node);
+				case UnaryOp: return VisitUnaryOp((UnaryOp)node);
 
 				case FunctionDef: return null;
 				case FunctionCall: VisitFunctionCall((FunctionCall)node); return null;
@@ -162,6 +163,10 @@ namespace TinyLang {
 					Error($"Unknown binary operation {binop.token?.Kind}");
 					return null;
 			}
+		}
+
+		Value? VisitUnaryOp(UnaryOp unary) {
+			return -Visit(unary.right);
 		}
 
 		void VisitBlock(Block block) {

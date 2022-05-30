@@ -3,6 +3,7 @@ fn say_hello(name: string, age: int) {
 	var int x = 10 + age;
 	var int y = x * x;
 
+	# Nesting a function works
 	fn say_hello_again() {
 		@println("Hello again, ", name);
 	};
@@ -13,9 +14,17 @@ fn say_hello(name: string, age: int) {
 
 fn bar(foo: boolean) {
 	var boolean x = -foo;
+	@println(x, " ", foo, " ", -true, " ", -false);
+}
+
+fn baz() {
+	@println(-100, " ", 100);
 }
 
 var string n = "Caleb";
 say_hello(n, 22);
 
-@println("Hello!", " Foo ", 123);
+bar(true);
+baz();
+
+@println("Hello!", " Foo ", 123, " ", n);
