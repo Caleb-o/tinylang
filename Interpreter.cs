@@ -125,6 +125,19 @@ namespace TinyLang {
 			callStack.stack.Remove(callStack.stack[^1]);
 		}
 
+		Value DefaultValue(Return ret) {
+			// TODO: If return is a record/struct, then return a Visit on a mandatory
+			// constructor for the type
+			switch(ret.type) {
+				case "int": return new Value(ValueKind.Int, 0);
+				case "float": return new Value(ValueKind.Float, 0);
+				case "boolean": return new Value(ValueKind.Bool, false);
+				case "string": return new Value(ValueKind.Bool, "");
+			}
+
+			throw new InvalidCastException("Unreachable");
+		}
+
 		void Error(string msg) {
 			Console.WriteLine("-- Call Stack --");
 			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
@@ -158,6 +171,7 @@ namespace TinyLang {
 				case FunctionDef: return null;
 				case FunctionCall: VisitFunctionCall((FunctionCall)node); return null;
 				case BuiltinFunctionCall: VisitBuiltinFunctionCall((BuiltinFunctionCall)node); return null;
+				case Escape: return null;
 
 				case Var: return VisitVar((Var)node);
 				case Assignment: VisitAssignment((Assignment)node); return null;
@@ -189,14 +203,10 @@ namespace TinyLang {
 			foreach(Node node in block.statements) {
 				Visit(node);
 
-				if (node is Return) {
+				if (node is Escape) {
 					break;
 				}
 			}
-		}
-
-		void VisitReturn(Return ret) {
-			Visit(ret.expr);
 		}
 
 		void VisitVarDecl(VarDecl decl) {
@@ -225,19 +235,28 @@ namespace TinyLang {
 
 			int idx = 0;
 			foreach(Node arg in function.arguments) {
-				fnscope.members[function.definition.parameters[idx].identifier] = Visit(arg);
+				fnscope.members[function.sym.parameters[idx].identifier] = Visit(arg);
 				
 				if (arg is Var) {
 					fnscope.members[
-						function.definition.parameters[idx].identifier
+						function.sym.parameters[idx].identifier
 					].references = arg.token.Lexeme;
 				}
 
 				idx++;
 			}
+			
+			// Insert an implicit return value
+			if (function.sym.def.returnType.type != "void") {
+				if (function.sym.def.returnType.expr != null) {
+					fnscope.members["result"] = Visit(function.sym.def.returnType.expr);
+				} else {
+					fnscope.members["result"] = DefaultValue(function.sym.def.returnType);
+				}
+			}
 
 			callStack.stack.Add(fnscope);
-			VisitBlock(function.definition.def.block);
+			VisitBlock(function.sym.def.block);
 			callStack.stack.Remove(fnscope);
 
 			// TODO: Return value from return statement

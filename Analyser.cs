@@ -111,7 +111,7 @@ namespace TinyLang {
 				}
 
 				case FunctionCall: {
-					return ((FunctionCall)node).definition.def.returnType;
+					return ((FunctionCall)node).sym.def.returnType.type;
 				}
 
 				case BinOp: {
@@ -155,7 +155,7 @@ namespace TinyLang {
 				case FunctionCall: VisitFunctionCall((FunctionCall)node); break;
 				case BuiltinFunctionCall: VisitBuiltinCall((BuiltinFunctionCall)node); break;
 				case Var: VisitVar((Var)node); break;
-				case Return: VisitReturn((Return)node); break;
+				case Escape: VisitEscape((Escape)node); break;
 
 				case Literal: break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
@@ -182,14 +182,11 @@ namespace TinyLang {
 			}
 		}
 
-		void VisitReturn(Return ret) {
+		void VisitEscape(Escape ret) {
 			if (scope.identifier == "global") {
-				Error("Cannot return from global scope");
+				// TODO: This can probably occur for early returns
+				Error("Cannot escape from global scope");
 			}
-
-			// TODO: Check if it matches the return value of a function
-
-			Visit(ret.expr);
 		}
 
 		void VisitFunctionDef(FunctionDef function) {
@@ -218,11 +215,18 @@ namespace TinyLang {
 				func.parameters.Add(variable);
 			}
 
-			VisitBlock(function.block);
+			// Insert implicit return value
+			Console.WriteLine($"Return type {func.def.returnType.type}");
 
-			if (function.returnType != "void" && function.block.returnValue == null) {
-				Error($"Function '{function.token.Lexeme}' expected a return value of type '{function.returnType}' but received void");
+			if (func.def.returnType.type != "void") {
+				scope.Insert(new VarSym(
+					"result",
+					scope.Lookup(func.def.returnType.type, false),
+					true
+				));
 			}
+
+			VisitBlock(function.block);
 
 			ClimbScope();
 		}
@@ -239,7 +243,7 @@ namespace TinyLang {
 			}
 
 			// Assign the definition
-			function.definition = func;
+			function.sym = func;
 
 			int current = 0;
 			foreach(Node node in function.arguments) {
@@ -286,7 +290,7 @@ namespace TinyLang {
 		}
 
 		void VisitAssignment(Assignment assign) {
-			VarSym sym = (VarSym)scope.Lookup(assign.identifier, false);
+			VarSym sym = (VarSym)scope.Lookup(assign.identifier, (assign.identifier == "result"));
 
 			if (sym == null) {
 				Error($"Variable '{assign.identifier}' does not exist in any scope");

@@ -104,7 +104,7 @@ namespace TinyLang {
 
 	sealed class Block : Node {
 		public readonly List<Node> statements;
-		public Node returnValue;
+		public Escape escape;
 
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;
@@ -112,19 +112,31 @@ namespace TinyLang {
 	}
 
 	sealed class Return : Node {
-		public Node expr;
+		// Return is the default value and type info
+		// rather than the statement
+		public readonly string type;
+		public readonly Node expr;
 
-		public Return(Node expr) : base(null) {
+		public Return(string type, Node expr) : base(null) {
+			this.type = type;
 			this.expr = expr;
 		}
+	}
+
+	sealed class Escape : Node {
+		// Escape is similar to a return statement,
+		// except it does not return a value but signals
+		// an exit for the function
+		public Escape() : base(null) {}
 	}
 
 	sealed class FunctionDef : Node {
 		public readonly List<Parameter> parameters;
 		public readonly Block block;
-		public readonly string returnType;
+		// Return type is used for the implicit return type
+		public readonly Return returnType;
 
-		public FunctionDef(Token identifier, List<Parameter> parameters, string returnType, Block block) : base(identifier) {
+		public FunctionDef(Token identifier, List<Parameter> parameters, Return returnType, Block block) : base(identifier) {
 			this.parameters = parameters;
 			this.returnType = returnType;
 			this.block = block;
@@ -152,7 +164,7 @@ namespace TinyLang {
 
 	sealed class FunctionCall : Node {
 		public readonly List<Node> arguments;
-		public FunctionSym definition;
+		public FunctionSym sym;
 
 		public FunctionCall(Token identifier, List<Node> arguments) : base(identifier) {
 			this.arguments = arguments;

@@ -1,7 +1,9 @@
 var int a = 10;
 
-fn do_things(b: var int) {
+fn do_things(b: var int): int(10) {
 	b = b * b;
+	
+	result = 10;
 }
 
 do_things(a);
