@@ -134,9 +134,7 @@ namespace TinyLang {
 			return arguments;
 		}
 
-		void Assignment(Block block) {
-			Consume(TokenKind.Var);
-
+		void VariableDeclaration(Block block, bool mutable) {
 			Token? type_id = currentToken;
 			Consume(TokenKind.Identifier);
 
@@ -146,13 +144,15 @@ namespace TinyLang {
 			Consume(TokenKind.Equals);
 			Node? expr = Expr();
 
-			block.statements.Add(new Assignment(identifier?.Lexeme, type_id, expr));
+			block.statements.Add(new VarDecl(identifier?.Lexeme, type_id, mutable, expr));
 		}
 
-		void FunctionCall(Block block) {
-			Token? identifier = currentToken;
-			Consume(TokenKind.Identifier);
+		void Assignment(Block block, Token? identifier) {
+			Consume(TokenKind.Equals);
+			block.statements.Add(new Assignment(identifier?.Lexeme, Expr()));
+		}
 
+		void FunctionCall(Block block, Token? identifier) {
 			Consume(TokenKind.OpenParen);
 			List<Node> arguments = GetArguments(TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
@@ -216,7 +216,14 @@ namespace TinyLang {
 		void Statement(Block block) {
 			switch(currentToken?.Kind) {
 				case TokenKind.Var: {
-					Assignment(block);
+					Consume(TokenKind.Var);
+					VariableDeclaration(block, true);
+					break;
+				}
+
+				case TokenKind.Let: {
+					Consume(TokenKind.Let);
+					VariableDeclaration(block, false);
 					break;
 				}
 
@@ -226,7 +233,23 @@ namespace TinyLang {
 				}
 
 				case TokenKind.Identifier: {
-					FunctionCall(block);
+					Token? identifier = currentToken;
+					Consume(TokenKind.Identifier);
+
+					switch(currentToken.Kind) {
+						case TokenKind.OpenParen:
+							FunctionCall(block, identifier);
+							break;
+
+						// TODO: Support alternate assignment operators += -= *= /=
+						case TokenKind.Equals:
+							Assignment(block, identifier);
+							break;
+
+						default:
+							Error($"Unknown token following identifier: {currentToken.Kind}");
+							break;
+					}
 					break;
 				}
 

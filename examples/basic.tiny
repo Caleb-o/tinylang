@@ -24,6 +24,12 @@ fn baz() {
 var string n = "Caleb";
 say_hello(n, 22);
 
+n = "woah";
+
+# Immutability
+let int a = 10;
+a = 20;
+
 bar(true);
 baz();
 

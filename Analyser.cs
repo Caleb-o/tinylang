@@ -14,8 +14,12 @@ namespace TinyLang {
 	}
 
 	sealed class VarSym : Symbol {
-		public VarSym(string identifier, Symbol? type)
-			: base(identifier, type) {}
+		public readonly bool mutable;
+
+		public VarSym(string identifier, Symbol? type, bool mutable)
+			: base(identifier, type) {
+			this.mutable = mutable;
+		}
 	}
 
 	sealed class BuiltinTypeSym : Symbol {
@@ -141,6 +145,7 @@ namespace TinyLang {
 				case Block: VisitBlock((Block)node); break;
 				case BinOp: VisitBinOp((BinOp)node); break;
 				case Assignment: VisitAssignment((Assignment)node); break;
+				case VarDecl: VisitVariableDeclaration((VarDecl)node); break;
 				case FunctionDef: VisitFunctionDef((FunctionDef)node); break;
 				case FunctionCall: VisitFunctionCall((FunctionCall)node); break;
 				case BuiltinFunctionCall: VisitBuiltinCall((BuiltinFunctionCall)node); break;
@@ -190,7 +195,8 @@ namespace TinyLang {
 			foreach(Parameter param in function.parameters) {
 				VarSym variable = new VarSym(
 					param.token?.Lexeme,
-					scope.Lookup(param.type?.Lexeme, false)
+					scope.Lookup(param.type?.Lexeme, false),
+					false
 				);
 				scope.Insert(variable);
 				func.parameters.Add(variable);
@@ -240,20 +246,40 @@ namespace TinyLang {
 			}
 		}
 
-		void VisitAssignment(Assignment assign) {
-			if (scope.HasSymbol(assign.identifier)) {
-				Error($"Variable '{assign.identifier}' already exists in the current scope");
+		void VisitVariableDeclaration(VarDecl decl) {
+			if (scope.HasSymbol(decl.identifier)) {
+				Error($"Variable '{decl.identifier}' already exists in the current scope");
 			}
 
-			string? received = FindType(assign.expr, assign.type?.Lexeme);
+			string? received = FindType(decl.expr, decl.type?.Lexeme);
 			if (received != null) {
-				Error($"'{assign.identifier}' expected type {assign.type?.Lexeme} but received {received}");
+				Error($"'{decl.identifier}' expected type {decl.type?.Lexeme} but received {received}");
 			}
 
 			scope?.Insert(new VarSym(
-				assign.identifier,
-				scope?.Lookup(assign.type?.Lexeme, false)
+				decl.identifier,
+				scope?.Lookup(decl.type?.Lexeme, false),
+				decl.mutable
 			));
+			Visit(decl.expr);
+		}
+
+		void VisitAssignment(Assignment assign) {
+			VarSym? sym = (VarSym?)scope?.Lookup(assign.identifier, false);
+
+			if (sym == null) {
+				Error($"Variable '{assign.identifier}' does not exist in any scope");
+			}
+
+			string? received = FindType(assign.expr, sym.type?.identifier);
+			if (received != null) {
+				Error($"'{assign.identifier}' expected type {sym.type?.identifier} but received {received}");
+			}
+
+			if (!sym.mutable) {
+				Error($"Cannot reassign to immutable variable '{assign.identifier}'");
+			}
+
 			Visit(assign.expr);
 		}
 	}

@@ -65,14 +65,26 @@ namespace TinyLang {
 		public Var(Token? token) : base(token) {}
 	}
 
-	sealed class Assignment : Node {
+	sealed class VarDecl : Node {
 		public readonly string identifier;
+		public readonly bool mutable;
 		public readonly Token? type;
 		public readonly Node expr;
 
-		public Assignment(string identifier, Token? type, Node expr) : base(null) {
+		public VarDecl(string identifier, Token? type, bool mutable, Node expr) : base(null) {
 			this.identifier = identifier;
 			this.type = type;
+			this.mutable = mutable;
+			this.expr = expr;
+		}
+	}
+
+	sealed class Assignment : Node {
+		public readonly string identifier;
+		public readonly Node expr;
+
+		public Assignment(string identifier, Node expr) : base(null) {
+			this.identifier = identifier;
 			this.expr = expr;
 		}
 	}

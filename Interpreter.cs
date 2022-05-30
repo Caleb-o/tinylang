@@ -146,6 +146,7 @@ namespace TinyLang {
 
 				case Var: return VisitVar((Var)node);
 				case Assignment: VisitAssignment((Assignment)node); return null;
+				case VarDecl: VisitVarDecl((VarDecl)node); return null;
 			}
 
 			Error($"Unknown node type {node}");
@@ -173,6 +174,10 @@ namespace TinyLang {
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+		}
+
+		void VisitVarDecl(VarDecl decl) {
+			callStack.stack[^1].members[decl.identifier] = Visit(decl.expr);
 		}
 
 		void VisitAssignment(Assignment assign) {
