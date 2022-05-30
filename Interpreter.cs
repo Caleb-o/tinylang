@@ -198,12 +198,12 @@ namespace TinyLang {
 			}
 
 			callStack.stack.Add(fnscope);
-			Visit(function.definition?.block);
+			Visit(function.definition?.def.block);
 			callStack.stack.Remove(fnscope);
 		}
 
 		void VisitBuiltinFunctionCall(BuiltinFunctionCall function) {
-			List<Value> values = new List<Value>();
+			List<Value?> values = new List<Value?>();
 			foreach(Node n in function.arguments) {
 				values.Add(Visit(n));
 			}

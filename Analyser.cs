@@ -29,12 +29,12 @@ namespace TinyLang {
 
 	sealed class FunctionSym : Symbol {
 		public readonly List<VarSym> parameters;
-		public readonly Block block;
+		public readonly FunctionDef def;
 
-		public FunctionSym(string identifier, List<VarSym> parameters, Block block)
+		public FunctionSym(string identifier, List<VarSym> parameters, FunctionDef def)
 			: base(identifier, null) {
 			this.parameters = parameters;
-			this.block = block;
+			this.def = def;
 		}
 	}
 
@@ -107,6 +107,10 @@ namespace TinyLang {
 						return var_type;
 					}
 					return null;
+				}
+
+				case FunctionCall: {
+					return ((FunctionCall)node).definition.def.returnType;
 				}
 
 				case BinOp: {
@@ -184,7 +188,7 @@ namespace TinyLang {
 			FunctionSym func = new FunctionSym(
 				function.token?.Lexeme,
 				new List<VarSym>(),
-				function.block
+				function
 			);
 
 			scope.Insert(func);
@@ -203,6 +207,10 @@ namespace TinyLang {
 			}
 
 			VisitBlock(function.block);
+
+			if (function.returnType != "void" && function.block.returnValue == null) {
+				Error($"Function '{function.token?.Lexeme}' expected a return value of type '{function.returnType}' but received void");
+			}
 
 			ClimbScope();
 		}
@@ -251,6 +259,8 @@ namespace TinyLang {
 				Error($"Variable '{decl.identifier}' already exists in the current scope");
 			}
 
+			Visit(decl.expr);
+
 			string? received = FindType(decl.expr, decl.type?.Lexeme);
 			if (received != null) {
 				Error($"'{decl.identifier}' expected type {decl.type?.Lexeme} but received {received}");
@@ -261,7 +271,6 @@ namespace TinyLang {
 				scope?.Lookup(decl.type?.Lexeme, false),
 				decl.mutable
 			));
-			Visit(decl.expr);
 		}
 
 		void VisitAssignment(Assignment assign) {
@@ -271,6 +280,8 @@ namespace TinyLang {
 				Error($"Variable '{assign.identifier}' does not exist in any scope");
 			}
 
+			Visit(assign.expr);
+
 			string? received = FindType(assign.expr, sym.type?.identifier);
 			if (received != null) {
 				Error($"'{assign.identifier}' expected type {sym.type?.identifier} but received {received}");
@@ -279,8 +290,6 @@ namespace TinyLang {
 			if (!sym.mutable) {
 				Error($"Cannot reassign to immutable variable '{assign.identifier}'");
 			}
-
-			Visit(assign.expr);
 		}
 	}
 }

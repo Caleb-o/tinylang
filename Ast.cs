@@ -10,14 +10,14 @@ namespace TinyLang {
 	}
 
 	static class Builtins {
-		public delegate Value? Fn(List<Value> arguments);
+		public delegate Value? Fn(List<Value?> arguments);
 		public static Dictionary<string, BuiltinFn> Functions = new Dictionary<string, BuiltinFn>() {
 			{ "println", new BuiltinFn(PrintLn, -1) },
 		};
 
-		public static Value? PrintLn(List<Value> arguments) {
-			foreach(Value n in arguments) {
-				Console.Write(n.value);
+		public static Value? PrintLn(List<Value?> arguments) {
+			foreach(Value? n in arguments) {
+				Console.Write((n != null) ? n?.value : "NONE");
 			}
 			Console.WriteLine();
 			return null;
@@ -99,6 +99,7 @@ namespace TinyLang {
 
 	sealed class Block : Node {
 		public readonly List<Node> statements;
+		public Node? returnValue;
 
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;
@@ -108,9 +109,9 @@ namespace TinyLang {
 	sealed class FunctionDef : Node {
 		public readonly List<Parameter> parameters;
 		public readonly Block block;
-		public readonly Identifier returnType;
+		public readonly string returnType;
 
-		public FunctionDef(Token? identifier, List<Parameter> parameters, Identifier returnType, Block block) : base(identifier) {
+		public FunctionDef(Token? identifier, List<Parameter> parameters, string returnType, Block block) : base(identifier) {
 			this.parameters = parameters;
 			this.returnType = returnType;
 			this.block = block;

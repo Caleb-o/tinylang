@@ -1,0 +1,4 @@
+fn my_func(foo: int): int {}
+
+let int bar = my_func(10);
+@println(bar);

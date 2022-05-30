@@ -63,20 +63,17 @@ namespace TinyLang {
 			return parameters;
 		}
 
-		Var Variable() {
-			Token? token = currentToken;
-			Consume(TokenKind.Identifier);
-
+		Var Variable(Token? token) {
 			return new Var(token);
 		}
 
-		Node Factor() {
+		Node Factor(Block block) {
 			Token? current = currentToken;
 
 			switch(currentToken?.Kind) {
 				case TokenKind.Minus: {
 					Consume(TokenKind.Minus);
-					return new UnaryOp(current, Factor());
+					return new UnaryOp(current, Factor(block));
 				}
 
 				case TokenKind.Int:
@@ -89,46 +86,60 @@ namespace TinyLang {
 
 				case TokenKind.OpenParen: {
 					Consume(TokenKind.OpenParen);
-					Node? n = Expr();
+					Node? n = Expr(block);
 					Consume(TokenKind.CloseParen);
 					return n;
 				}
 
+				case TokenKind.Identifier: {
+					Token? identifier = currentToken;
+					Consume(TokenKind.Identifier);
+
+					if (currentToken?.Kind == TokenKind.OpenParen) {
+						return FunctionCall(block, identifier);
+					}
+					else {
+						return Variable(identifier);
+					}
+				}
+
 				default: {
-					// Defaults to an identifier
-					return Variable();
+					Error($"Unknown token in expression {currentToken?.Kind}");
+					break;
 				}
 			}
+
+			return null;
 		}
 
-		Node Term() {
-			Node n = Factor();
+		Node Term(Block block) {
+			Node n = Factor(block);
 
 			while(currentToken?.Kind == TokenKind.Star || currentToken?.Kind == TokenKind.Slash) {
 				Token? op = currentToken;
 				Consume(currentToken.Kind);
-				n = new BinOp(op, n, Factor());
+				n = new BinOp(op, n, Factor(block));
 			}
 
 			return n;
 		}
 
-		Node Expr() {
-			Node n = Term();
+		Node Expr(Block block) {
+			Node n = Term(block);
 
 			while(currentToken?.Kind == TokenKind.Plus || currentToken?.Kind == TokenKind.Minus) {
 				Token? op = currentToken;
 				Consume(currentToken.Kind);
-				n = new BinOp(op, n, Term());
+				n = new BinOp(op, n, Term(block));
 			}
 
 			return n;
 		}
 
-		List<Node> GetArguments(TokenKind closing) {
+		List<Node> GetArguments(Block block, TokenKind closing) {
 			List<Node> arguments = new List<Node>();
 			while(currentToken?.Kind != closing) {
-				arguments.Add(Expr());
+				arguments.Add(Expr(block));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 			return arguments;
@@ -143,7 +154,7 @@ namespace TinyLang {
 				Consume(TokenKind.Identifier);
 
 				Consume(TokenKind.Equals);
-				Node? expr = Expr();
+				Node? expr = Expr(block);
 
 				block.statements.Add(new VarDecl(identifier?.Lexeme, type_id, mutable, expr));
 				ConsumeIfExists(TokenKind.Comma);
@@ -152,15 +163,15 @@ namespace TinyLang {
 
 		void Assignment(Block block, Token? identifier) {
 			Consume(TokenKind.Equals);
-			block.statements.Add(new Assignment(identifier?.Lexeme, Expr()));
+			block.statements.Add(new Assignment(identifier?.Lexeme, Expr(block)));
 		}
 
-		void FunctionCall(Block block, Token? identifier) {
+		FunctionCall FunctionCall(Block block, Token? identifier) {
 			Consume(TokenKind.OpenParen);
-			List<Node> arguments = GetArguments(TokenKind.CloseParen);
+			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
-			block.statements.Add(new FunctionCall(identifier, arguments));
+			return new FunctionCall(identifier, arguments);
 		}
 
 		void BuiltinFnCall(Block block) {
@@ -170,7 +181,7 @@ namespace TinyLang {
 			Consume(TokenKind.Identifier);
 
 			Consume(TokenKind.OpenParen);
-			List<Node> arguments = GetArguments(TokenKind.CloseParen);
+			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
 			block.statements.Add(new BuiltinFunctionCall(identifier?.Lexeme, arguments, "void"));
@@ -194,17 +205,14 @@ namespace TinyLang {
 
 			List<Parameter> parameters = ParameterList();
 
-			Identifier? return_type = null;
+			string return_type = "void";
 			if (currentToken?.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 
 				Token? return_identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
-				return_type = new Identifier(return_identifier?.Lexeme);
-			} else {
-				// Default to void
-				return_type = new Identifier("void");
+				return_type = return_identifier.Lexeme;
 			}
 
 			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
@@ -241,7 +249,7 @@ namespace TinyLang {
 
 					switch(currentToken.Kind) {
 						case TokenKind.OpenParen:
-							FunctionCall(block, identifier);
+							block.statements.Add(FunctionCall(block, identifier));
 							break;
 
 						// TODO: Support alternate assignment operators += -= *= /=
@@ -283,14 +291,8 @@ namespace TinyLang {
 						break;
 					}
 
-					case TokenKind.Identifier:
-					case TokenKind.Var: {
-						StatementList(app.block, TokenKind.End);
-						break;
-					}
-
 					default:
-						Error($"{currentToken?.Kind} is not implemented");
+						StatementList(app.block, TokenKind.End);
 						break;
 				}
 			}
