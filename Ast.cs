@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace TinyLang {
 	class BuiltinFn {
 		public readonly Builtins.Fn function;
@@ -10,14 +13,14 @@ namespace TinyLang {
 	}
 
 	static class Builtins {
-		public delegate Value? Fn(List<Value?> arguments);
+		public delegate Value Fn(List<Value> arguments);
 		public static Dictionary<string, BuiltinFn> Functions = new Dictionary<string, BuiltinFn>() {
 			{ "println", new BuiltinFn(PrintLn, -1) },
 		};
 
-		public static Value? PrintLn(List<Value?> arguments) {
-			foreach(Value? n in arguments) {
-				Console.Write((n != null) ? n?.value : "NONE");
+		public static Value PrintLn(List<Value> arguments) {
+			foreach(Value n in arguments) {
+				Console.Write((n != null) ? n.value : "NONE");
 			}
 			Console.WriteLine();
 			return null;
@@ -25,9 +28,9 @@ namespace TinyLang {
 	}
 
 	abstract class Node {
-		public readonly Token? token;
+		public readonly Token token;
 
-		public Node(Token? token) {
+		public Node(Token token) {
 			this.token = token;
 		}
 	}
@@ -35,7 +38,7 @@ namespace TinyLang {
 	sealed class BinOp : Node {
 		public readonly Node left, right;
 
-		public BinOp(Token? op, Node left, Node right) : base(op) {
+		public BinOp(Token op, Node left, Node right) : base(op) {
 			this.left = left;
 			this.right = right;
 		}
@@ -44,13 +47,13 @@ namespace TinyLang {
 	sealed class UnaryOp : Node {
 		public readonly Node right;
 
-		public UnaryOp(Token? op, Node right) : base(op) {
+		public UnaryOp(Token op, Node right) : base(op) {
 			this.right = right;
 		}
 	}
 
 	sealed class Literal : Node {
-		public Literal(Token? token) : base(token) {}
+		public Literal(Token token) : base(token) {}
 	}
 
 	sealed class Identifier : Node {
@@ -62,16 +65,16 @@ namespace TinyLang {
 	}
 
 	sealed class Var : Node {
-		public Var(Token? token) : base(token) {}
+		public Var(Token token) : base(token) {}
 	}
 
 	sealed class VarDecl : Node {
 		public readonly string identifier;
 		public readonly bool mutable;
-		public readonly Token? type;
+		public readonly Token type;
 		public readonly Node expr;
 
-		public VarDecl(string identifier, Token? type, bool mutable, Node expr) : base(null) {
+		public VarDecl(string identifier, Token type, bool mutable, Node expr) : base(null) {
 			this.identifier = identifier;
 			this.type = type;
 			this.mutable = mutable;
@@ -92,14 +95,14 @@ namespace TinyLang {
 	sealed class Parameter : Node {
 		public readonly Token type;
 
-		public Parameter(Token? identifier, Token type) : base(identifier) {
+		public Parameter(Token identifier, Token type) : base(identifier) {
 			this.type = type;
 		}
 	}
 
 	sealed class Block : Node {
 		public readonly List<Node> statements;
-		public Node? returnValue;
+		public Node returnValue;
 
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;
@@ -107,9 +110,9 @@ namespace TinyLang {
 	}
 
 	sealed class Return : Node {
-		public Node? expr;
+		public Node expr;
 
-		public Return(Node? expr) : base(null) {
+		public Return(Node expr) : base(null) {
 			this.expr = expr;
 		}
 	}
@@ -119,7 +122,7 @@ namespace TinyLang {
 		public readonly Block block;
 		public readonly string returnType;
 
-		public FunctionDef(Token? identifier, List<Parameter> parameters, string returnType, Block block) : base(identifier) {
+		public FunctionDef(Token identifier, List<Parameter> parameters, string returnType, Block block) : base(identifier) {
 			this.parameters = parameters;
 			this.returnType = returnType;
 			this.block = block;
@@ -147,9 +150,9 @@ namespace TinyLang {
 
 	sealed class FunctionCall : Node {
 		public readonly List<Node> arguments;
-		public FunctionSym? definition;
+		public FunctionSym definition;
 
-		public FunctionCall(Token? identifier, List<Node> arguments) : base(identifier) {
+		public FunctionCall(Token identifier, List<Node> arguments) : base(identifier) {
 			this.arguments = arguments;
 		}
 	}

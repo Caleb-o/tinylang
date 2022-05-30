@@ -1,12 +1,13 @@
 using System;
+using System.Collections.Generic;
 
 namespace TinyLang {
 	abstract class Symbol {
 		public string identifier;
 		public int scopeLevel;
-		public Symbol? type;
+		public Symbol type;
 
-		public Symbol(string identifier, Symbol? type) {
+		public Symbol(string identifier, Symbol type) {
 			this.identifier = identifier;
 			this.type = type;
 			this.scopeLevel = 0;
@@ -16,7 +17,7 @@ namespace TinyLang {
 	sealed class VarSym : Symbol {
 		public readonly bool mutable;
 
-		public VarSym(string identifier, Symbol? type, bool mutable)
+		public VarSym(string identifier, Symbol type, bool mutable)
 			: base(identifier, type) {
 			this.mutable = mutable;
 		}
@@ -41,10 +42,10 @@ namespace TinyLang {
 	sealed class SymbolScope {
 		public readonly Dictionary<string, Symbol> symbols = new Dictionary<string, Symbol>();
 		public readonly string identifier;
-		public readonly SymbolScope? parent;
+		public readonly SymbolScope parent;
 		public int scopeLevel { get; private set; }
 
-		public SymbolScope(string identifier, int scopeLevel, SymbolScope? parent) {
+		public SymbolScope(string identifier, int scopeLevel, SymbolScope parent) {
 			this.identifier = identifier;
 			this.scopeLevel = scopeLevel;
 			this.parent = parent;
@@ -66,7 +67,7 @@ namespace TinyLang {
 			return symbols.ContainsKey(identifier);
 		}
 
-		public Symbol? Lookup(string identifier, bool local) {
+		public Symbol Lookup(string identifier, bool local) {
 			if (symbols.ContainsKey(identifier)) {
 				return symbols[identifier];
 			}
@@ -75,12 +76,12 @@ namespace TinyLang {
 				return null;
 			}
 
-			return parent?.Lookup(identifier, false);
+			return parent.Lookup(identifier, false);
 		}
 	}
 
 	sealed class Analyser {
-		public SymbolScope? scope;
+		public SymbolScope scope;
 
 		public void Run(Application app) {
 			// Setup the global scope with builtins
@@ -91,17 +92,17 @@ namespace TinyLang {
 		}
 
 		void Error(string msg) {
-			throw new Exception($"Analyser: {msg} : [{scope?.identifier}]");
+			throw new Exception($"Analyser: {msg} : [{scope.identifier}]");
 		}
 
 		void ClimbScope() {
-			scope = scope?.parent;
+			scope = scope.parent;
 		}
 
-		string? FindType(Node? node, string expects) {
+		string FindType(Node node, string expects) {
 			switch(node) {
 				case Var: {
-					string var_type = scope?.Lookup(((Var)node).token?.Lexeme, false).type?.identifier;
+					string var_type = scope.Lookup(((Var)node).token.Lexeme, false).type.identifier;
 
 					if (var_type != expects) {
 						return var_type;
@@ -114,12 +115,12 @@ namespace TinyLang {
 				}
 
 				case BinOp: {
-					string? left = FindType(((BinOp)node).left, expects);
+					string left = FindType(((BinOp)node).left, expects);
 					if (left != null) {
 						return left;
 					}
 					
-					string? right = FindType(((BinOp)node).right, expects);
+					string right = FindType(((BinOp)node).right, expects);
 					if (right != null) {
 						return right;
 					}
@@ -127,7 +128,7 @@ namespace TinyLang {
 				}
 
 				case Literal: {
-					string? lit_type = ((Literal)node).token?.Kind.ToString().ToLower();
+					string lit_type = ((Literal)node).token.Kind.ToString().ToLower();
 
 					if (lit_type != expects) {
 						return lit_type;
@@ -170,8 +171,8 @@ namespace TinyLang {
 		}
 
 		void VisitVar(Var var) {
-			if (scope?.Lookup(var.token?.Lexeme, false) == null) {
-				Error($"Variable '{var.token?.Lexeme}' does not exist in any scope");
+			if (scope.Lookup(var.token.Lexeme, false) == null) {
+				Error($"Variable '{var.token.Lexeme}' does not exist in any scope");
 			}
 		}
 
@@ -182,35 +183,35 @@ namespace TinyLang {
 		}
 
 		void VisitReturn(Return ret) {
-			if (scope?.identifier == "global") {
+			if (scope.identifier == "global") {
 				Error("Cannot return from global scope");
 			}
 
 			// TODO: Check if it matches the return value of a function
 
-			Visit(ret?.expr);
+			Visit(ret.expr);
 		}
 
 		void VisitFunctionDef(FunctionDef function) {
-			if (scope.HasSymbol(function.token?.Lexeme)) {
-				Error($"Function '{function.token?.Lexeme}' has already been defined");
+			if (scope.HasSymbol(function.token.Lexeme)) {
+				Error($"Function '{function.token.Lexeme}' has already been defined");
 			}
 
 			FunctionSym func = new FunctionSym(
-				function.token?.Lexeme,
+				function.token.Lexeme,
 				new List<VarSym>(),
 				function
 			);
 
 			scope.Insert(func);
-			SymbolScope func_scope = new SymbolScope(function.token?.Lexeme, scope.scopeLevel + 1, scope);
+			SymbolScope func_scope = new SymbolScope(function.token.Lexeme, scope.scopeLevel + 1, scope);
 			scope = func_scope;
 
 			// Add paramaters
 			foreach(Parameter param in function.parameters) {
 				VarSym variable = new VarSym(
-					param.token?.Lexeme,
-					scope.Lookup(param.type?.Lexeme, false),
+					param.token.Lexeme,
+					scope.Lookup(param.type.Lexeme, false),
 					false
 				);
 				scope.Insert(variable);
@@ -220,21 +221,21 @@ namespace TinyLang {
 			VisitBlock(function.block);
 
 			if (function.returnType != "void" && function.block.returnValue == null) {
-				Error($"Function '{function.token?.Lexeme}' expected a return value of type '{function.returnType}' but received void");
+				Error($"Function '{function.token.Lexeme}' expected a return value of type '{function.returnType}' but received void");
 			}
 
 			ClimbScope();
 		}
 
 		void VisitFunctionCall(FunctionCall function) {
-			FunctionSym? func = (FunctionSym?)scope.Lookup(function.token?.Lexeme, false);
+			FunctionSym func = (FunctionSym)scope.Lookup(function.token.Lexeme, false);
 
 			if (func == null) {
-				Error($"Function '{function.token?.Lexeme}' does not exist");
+				Error($"Function '{function.token.Lexeme}' does not exist");
 			}
 
 			if (function.arguments.Count != func.parameters.Count) {
-				Error($"Function '{function.token?.Lexeme}' expected {func.parameters.Count} argument(s) but received {function.arguments.Count}");
+				Error($"Function '{function.token.Lexeme}' expected {func.parameters.Count} argument(s) but received {function.arguments.Count}");
 			}
 
 			// Assign the definition
@@ -243,10 +244,10 @@ namespace TinyLang {
 			int current = 0;
 			foreach(Node node in function.arguments) {
 				string expected = func.parameters[current].type.identifier;
-				string? failed_type = FindType(node, expected);
+				string failed_type = FindType(node, expected);
 
 				if (failed_type != null) {
-					Error($"'{function.token?.Lexeme}' argument at position {current + 1} expected type {expected} but received {failed_type}");
+					Error($"'{function.token.Lexeme}' argument at position {current + 1} expected type {expected} but received {failed_type}");
 				}
 
 				Visit(node);
@@ -272,20 +273,20 @@ namespace TinyLang {
 
 			Visit(decl.expr);
 
-			string? received = FindType(decl.expr, decl.type?.Lexeme);
+			string received = FindType(decl.expr, decl.type.Lexeme);
 			if (received != null) {
-				Error($"'{decl.identifier}' expected type {decl.type?.Lexeme} but received {received}");
+				Error($"'{decl.identifier}' expected type {decl.type.Lexeme} but received {received}");
 			}
 
-			scope?.Insert(new VarSym(
+			scope.Insert(new VarSym(
 				decl.identifier,
-				scope?.Lookup(decl.type?.Lexeme, false),
+				scope.Lookup(decl.type.Lexeme, false),
 				decl.mutable
 			));
 		}
 
 		void VisitAssignment(Assignment assign) {
-			VarSym? sym = (VarSym?)scope?.Lookup(assign.identifier, false);
+			VarSym sym = (VarSym)scope.Lookup(assign.identifier, false);
 
 			if (sym == null) {
 				Error($"Variable '{assign.identifier}' does not exist in any scope");
@@ -293,9 +294,9 @@ namespace TinyLang {
 
 			Visit(assign.expr);
 
-			string? received = FindType(assign.expr, sym.type?.identifier);
+			string received = FindType(assign.expr, sym.type.identifier);
 			if (received != null) {
-				Error($"'{assign.identifier}' expected type {sym.type?.identifier} but received {received}");
+				Error($"'{assign.identifier}' expected type {sym.type.identifier} but received {received}");
 			}
 
 			if (!sym.mutable) {

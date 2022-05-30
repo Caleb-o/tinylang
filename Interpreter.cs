@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace TinyLang {
 	enum RecordType {
 		Program, Function,
@@ -142,7 +145,7 @@ namespace TinyLang {
 			throw new InvalidOperationException("Unreachable");
 		}
 
-		Value? Visit(Node node) {
+		Value Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); return null;
 				case Literal: return VisitLiteral((Literal)node);
@@ -162,20 +165,20 @@ namespace TinyLang {
 			return null;
 		}
 
-		Value? VisitBinOp(BinOp binop) {
-			switch(binop.token?.Kind) {
+		Value VisitBinOp(BinOp binop) {
+			switch(binop.token.Kind) {
 				case TokenKind.Plus: 	return Visit(binop.left) + Visit(binop.right);
 				case TokenKind.Minus: 	return Visit(binop.left) - Visit(binop.right);
 				case TokenKind.Star: 	return Visit(binop.left) * Visit(binop.right);
 				case TokenKind.Slash: 	return Visit(binop.left) / Visit(binop.right);
 
 				default: 
-					Error($"Unknown binary operation {binop.token?.Kind}");
+					Error($"Unknown binary operation {binop.token.Kind}");
 					return null;
 			}
 		}
 
-		Value? VisitUnaryOp(UnaryOp unary) {
+		Value VisitUnaryOp(UnaryOp unary) {
 			return -Visit(unary.right);
 		}
 
@@ -190,7 +193,7 @@ namespace TinyLang {
 		}
 
 		void VisitReturn(Return ret) {
-			Visit(ret?.expr);
+			Visit(ret.expr);
 		}
 
 		void VisitVarDecl(VarDecl decl) {
@@ -217,14 +220,14 @@ namespace TinyLang {
 			}
 
 			callStack.stack.Add(fnscope);
-			VisitBlock(function.definition?.def.block);
+			VisitBlock(function.definition.def.block);
 			callStack.stack.Remove(fnscope);
 
 			// TODO: Return value from return statement
 		}
 
 		void VisitBuiltinFunctionCall(BuiltinFunctionCall function) {
-			List<Value?> values = new List<Value?>();
+			List<Value> values = new List<Value>();
 			foreach(Node n in function.arguments) {
 				values.Add(Visit(n));
 			}
@@ -232,7 +235,7 @@ namespace TinyLang {
 			function.native.function(values);
 		}
 
-		Value? VisitVar(Var var) {
+		Value VisitVar(Var var) {
 			// Variable resolution through records
 			for(int idx = callStack.stack.Count - 1; idx >= 0; idx--) {
 				if (callStack.stack[idx].members.ContainsKey(var.token.Lexeme)) {
@@ -244,15 +247,15 @@ namespace TinyLang {
 			return null;
 		}
 
-		Value? VisitLiteral(Literal literal) {
-			switch(literal.token?.Kind) {
+		Value VisitLiteral(Literal literal) {
+			switch(literal.token.Kind) {
 				case TokenKind.Int:			return new Value(ValueKind.Int, int.Parse(literal.token.Lexeme));
 				case TokenKind.Float:		return new Value(ValueKind.Float, float.Parse(literal.token.Lexeme));
 				case TokenKind.Boolean:		return new Value(ValueKind.Bool, bool.Parse(literal.token.Lexeme));
 				case TokenKind.String:		return new Value(ValueKind.String, literal.token.Lexeme);
 
 				default:
-					Error($"Unknown literal type {literal.token?.Kind}");
+					Error($"Unknown literal type {literal.token.Kind}");
 					return null;
 			}
 		}

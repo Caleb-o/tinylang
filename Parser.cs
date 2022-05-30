@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
+
 namespace TinyLang {
 	class Parser {
-		readonly Lexer? lexer;
-		Token? currentToken;
+		readonly Lexer lexer;
+		Token currentToken;
 		Application app;
 
 
@@ -17,20 +20,20 @@ namespace TinyLang {
 		}
 
 		void Error(string message) {
-			throw new Exception($"{message} :: [{currentToken?.Column}:{currentToken?.Line}]");
+			throw new Exception($"{message} :: [{currentToken.Column}:{currentToken.Line}]");
 		}
 
 		void Consume(TokenKind expects) {
-			if (currentToken?.Kind == expects) {
-				currentToken = lexer?.Next();
+			if (currentToken.Kind == expects) {
+				currentToken = lexer.Next();
 			} else {
-				Error($"Expected token kind {expects} but received {currentToken?.Kind}");
+				Error($"Expected token kind {expects} but received {currentToken.Kind}");
 			}
 		}
 
 		void ConsumeIfExists(TokenKind expects) {
-			if (currentToken?.Kind == expects) {
-				currentToken = lexer?.Next();
+			if (currentToken.Kind == expects) {
+				currentToken = lexer.Next();
 			}
 		}
 
@@ -39,10 +42,10 @@ namespace TinyLang {
 
 			Consume(TokenKind.OpenParen);
 
-			while(currentToken?.Kind != TokenKind.CloseParen) {
-				List<Token?> identifiers = new List<Token?>();
+			while(currentToken.Kind != TokenKind.CloseParen) {
+				List<Token> identifiers = new List<Token>();
 
-				while(currentToken?.Kind == TokenKind.Identifier) {
+				while(currentToken.Kind == TokenKind.Identifier) {
 					identifiers.Add(currentToken);
 					Consume(TokenKind.Identifier);
 					ConsumeIfExists(TokenKind.Comma);
@@ -50,10 +53,10 @@ namespace TinyLang {
 
 				Consume(TokenKind.Colon);
 
-				Token? type_identifier = currentToken;
+				Token type_identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
-				foreach(Token? id in identifiers) {
+				foreach(Token id in identifiers) {
 					parameters.Add(new Parameter(id, type_identifier));
 				}
 				ConsumeIfExists(TokenKind.Comma);
@@ -63,14 +66,14 @@ namespace TinyLang {
 			return parameters;
 		}
 
-		Var Variable(Token? token) {
+		Var Variable(Token token) {
 			return new Var(token);
 		}
 
 		Node Factor(Block block) {
-			Token? current = currentToken;
+			Token current = currentToken;
 
-			switch(currentToken?.Kind) {
+			switch(currentToken.Kind) {
 				case TokenKind.Minus: {
 					Consume(TokenKind.Minus);
 					return new UnaryOp(current, Factor(block));
@@ -86,16 +89,16 @@ namespace TinyLang {
 
 				case TokenKind.OpenParen: {
 					Consume(TokenKind.OpenParen);
-					Node? n = Expr(block);
+					Node n = Expr(block);
 					Consume(TokenKind.CloseParen);
 					return n;
 				}
 
 				case TokenKind.Identifier: {
-					Token? identifier = currentToken;
+					Token identifier = currentToken;
 					Consume(TokenKind.Identifier);
 
-					if (currentToken?.Kind == TokenKind.OpenParen) {
+					if (currentToken.Kind == TokenKind.OpenParen) {
 						return FunctionCall(block, identifier);
 					}
 					else {
@@ -104,7 +107,7 @@ namespace TinyLang {
 				}
 
 				default: {
-					Error($"Unknown token in expression {currentToken?.Kind}");
+					Error($"Unknown token in expression {currentToken.Kind}");
 					break;
 				}
 			}
@@ -115,8 +118,8 @@ namespace TinyLang {
 		Node Term(Block block) {
 			Node n = Factor(block);
 
-			while(currentToken?.Kind == TokenKind.Star || currentToken?.Kind == TokenKind.Slash) {
-				Token? op = currentToken;
+			while(currentToken.Kind == TokenKind.Star || currentToken.Kind == TokenKind.Slash) {
+				Token op = currentToken;
 				Consume(currentToken.Kind);
 				n = new BinOp(op, n, Factor(block));
 			}
@@ -127,8 +130,8 @@ namespace TinyLang {
 		Node Expr(Block block) {
 			Node n = Term(block);
 
-			while(currentToken?.Kind == TokenKind.Plus || currentToken?.Kind == TokenKind.Minus) {
-				Token? op = currentToken;
+			while(currentToken.Kind == TokenKind.Plus || currentToken.Kind == TokenKind.Minus) {
+				Token op = currentToken;
 				Consume(currentToken.Kind);
 				n = new BinOp(op, n, Term(block));
 			}
@@ -138,7 +141,7 @@ namespace TinyLang {
 
 		List<Node> GetArguments(Block block, TokenKind closing) {
 			List<Node> arguments = new List<Node>();
-			while(currentToken?.Kind != closing) {
+			while(currentToken.Kind != closing) {
 				arguments.Add(Expr(block));
 				ConsumeIfExists(TokenKind.Comma);
 			}
@@ -146,27 +149,27 @@ namespace TinyLang {
 		}
 
 		void VariableDeclaration(Block block, bool mutable) {
-			Token? type_id = currentToken;
+			Token type_id = currentToken;
 			Consume(TokenKind.Identifier);
 
-			while (currentToken?.Kind == TokenKind.Identifier) {
-				Token? identifier = currentToken;
+			while (currentToken.Kind == TokenKind.Identifier) {
+				Token identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
 				Consume(TokenKind.Equals);
-				Node? expr = Expr(block);
+				Node expr = Expr(block);
 
-				block.statements.Add(new VarDecl(identifier?.Lexeme, type_id, mutable, expr));
+				block.statements.Add(new VarDecl(identifier.Lexeme, type_id, mutable, expr));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 		}
 
-		void Assignment(Block block, Token? identifier) {
+		void Assignment(Block block, Token identifier) {
 			Consume(TokenKind.Equals);
-			block.statements.Add(new Assignment(identifier?.Lexeme, Expr(block)));
+			block.statements.Add(new Assignment(identifier.Lexeme, Expr(block)));
 		}
 
-		FunctionCall FunctionCall(Block block, Token? identifier) {
+		FunctionCall FunctionCall(Block block, Token identifier) {
 			Consume(TokenKind.OpenParen);
 			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
@@ -177,21 +180,21 @@ namespace TinyLang {
 		void BuiltinFnCall(Block block) {
 			Consume(TokenKind.At);
 
-			Token? identifier = currentToken;
+			Token identifier = currentToken;
 			Consume(TokenKind.Identifier);
 
 			Consume(TokenKind.OpenParen);
 			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
-			block.statements.Add(new BuiltinFunctionCall(identifier?.Lexeme, arguments, "void"));
+			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, "void"));
 		}
 
 		void Return(Block block) {
 			Consume(TokenKind.Return);
-			Node? expr = null;
+			Node expr = null;
 
-			if (currentToken?.Kind != TokenKind.SemiColon) {
+			if (currentToken.Kind != TokenKind.SemiColon) {
 				expr = Expr(block);
 			}
 
@@ -211,16 +214,16 @@ namespace TinyLang {
 		void FunctionDef(Block block) {
 			Consume(TokenKind.Function);
 
-			Token? identifier = currentToken;
+			Token identifier = currentToken;
 			Consume(TokenKind.Identifier);
 
 			List<Parameter> parameters = ParameterList();
 
 			string return_type = "void";
-			if (currentToken?.Kind == TokenKind.Colon) {
+			if (currentToken.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 
-				Token? return_identifier = currentToken;
+				Token return_identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
 				return_type = return_identifier.Lexeme;
@@ -230,13 +233,13 @@ namespace TinyLang {
 		}
 
 		void StatementList(Block block, TokenKind closing) {
-			while(currentToken?.Kind != closing) {
+			while(currentToken.Kind != closing) {
 				Statement(block);
 			}
 		}
 
 		void Statement(Block block) {
-			switch(currentToken?.Kind) {
+			switch(currentToken.Kind) {
 				case TokenKind.Var: {
 					Consume(TokenKind.Var);
 					VariableDeclaration(block, true);
@@ -260,7 +263,7 @@ namespace TinyLang {
 				}
 
 				case TokenKind.Identifier: {
-					Token? identifier = currentToken;
+					Token identifier = currentToken;
 					Consume(TokenKind.Identifier);
 
 					switch(currentToken.Kind) {
@@ -286,7 +289,7 @@ namespace TinyLang {
 				}
 
 				default:
-					Error($"Unknown token in statement: {currentToken?.Kind}");
+					Error($"Unknown token in statement: {currentToken.Kind}");
 					break;
 			}
 
@@ -296,8 +299,8 @@ namespace TinyLang {
 		void Declaration() {
 			// Record defs
 			// Functions
-			while (currentToken?.Kind != TokenKind.End) {
-				switch(currentToken?.Kind) {
+			while (currentToken.Kind != TokenKind.End) {
+				switch(currentToken.Kind) {
 					case TokenKind.Function: {
 						FunctionDef(app.block);
 						break;

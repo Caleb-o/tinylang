@@ -5,4 +5,4 @@ fn do_things(b: int) {
 }
 
 do_things(2);
-@println(a);
+@println(a, " " + "Hello!");
