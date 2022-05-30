@@ -1,0 +1,8 @@
+var int a = 10;
+
+fn do_things() {
+	a = 20;
+}
+
+do_things();
+@println(a);

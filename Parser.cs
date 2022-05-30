@@ -187,6 +187,17 @@ namespace TinyLang {
 			block.statements.Add(new BuiltinFunctionCall(identifier?.Lexeme, arguments, "void"));
 		}
 
+		void Return(Block block) {
+			Consume(TokenKind.Return);
+			Node? expr = null;
+
+			if (currentToken?.Kind != TokenKind.SemiColon) {
+				expr = Expr(block);
+			}
+
+			block.statements.Add(new Return(expr));
+		}
+
 		Block Body() {
 			Block block = new Block(new List<Node>());
 
@@ -243,6 +254,11 @@ namespace TinyLang {
 					break;
 				}
 
+				case TokenKind.Return: {
+					Return(block);
+					break;
+				}
+
 				case TokenKind.Identifier: {
 					Token? identifier = currentToken;
 					Consume(TokenKind.Identifier);
@@ -280,10 +296,6 @@ namespace TinyLang {
 		void Declaration() {
 			// Record defs
 			// Functions
-
-			// -- Shared with body statements
-			// Variables
-			// Statements
 			while (currentToken?.Kind != TokenKind.End) {
 				switch(currentToken?.Kind) {
 					case TokenKind.Function: {
@@ -292,7 +304,7 @@ namespace TinyLang {
 					}
 
 					default:
-						StatementList(app.block, TokenKind.End);
+						Statement(app.block);
 						break;
 				}
 			}

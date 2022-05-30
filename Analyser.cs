@@ -154,6 +154,7 @@ namespace TinyLang {
 				case FunctionCall: VisitFunctionCall((FunctionCall)node); break;
 				case BuiltinFunctionCall: VisitBuiltinCall((BuiltinFunctionCall)node); break;
 				case Var: VisitVar((Var)node); break;
+				case Return: VisitReturn((Return)node); break;
 
 				case Literal: break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
@@ -178,6 +179,16 @@ namespace TinyLang {
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+		}
+
+		void VisitReturn(Return ret) {
+			if (scope?.identifier == "global") {
+				Error("Cannot return from global scope");
+			}
+
+			// TODO: Check if it matches the return value of a function
+
+			Visit(ret?.expr);
 		}
 
 		void VisitFunctionDef(FunctionDef function) {

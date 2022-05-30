@@ -133,6 +133,15 @@ namespace TinyLang {
 			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
 		}
 
+		ActivationRecord ResolveVar(string identifier) {
+			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
+				if (callStack.stack[i].members.ContainsKey(identifier)) {
+					return callStack.stack[i];
+				}
+			}
+			throw new InvalidOperationException("Unreachable");
+		}
+
 		Value? Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); return null;
@@ -173,7 +182,15 @@ namespace TinyLang {
 		void VisitBlock(Block block) {
 			foreach(Node node in block.statements) {
 				Visit(node);
+
+				if (node is Return) {
+					break;
+				}
 			}
+		}
+
+		void VisitReturn(Return ret) {
+			Visit(ret?.expr);
 		}
 
 		void VisitVarDecl(VarDecl decl) {
@@ -181,7 +198,9 @@ namespace TinyLang {
 		}
 
 		void VisitAssignment(Assignment assign) {
-			callStack.stack[^1].members[assign.identifier] = Visit(assign.expr);
+			// Hack: This allows modifying values from other scopes
+			ActivationRecord record = ResolveVar(assign.identifier);
+			record.members[assign.identifier] = Visit(assign.expr);
 		}
 
 		void VisitFunctionCall(FunctionCall function) {
@@ -198,8 +217,10 @@ namespace TinyLang {
 			}
 
 			callStack.stack.Add(fnscope);
-			Visit(function.definition?.def.block);
+			VisitBlock(function.definition?.def.block);
 			callStack.stack.Remove(fnscope);
+
+			// TODO: Return value from return statement
 		}
 
 		void VisitBuiltinFunctionCall(BuiltinFunctionCall function) {

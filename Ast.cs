@@ -106,6 +106,14 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class Return : Node {
+		public Node? expr;
+
+		public Return(Node? expr) : base(null) {
+			this.expr = expr;
+		}
+	}
+
 	sealed class FunctionDef : Node {
 		public readonly List<Parameter> parameters;
 		public readonly Block block;
