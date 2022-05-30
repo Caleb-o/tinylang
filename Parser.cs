@@ -183,7 +183,7 @@ namespace TinyLang {
 			return block;
 		}
 
-		void FunctionDef() {
+		void FunctionDef(Block block) {
 			Consume(TokenKind.Function);
 
 			Token? identifier = currentToken;
@@ -204,7 +204,7 @@ namespace TinyLang {
 				return_type = new Identifier("void");
 			}
 
-			app.block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
+			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
 		}
 
 		void StatementList(Block block, TokenKind closing) {
@@ -230,6 +230,11 @@ namespace TinyLang {
 					break;
 				}
 
+				case TokenKind.Function: {
+					FunctionDef(block);
+					break;
+				}
+
 				default:
 					Error($"Unknown token in statement: {currentToken?.Kind}");
 					break;
@@ -248,7 +253,7 @@ namespace TinyLang {
 			while (currentToken?.Kind != TokenKind.End) {
 				switch(currentToken?.Kind) {
 					case TokenKind.Function: {
-						FunctionDef();
+						FunctionDef(app.block);
 						break;
 					}
 

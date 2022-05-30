@@ -10,14 +10,14 @@ namespace TinyLang {
 	}
 
 	static class Builtins {
-		public delegate Node? Fn(List<Node> arguments);
+		public delegate Value? Fn(List<Value> arguments);
 		public static Dictionary<string, BuiltinFn> Functions = new Dictionary<string, BuiltinFn>() {
 			{ "println", new BuiltinFn(PrintLn, -1) },
 		};
 
-		public static Node? PrintLn(List<Node> arguments) {
-			foreach(Node n in arguments) {
-				Console.Write(n.token?.Lexeme);
+		public static Value? PrintLn(List<Value> arguments) {
+			foreach(Value n in arguments) {
+				Console.Write(n.value);
 			}
 			Console.WriteLine();
 			return null;

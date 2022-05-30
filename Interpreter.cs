@@ -120,7 +120,17 @@ namespace TinyLang {
 		}
 
 		void Error(string msg) {
-			throw new InvalidOperationException($"Runtime: {msg}");
+			Console.WriteLine("-- Call Stack --");
+			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
+				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
+
+				foreach(var record in callStack.stack[i].members) {
+					Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.kind}]");
+				}
+			}
+			Console.WriteLine();
+
+			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
 		}
 
 		Value? Visit(Node node) {
@@ -183,11 +193,24 @@ namespace TinyLang {
 		}
 
 		void VisitBuiltinFunctionCall(BuiltinFunctionCall function) {
-			function.native.function(function.arguments);
+			List<Value> values = new List<Value>();
+			foreach(Node n in function.arguments) {
+				values.Add(Visit(n));
+			}
+
+			function.native.function(values);
 		}
 
 		Value? VisitVar(Var var) {
-			return callStack.stack[^1].members[var.token.Lexeme];
+			// Variable resolution through records
+			for(int idx = callStack.stack.Count - 1; idx >= 0; idx--) {
+				if (callStack.stack[idx].members.ContainsKey(var.token.Lexeme)) {
+					return callStack.stack[idx].members[var.token.Lexeme];
+				}
+
+			}
+			Error($"Unknown variable read '{var.token.Lexeme}'");
+			return null;
 		}
 
 		Value? VisitLiteral(Literal literal) {

@@ -1,3 +1,5 @@
+using System;
+
 namespace TinyLang {
 	abstract class Symbol {
 		public string identifier;
@@ -85,7 +87,13 @@ namespace TinyLang {
 		}
 
 		void Error(string msg) {
-			throw new Exception($"Analyser: {msg}");
+			SymbolScope? current = scope;
+
+			while(current != null) {
+				Console.WriteLine($"[{current.identifier}] " + "{" + string.Join(", ", current.symbols.Select(m => m.Key)) + "}");
+				current = current.parent;
+			}
+			throw new Exception($"Analyser: {msg} : [{scope?.identifier}]");
 		}
 
 		void ClimbScope() {
@@ -195,6 +203,7 @@ namespace TinyLang {
 			}
 
 			VisitBlock(function.block);
+
 			ClimbScope();
 		}
 

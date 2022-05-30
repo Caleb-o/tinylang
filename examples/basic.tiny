@@ -2,6 +2,13 @@
 fn say_hello(name: string, age: int) {
 	var int x = 10 + age;
 	var int y = x * x;
+
+	fn say_hello_again() {
+		@println("Hello again, ", name);
+	};
+
+	@println("Hello, ", name);
+	say_hello_again();
 }
 
 fn bar(foo: boolean) {
