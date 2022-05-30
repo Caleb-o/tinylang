@@ -1,9 +1,13 @@
 var int a = 10;
 
-fn do_things(b: var int): int(10) {
+# do_things has an explicit return value of 20
+fn do_things(b: var int): int(20) {
 	b = b * b;
-	
-	result = 10;
+
+	# Override the result
+	# FIXME: The value of b here is the reference value of a, 
+	# it should also have its own value in this scope
+	result = b;
 }
 
 let int foo = do_things(a);
