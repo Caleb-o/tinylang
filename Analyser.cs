@@ -87,12 +87,6 @@ namespace TinyLang {
 		}
 
 		void Error(string msg) {
-			SymbolScope? current = scope;
-
-			while(current != null) {
-				Console.WriteLine($"[{current.identifier}] " + "{" + string.Join(", ", current.symbols.Select(m => m.Key)) + "}");
-				current = current.parent;
-			}
 			throw new Exception($"Analyser: {msg} : [{scope?.identifier}]");
 		}
 

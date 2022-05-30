@@ -28,3 +28,5 @@ bar(true);
 baz();
 
 @println("Hello!", " Foo ", 123, " ", n);
+
+var float a = -2.3;
