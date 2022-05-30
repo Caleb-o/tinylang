@@ -27,8 +27,8 @@ say_hello(n, 22);
 n = "woah";
 
 # Immutability
-let int a = 10;
-a = 20;
+var int foo = 10;
+foo = 20;
 
 bar(true);
 baz();

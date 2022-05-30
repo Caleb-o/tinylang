@@ -1,0 +1,10 @@
+# Mutable string value
+var string hello = "Hello, World!";
+@println(hello);
+
+hello = "Hello, Me!";
+@println(hello);
+
+# Immutable integer value
+let int age = 22;
+@println("I am ", age, " years old!");
