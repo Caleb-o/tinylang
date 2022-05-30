@@ -70,7 +70,7 @@ namespace TinyLang {
 			return new Var(token);
 		}
 
-		Node? Factor() {
+		Node Factor() {
 			Token? current = currentToken;
 
 			switch(currentToken?.Kind) {
@@ -101,8 +101,8 @@ namespace TinyLang {
 			}
 		}
 
-		Node? Term() {
-			Node? n = Factor();
+		Node Term() {
+			Node n = Factor();
 
 			while(currentToken?.Kind == TokenKind.Star || currentToken?.Kind == TokenKind.Slash) {
 				Token? op = currentToken;
@@ -113,8 +113,8 @@ namespace TinyLang {
 			return n;
 		}
 
-		Node? Expr() {
-			Node? n = Term();
+		Node Expr() {
+			Node n = Term();
 
 			while(currentToken?.Kind == TokenKind.Plus || currentToken?.Kind == TokenKind.Minus) {
 				Token? op = currentToken;

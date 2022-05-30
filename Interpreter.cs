@@ -166,7 +166,7 @@ namespace TinyLang {
 
 		void VisitFunctionCall(FunctionCall function) {
 			ActivationRecord fnscope = new ActivationRecord(
-				function.token?.Lexeme,
+				function.token.Lexeme,
 				RecordType.Function,
 				callStack.stack[^1].scopeLevel + 1
 			);
@@ -187,15 +187,15 @@ namespace TinyLang {
 		}
 
 		Value? VisitVar(Var var) {
-			return callStack.stack[^1].members[var.token?.Lexeme];
+			return callStack.stack[^1].members[var.token.Lexeme];
 		}
 
 		Value? VisitLiteral(Literal literal) {
 			switch(literal.token?.Kind) {
-				case TokenKind.Int:			return new Value(ValueKind.Int, int.Parse(literal.token?.Lexeme));
-				case TokenKind.Float:		return new Value(ValueKind.Float, float.Parse(literal.token?.Lexeme));
-				case TokenKind.Boolean:		return new Value(ValueKind.Bool, bool.Parse(literal.token?.Lexeme));
-				case TokenKind.String:		return new Value(ValueKind.String, literal.token?.Lexeme);
+				case TokenKind.Int:			return new Value(ValueKind.Int, int.Parse(literal.token.Lexeme));
+				case TokenKind.Float:		return new Value(ValueKind.Float, float.Parse(literal.token.Lexeme));
+				case TokenKind.Boolean:		return new Value(ValueKind.Bool, bool.Parse(literal.token.Lexeme));
+				case TokenKind.String:		return new Value(ValueKind.String, literal.token.Lexeme);
 
 				default:
 					Error($"Unknown literal type {literal.token?.Kind}");

@@ -33,18 +33,18 @@ namespace TinyLang {
 	}
 
 	sealed class BinOp : Node {
-		public readonly Node? left, right;
+		public readonly Node left, right;
 
-		public BinOp(Token? op, Node? left, Node? right) : base(op) {
+		public BinOp(Token? op, Node left, Node right) : base(op) {
 			this.left = left;
 			this.right = right;
 		}
 	}
 
 	sealed class UnaryOp : Node {
-		public readonly Node? right;
+		public readonly Node right;
 
-		public UnaryOp(Token? op, Node? right) : base(op) {
+		public UnaryOp(Token? op, Node right) : base(op) {
 			this.right = right;
 		}
 	}
@@ -78,9 +78,9 @@ namespace TinyLang {
 	}
 
 	sealed class Parameter : Node {
-		public readonly Token? type;
+		public readonly Token type;
 
-		public Parameter(Token? identifier, Token? type) : base(identifier) {
+		public Parameter(Token? identifier, Token type) : base(identifier) {
 			this.type = type;
 		}
 	}

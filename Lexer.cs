@@ -12,7 +12,7 @@ namespace TinyLang {
 	}
 	
 	class Token {
-		public readonly string Lexeme = "";
+		public readonly string Lexeme;
 		public readonly TokenKind Kind;
 		public readonly int Column, Line;
 
