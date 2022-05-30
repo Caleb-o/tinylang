@@ -8,3 +8,7 @@ hello = "Hello, Me!";
 # Immutable integer value
 let int age = 22;
 @println("I am ", age, " years old!");
+
+# Declare multiple variables at once
+let int a = 10, b = 20;
+@println(a, " ", b);

@@ -138,13 +138,16 @@ namespace TinyLang {
 			Token? type_id = currentToken;
 			Consume(TokenKind.Identifier);
 
-			Token? identifier = currentToken;
-			Consume(TokenKind.Identifier);
+			while (currentToken?.Kind == TokenKind.Identifier) {
+				Token? identifier = currentToken;
+				Consume(TokenKind.Identifier);
 
-			Consume(TokenKind.Equals);
-			Node? expr = Expr();
+				Consume(TokenKind.Equals);
+				Node? expr = Expr();
 
-			block.statements.Add(new VarDecl(identifier?.Lexeme, type_id, mutable, expr));
+				block.statements.Add(new VarDecl(identifier?.Lexeme, type_id, mutable, expr));
+				ConsumeIfExists(TokenKind.Comma);
+			}
 		}
 
 		void Assignment(Block block, Token? identifier) {
