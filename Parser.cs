@@ -53,11 +53,19 @@ namespace TinyLang {
 
 				Consume(TokenKind.Colon);
 
+				// Parameters are immutable by default and require the var
+				// keyword to make them mutable
+				bool mutable = false;
+				if (currentToken.Kind == TokenKind.Var) {
+					Consume(TokenKind.Var);
+					mutable = true;
+				}
+
 				Token type_identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
 				foreach(Token id in identifiers) {
-					parameters.Add(new Parameter(id, type_identifier));
+					parameters.Add(new Parameter(id, type_identifier, mutable));
 				}
 				ConsumeIfExists(TokenKind.Comma);
 			}

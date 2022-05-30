@@ -212,7 +212,7 @@ namespace TinyLang {
 				VarSym variable = new VarSym(
 					param.token.Lexeme,
 					scope.Lookup(param.type.Lexeme, false),
-					false
+					param.mutable
 				);
 				scope.Insert(variable);
 				func.parameters.Add(variable);

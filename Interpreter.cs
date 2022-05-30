@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace TinyLang {
@@ -17,6 +18,8 @@ namespace TinyLang {
 	class Value {
 		public readonly ValueKind kind;
 		public readonly object value;
+		// Which identifier it is referencing
+		public string references = null;
 
 		public Value(ValueKind kind, object value) {
 			this.kind = kind;
@@ -202,8 +205,15 @@ namespace TinyLang {
 
 		void VisitAssignment(Assignment assign) {
 			// Hack: This allows modifying values from other scopes
-			ActivationRecord record = ResolveVar(assign.identifier);
-			record.members[assign.identifier] = Visit(assign.expr);
+			string identifier = assign.identifier;
+			ActivationRecord record = ResolveVar(identifier);
+
+			if (record.members[assign.identifier].references != null) {
+				identifier = record.members[assign.identifier].references;
+				record = ResolveVar(identifier);
+			}
+
+			record.members[identifier] = Visit(assign.expr);
 		}
 
 		void VisitFunctionCall(FunctionCall function) {
@@ -215,8 +225,15 @@ namespace TinyLang {
 
 			int idx = 0;
 			foreach(Node arg in function.arguments) {
-				fnscope.members[function.definition.parameters[idx++].identifier] = 
-					Visit(arg);
+				fnscope.members[function.definition.parameters[idx].identifier] = Visit(arg);
+				
+				if (arg is Var) {
+					fnscope.members[
+						function.definition.parameters[idx].identifier
+					].references = arg.token.Lexeme;
+				}
+
+				idx++;
 			}
 
 			callStack.stack.Add(fnscope);

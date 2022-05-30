@@ -1,8 +1,14 @@
 var int a = 10;
 
-fn do_things(b: int) {
-	a = 20 + b;
+fn do_things(b: var int) {
+	b = b * b;
 }
 
-do_things(2);
+do_things(a);
 @println(a, " " + "Hello!");
+
+# fn bar(): int {
+# 	return 10;
+# }
+
+# let int foo = bar();

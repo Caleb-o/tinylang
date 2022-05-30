@@ -94,9 +94,11 @@ namespace TinyLang {
 
 	sealed class Parameter : Node {
 		public readonly Token type;
+		public readonly bool mutable;
 
-		public Parameter(Token identifier, Token type) : base(identifier) {
+		public Parameter(Token identifier, Token type, bool mutable) : base(identifier) {
 			this.type = type;
+			this.mutable = mutable;
 		}
 	}
 
