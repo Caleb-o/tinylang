@@ -1,8 +1,8 @@
 var int a = 10;
 
-fn do_things() {
-	a = 20;
+fn do_things(b: int) {
+	a = 20 + b;
 }
 
-do_things();
+do_things(2);
 @println(a);

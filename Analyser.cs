@@ -234,7 +234,7 @@ namespace TinyLang {
 			}
 
 			if (function.arguments.Count != func.parameters.Count) {
-				Error($"Function '{function.token?.Lexeme}' expected {func.parameters.Count} arguments but received {function.arguments.Count}");
+				Error($"Function '{function.token?.Lexeme}' expected {func.parameters.Count} argument(s) but received {function.arguments.Count}");
 			}
 
 			// Assign the definition
@@ -256,7 +256,7 @@ namespace TinyLang {
 
 		void VisitBuiltinCall(BuiltinFunctionCall builtin) {
 			if (builtin.native.parity >= 0 && builtin.arguments.Count != builtin.native.parity) {
-				Error($"Builtin function '{builtin.identifier}' expected {builtin.native.parity} arguments but received {builtin.arguments.Count}");
+				Error($"Builtin function '{builtin.identifier}' expected {builtin.native.parity} argument(s) but received {builtin.arguments.Count}");
 			}
 
 			// TODO: Typecheck builtin function arguments
