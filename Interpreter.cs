@@ -169,7 +169,7 @@ namespace TinyLang {
 				case UnaryOp: return VisitUnaryOp((UnaryOp)node);
 
 				case FunctionDef: return null;
-				case FunctionCall: VisitFunctionCall((FunctionCall)node); return null;
+				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
 				case BuiltinFunctionCall: VisitBuiltinFunctionCall((BuiltinFunctionCall)node); return null;
 				case Escape: return null;
 
@@ -226,7 +226,7 @@ namespace TinyLang {
 			record.members[identifier] = Visit(assign.expr);
 		}
 
-		void VisitFunctionCall(FunctionCall function) {
+		Value VisitFunctionCall(FunctionCall function) {
 			ActivationRecord fnscope = new ActivationRecord(
 				function.token.Lexeme,
 				RecordType.Function,
@@ -257,9 +257,11 @@ namespace TinyLang {
 
 			callStack.stack.Add(fnscope);
 			VisitBlock(function.sym.def.block);
+
+			Value result = ResolveVar("result").members["result"];
 			callStack.stack.Remove(fnscope);
 
-			// TODO: Return value from return statement
+			return result;
 		}
 
 		void VisitBuiltinFunctionCall(BuiltinFunctionCall function) {

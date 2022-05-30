@@ -111,7 +111,13 @@ namespace TinyLang {
 				}
 
 				case FunctionCall: {
-					return ((FunctionCall)node).sym.def.returnType.type;
+					string return_type = ((FunctionCall)node).sym.def.returnType.type;
+
+					if (return_type != expects) {
+						return return_type;
+					}
+
+					return null;
 				}
 
 				case BinOp: {
@@ -216,8 +222,6 @@ namespace TinyLang {
 			}
 
 			// Insert implicit return value
-			Console.WriteLine($"Return type {func.def.returnType.type}");
-
 			if (func.def.returnType.type != "void") {
 				scope.Insert(new VarSym(
 					"result",
