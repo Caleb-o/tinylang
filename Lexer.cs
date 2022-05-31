@@ -10,7 +10,7 @@ namespace TinyLang {
 		Plus, Minus, Star, Slash, At,
 
 		Let, Var, Identifier, Record, Function,
-		Escape, If, Else, While,
+		Escape, If, Else, While, Do,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
 
@@ -40,6 +40,7 @@ namespace TinyLang {
 			{ "escape", TokenKind.Escape },
 			{ "fn", TokenKind.Function },
 			{ "record", TokenKind.Record },
+			{ "do", TokenKind.Do },
 			{ "while", TokenKind.While },
 			{ "if", TokenKind.If },
 			{ "else", TokenKind.Else },

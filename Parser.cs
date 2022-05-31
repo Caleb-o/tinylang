@@ -287,6 +287,14 @@ namespace TinyLang {
 			block.statements.Add(new While(Expr(block), Body()));
 		}
 
+		void DoWhile(Block block) {
+			Consume(TokenKind.Do);
+			Block body = Body();
+			Consume(TokenKind.While);
+			
+			block.statements.Add(new While(Expr(block), body));
+		}
+
 		void StatementList(Block block, TokenKind closing) {
 			while(currentToken.Kind != closing) {
 				Statement(block);
@@ -315,6 +323,11 @@ namespace TinyLang {
 				case TokenKind.While: {
 					While(block);
 					return; // Avoid semicolon
+				}
+
+				case TokenKind.Do: {
+					DoWhile(block);
+					break;
 				}
 
 				case TokenKind.At: {

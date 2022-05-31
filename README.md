@@ -120,8 +120,16 @@ if a > 20 {
 var int i = 0;
 
 while i < 10 {
+	i = i + 1;
 	@println(i);
 }
+
+# -- Do While loop
+i = 0;
+
+do {
+	i = i + 1;
+} while i < 2;
 ```
 
 ### Referencing Variables

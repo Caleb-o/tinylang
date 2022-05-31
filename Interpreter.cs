@@ -68,6 +68,7 @@ namespace TinyLang {
 				case UnaryOp: return VisitUnaryOp((UnaryOp)node);
 				case IfStmt: VisitIfStmt((IfStmt)node); return null;
 				case While: VisitWhile((While)node); return null;
+				case DoWhile: VisitDoWhile((DoWhile)node); return null;
 
 				case FunctionDef: return null;
 				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
@@ -137,6 +138,14 @@ namespace TinyLang {
 		}
 
 		void VisitWhile(While whilestmt) {
+			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
+				Visit(whilestmt.body);
+			}
+		}
+
+		void VisitDoWhile(DoWhile whilestmt) {
+			Visit(whilestmt.body);
+
 			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
 				Visit(whilestmt.body);
 			}

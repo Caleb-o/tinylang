@@ -164,6 +164,7 @@ namespace TinyLang {
 				case Escape: VisitEscape((Escape)node); break;
 				case IfStmt: VisitIfStatement((IfStmt)node); break;
 				case While: VisitWhile((While)node); break;
+				case DoWhile: VisitWhile((While)node); break;
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;

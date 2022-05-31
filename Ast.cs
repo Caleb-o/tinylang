@@ -113,6 +113,16 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class DoWhile : Node {
+		public readonly Node expr;
+		public readonly Block body;
+
+		public DoWhile(Node expr, Block body) : base(null) {
+			this.expr = expr;
+			this.body = body;
+		}
+	}
+
 	sealed class Assignment : Node {
 		public readonly string identifier;
 		public readonly Node expr;
