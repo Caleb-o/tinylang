@@ -7,6 +7,7 @@ A small interpreted language to try and learn more about language design and dev
 * [Desirables](#desirables)
 * [DataTypes](#data-types)
 * [Examples](#examples)
+* [Programs](#programs)
 
 ## TODO
 * Conditional - if/else/elif
@@ -149,7 +150,7 @@ foo();
 ### Fibonacci
 ```julia
 fn fibonacci(n: int): int {
-	if (n > 1) {
+	if n > 1 {
 		result = fibonacci(n - 1) + fibonacci(n - 2);
 	} else {
 		result = n;
