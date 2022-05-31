@@ -282,6 +282,11 @@ namespace TinyLang {
 			return new IfStmt(expr, true_body, false_body);
 		}
 
+		void While(Block block) {
+			Consume(TokenKind.While);
+			block.statements.Add(new While(Expr(block), Body()));
+		}
+
 		void StatementList(Block block, TokenKind closing) {
 			while(currentToken.Kind != closing) {
 				Statement(block);
@@ -304,6 +309,11 @@ namespace TinyLang {
 
 				case TokenKind.If: {
 					block.statements.Add(IfStatement(block));
+					return; // Avoid semicolon
+				}
+
+				case TokenKind.While: {
+					While(block);
 					return; // Avoid semicolon
 				}
 

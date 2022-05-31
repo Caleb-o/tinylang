@@ -5,12 +5,10 @@
 #     return fib(n-1) + fib(n-2);
 # }
 
-fn fibonacci(n: int): int {
-	if n > 1 {
-		result = fibonacci(n - 1) + fibonacci(n - 2);
-	} else {
-		result = n;
-	}
+var int a = 0;
+
+while a < 1000 {
+	a = a + 1;
 }
 
-@println(fibonacci(24)); # 46368
+@println(a);

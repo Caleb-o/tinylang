@@ -163,6 +163,7 @@ namespace TinyLang {
 				case Var: VisitVar((Var)node); break;
 				case Escape: VisitEscape((Escape)node); break;
 				case IfStmt: VisitIfStatement((IfStmt)node); break;
+				case While: VisitWhile((While)node); break;
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
@@ -209,6 +210,11 @@ namespace TinyLang {
 			if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
 			}
+		}
+
+		void VisitWhile(While whilestmt) {
+			Visit(whilestmt.expr);
+			Visit(whilestmt.body);
 		}
 
 		void VisitFunctionDef(FunctionDef function) {

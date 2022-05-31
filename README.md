@@ -103,6 +103,27 @@ fn foo() {
 foo();
 ```
 
+### Control Flow
+```julia
+let int a = 10;
+
+# If statements
+if a > 20 {
+	@println("A > 20");
+} else if (a <= 10) {
+	@println("a <= 10);
+} else {
+	@println("other");
+}
+
+# Looping with while loop
+var int i = 0;
+
+while i < 10 {
+	@println(i);
+}
+```
+
 ### Referencing Variables
 ```julia
 # By default, function parameters are immutable, so they cannot

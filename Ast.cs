@@ -103,6 +103,16 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class While : Node {
+		public readonly Node expr;
+		public readonly Block body;
+
+		public While(Node expr, Block body) : base(null) {
+			this.expr = expr;
+			this.body = body;
+		}
+	}
+
 	sealed class Assignment : Node {
 		public readonly string identifier;
 		public readonly Node expr;
