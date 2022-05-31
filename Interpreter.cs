@@ -138,7 +138,7 @@ namespace TinyLang {
 			throw new InvalidCastException("Unreachable");
 		}
 
-		void Error(string msg) {
+		void PrintCallStack() {
 			Console.WriteLine("-- Call Stack --");
 			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
@@ -148,7 +148,10 @@ namespace TinyLang {
 				}
 			}
 			Console.WriteLine();
+		}
 
+		void Error(string msg) {
+			PrintCallStack();
 			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
 		}
 
@@ -158,7 +161,9 @@ namespace TinyLang {
 					return callStack.stack[i];
 				}
 			}
-			throw new InvalidOperationException($"Unreachable: unable to find variable '{identifier}'");
+
+			Error($"Unreachable: unable to find variable '{identifier}'");
+			return null;
 		}
 
 		Value Visit(Node node) {
@@ -273,7 +278,11 @@ namespace TinyLang {
 			callStack.stack.Add(fnscope);
 			VisitBlock(function.sym.def.block);
 
-			Value result = ResolveVar("result").members["result"];
+			Value result = null;
+
+			if (function.sym.def.returnType.type != "void") {
+				result = ResolveVar("result").members["result"];
+			}
 			callStack.stack.Remove(fnscope);
 
 			return result;
