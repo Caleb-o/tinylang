@@ -251,11 +251,21 @@ namespace TinyLang {
 
 			int current = 0;
 			foreach(Node node in function.arguments) {
-				string expected = func.parameters[current].type.identifier;
+				VarSym parameter = func.parameters[current];
+				string expected = parameter.type.identifier;
 				string failed_type = FindType(node, expected);
 
 				if (failed_type != null) {
 					Error($"'{function.token.Lexeme}' argument at position {current + 1} expected type {expected} but received {failed_type}");
+				}
+
+				// Incompatible mutability
+				if (parameter.mutable && node is Var) {
+					VarSym variable = (VarSym)scope.Lookup(node.token.Lexeme, true);
+
+					if (!variable.mutable) {
+						Error($"Trying to pass an immutable variable '{node.token.Lexeme}' to parameter '{parameter.identifier}' in function '{function.token.Lexeme}'");
+					}
 				}
 
 				Visit(node);
