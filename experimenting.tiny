@@ -17,11 +17,9 @@ fn check(): int(100) {}
 let int bar = check();
 @println(bar);
 
-fn try_pass_immutable_to_mutable(value: var int) {
-	@println("This should not happen!");
+fn foo_bar() {
+	escape;
 }
-
-try_pass_immutable_to_mutable(bar);
 
 let int foo = do_things(a);
 @println(a, " " + "Hello! ", foo);

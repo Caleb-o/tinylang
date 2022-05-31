@@ -171,6 +171,7 @@ namespace TinyLang {
 				case FunctionDef: return null;
 				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
 				case BuiltinFunctionCall: VisitBuiltinFunctionCall((BuiltinFunctionCall)node); return null;
+				// FIXME: We need to somehow signal a return from the function
 				case Escape: return null;
 
 				case Var: return VisitVar((Var)node);
