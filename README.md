@@ -66,15 +66,15 @@ fn return_integer(): int {
 	# and will be returned on function exit
 }
 
-fn return_explicit_integer(): int(1234) {
+fn return_default_integer(): int(1234) {
 	# Functions can define a default return value
 }
 
-simple();
+simple(); # Hello!
 let int foo = return_integer();
-let int bar = return_explicit_integer();
+let int bar = return_default_integer();
 
-@println(foo, " ", bar);
+@println(foo, " ", bar); # 0 1234
 ```
 
 ### Nested Functions
