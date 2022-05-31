@@ -4,17 +4,18 @@ var int a = 10;
 fn do_things(b: var int): int(20) {
 	b = b * b;
 
-	# Override the result
-	# FIXME: The value of b here is the reference value of a, 
-	# it should also have its own value in this scope
+	fn do_other_things(b: var int) {
+		b = b * 2;
+	};
+
+	do_other_things(b);
 	result = b;
 }
 
+fn check(): int(100) {}
+
+let int bar = check();
+@println(bar);
+
 let int foo = do_things(a);
 @println(a, " " + "Hello! ", foo);
-
-# fn bar(): int {
-# 	return 10;
-# }
-
-# let int foo = bar();

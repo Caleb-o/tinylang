@@ -152,13 +152,13 @@ namespace TinyLang {
 			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
 		}
 
-		ActivationRecord ResolveVar(string identifier) {
-			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
+		ActivationRecord ResolveVar(string identifier, int offset = 0) {
+			for(int i = callStack.stack.Count - (offset + 1); i >= 0; i--) {
 				if (callStack.stack[i].members.ContainsKey(identifier)) {
 					return callStack.stack[i];
 				}
 			}
-			throw new InvalidOperationException("Unreachable");
+			throw new InvalidOperationException($"Unreachable: unable to find variable '{identifier}'");
 		}
 
 		Value Visit(Node node) {
@@ -238,9 +238,23 @@ namespace TinyLang {
 				fnscope.members[function.sym.parameters[idx].identifier] = Visit(arg);
 				
 				if (arg is Var) {
+					// HACK:  Climb the ladder of references until we hit the uppermost variable
+					//		  Obviously this is a terrible solution as it requires more work
+					// FIXME: The reference should ideally never change, so a simple assignment
+					//		  to the original name should be valid. Using a name is also not great,
+					//		  as it may conflict with other scopes and will require more resolution
+					//		  later on.
+					Value val = ResolveVar(arg.token.Lexeme).members[arg.token.Lexeme];
+					string upper_variable = arg.token.Lexeme;
+
+					while (val.references != null){ 
+						upper_variable = val.references;
+						val = ResolveVar(val.references).members[val.references];
+					}
+
 					fnscope.members[
 						function.sym.parameters[idx].identifier
-					].references = arg.token.Lexeme;
+					].references = upper_variable;
 				}
 
 				idx++;
@@ -277,7 +291,8 @@ namespace TinyLang {
 			// Variable resolution through records
 			for(int idx = callStack.stack.Count - 1; idx >= 0; idx--) {
 				if (callStack.stack[idx].members.ContainsKey(var.token.Lexeme)) {
-					return callStack.stack[idx].members[var.token.Lexeme];
+					Value val = callStack.stack[idx].members[var.token.Lexeme];
+					return (val.references != null) ? ResolveVar(val.references).members[val.references] : val;
 				}
 
 			}
