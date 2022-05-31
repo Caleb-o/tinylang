@@ -10,8 +10,6 @@ A small interpreted language to try and learn more about language design and dev
 * [Programs](#programs)
 
 ## TODO
-* Conditional - if/else/elif
-* Loops - while/for
 * Structures - User types
 * Enums - Either C-like or Rust-like
 * Traits/Interfaces - Add "generic" functionality to structs eg. Hashable requiring a hash function
