@@ -3,6 +3,11 @@ A small interpreted language to try and learn more about language design and dev
 
 ***Note:** This language is very young and does not have everything a modern language may have. It is also not intended for use, other than for learning.*
 
+## Contents
+* [Desirables](#desirables)
+* [DataTypes](#data-types)
+* [Examples](#examples)
+
 ## TODO
 * Conditional - if/else/elif
 * Loops - while/for
@@ -137,6 +142,21 @@ fn foo() {
 
 foo();
 @println(a); # 10
+```
+
+## Programs
+
+### Fibonacci
+```julia
+fn fibonacci(n: int): int {
+	if (n > 1) {
+		result = fibonacci(n - 1) + fibonacci(n - 2);
+	} else {
+		result = n;
+	}
+}
+
+@println(fibonacci(24)); # 46368
 ```
 
 ## Builtin Functions
