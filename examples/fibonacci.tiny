@@ -1,0 +1,9 @@
+fn fibonacci(n: int): int {
+	if n > 1 {
+		result = fibonacci(n - 1) + fibonacci(n - 2);
+	} else {
+		result = n;
+	}
+}
+
+@println(fibonacci(24)); # 46368
