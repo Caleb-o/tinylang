@@ -1,114 +1,7 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace TinyLang {
-	enum RecordType {
-		Program, Function,
-	}
-
-	/*
-		TODO: Transpile to Python or C++ instead of interpreting
-		C++ might be a good primer for the main language
-	*/
-	enum ValueKind {
-		Int, Float, String, Bool,
-	}
-
-	class Value {
-		public readonly ValueKind kind;
-		public readonly object value;
-		// Which identifier it is referencing
-		public string references = null;
-
-		public Value(ValueKind kind, object value) {
-			this.kind = kind;
-			this.value = value;
-		}
-
-		// Since there is type checking, it should be possible to operate on different
-		// value types at runtime
-		public static Value operator-(Value me) {
-			switch(me.kind) {
-				case ValueKind.Int: 	return new Value(ValueKind.Int, -(int)me.value);
-				case ValueKind.Float: 	return new Value(ValueKind.Float, -(float)me.value);
-				case ValueKind.Bool: 	return new Value(ValueKind.Bool, !(bool)me.value);
-
-				case ValueKind.String: 	throw new InvalidOperationException("Cannot use unary negation on strings");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator+(Value me, Value other) {
-			switch(me.kind) {
-				case ValueKind.Int: 	return new Value(ValueKind.Int, (int)me.value + (int)other.value);
-				case ValueKind.Float: 	return new Value(ValueKind.Float, (float)me.value + (float)other.value);
-				case ValueKind.Bool: 	return other;
-				case ValueKind.String: 	return new Value(ValueKind.String, (string)me.value + (string)other.value);
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator-(Value me, Value other) {
-			switch(me.kind) {
-				case ValueKind.Int: 	return new Value(ValueKind.Int, (int)me.value - (int)other.value);
-				case ValueKind.Float: 	return new Value(ValueKind.Float, (float)me.value - (float)other.value);
-				case ValueKind.Bool: 	return other;
-				case ValueKind.String: 	throw new InvalidOperationException("Cannot use minus on strings");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator*(Value me, Value other) {
-			switch(me.kind) {
-				case ValueKind.Int: 	return new Value(ValueKind.Int, (int)me.value * (int)other.value);
-				case ValueKind.Float: 	return new Value(ValueKind.Float, (float)me.value * (float)other.value);
-				
-				case ValueKind.Bool:
-				case ValueKind.String: 	throw new InvalidOperationException($"Cannot use multiply on {me.kind}");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator/(Value me, Value other) {
-			switch(me.kind) {
-				case ValueKind.Int: 	return new Value(ValueKind.Int, (int)me.value / (int)other.value);
-				case ValueKind.Float: 	return new Value(ValueKind.Float, (float)me.value / (float)other.value);
-				
-				case ValueKind.Bool:
-				case ValueKind.String: 	throw new InvalidOperationException($"Cannot use divide on {me.kind}");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-	}
-
-	class ActivationRecord {
-		public readonly string identifier; 
-		public readonly RecordType type;
-		public readonly int scopeLevel;
-		public Dictionary<string, Value> members = new Dictionary<string, Value>();
-
-		public ActivationRecord(string identifier, RecordType type, int scopeLevel) {
-			this.identifier = identifier;
-			this.type = type;
-			this.scopeLevel = scopeLevel;
-		}
-	}
-
-	class CallStack {
-		public List<ActivationRecord> stack = new List<ActivationRecord>();
-	}
-
 	class Interpreter {
 		CallStack callStack;
 
@@ -171,7 +64,9 @@ namespace TinyLang {
 				case Block: VisitBlock((Block)node); return null;
 				case Literal: return VisitLiteral((Literal)node);
 				case BinOp: return VisitBinOp((BinOp)node);
+				case ConditionalOp: return VisitConditionalOp((ConditionalOp)node);
 				case UnaryOp: return VisitUnaryOp((UnaryOp)node);
+				case IfStmt: VisitIfStmt((IfStmt)node); return null;
 
 				case FunctionDef: return null;
 				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
@@ -201,6 +96,23 @@ namespace TinyLang {
 			}
 		}
 
+		Value VisitConditionalOp(ConditionalOp conditional) {
+			switch(conditional.token.Kind) {
+				case TokenKind.EqualEqual: 		return Visit(conditional.left) == Visit(conditional.right);
+				case TokenKind.NotEqual: 		return Visit(conditional.left) != Visit(conditional.right);
+
+				case TokenKind.Greater: 		return Visit(conditional.left) > Visit(conditional.right);
+				case TokenKind.GreaterEqual: 	return Visit(conditional.left) >= Visit(conditional.right);
+
+				case TokenKind.Less: 			return Visit(conditional.left) < Visit(conditional.right);
+				case TokenKind.LessEqual: 		return Visit(conditional.left) <= Visit(conditional.right);
+
+				default: 
+					Error($"Unknown conditional operation {conditional.token.Kind}");
+					return null;
+			}
+		}
+
 		Value VisitUnaryOp(UnaryOp unary) {
 			return -Visit(unary.right);
 		}
@@ -212,6 +124,14 @@ namespace TinyLang {
 				if (node is Escape) {
 					break;
 				}
+			}
+		}
+
+		void VisitIfStmt(IfStmt ifstmt) {
+			if ((bool)VisitConditionalOp((ConditionalOp)ifstmt.expr).value) {
+				Visit(ifstmt.trueBody);
+			} else if (ifstmt.falseBody != null) {
+				Visit(ifstmt.falseBody);
 			}
 		}
 

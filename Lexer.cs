@@ -10,9 +10,11 @@ namespace TinyLang {
 		Plus, Minus, Star, Slash, At,
 
 		Let, Var, Identifier, Record, Function,
-		Escape,
+		Escape, If, Else,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
+
+		NotEqual, EqualEqual, Greater, Less, GreaterEqual, LessEqual,
 	}
 	
 	class Token {
@@ -38,6 +40,8 @@ namespace TinyLang {
 			{ "escape", TokenKind.Escape },
 			{ "fn", TokenKind.Function },
 			{ "record", TokenKind.Record },
+			{ "if", TokenKind.If },
+			{ "else", TokenKind.Else },
 			{ "true", TokenKind.Boolean },
 			{ "false", TokenKind.Boolean },
 		};
@@ -57,6 +61,8 @@ namespace TinyLang {
 			{ ')', TokenKind.CloseParen },
 			{ '{', TokenKind.OpenCurly },
 			{ '}', TokenKind.CloseCurly },
+			{ '>', TokenKind.Greater },
+			{ '<', TokenKind.Less },
 		};
 
 		public Lexer(string source) {
@@ -83,6 +89,22 @@ namespace TinyLang {
 			if (source[ip] == '"') {
 				return String();
 			}
+
+			if (Peek() == '!' && Peek(1) == '=') {
+				return MakeDouble(TokenKind.NotEqual);
+			}
+
+			if (Peek() == '=' && Peek(1) == '=') {
+				return MakeDouble(TokenKind.EqualEqual);
+			}
+
+			if (Peek() == '>' && Peek(1) == '=') {
+				return MakeDouble(TokenKind.GreaterEqual);
+			}
+
+			if (Peek() == '<' && Peek(1) == '=') {
+				return MakeDouble(TokenKind.LessEqual);
+			}
 			
 			if (Singles.ContainsKey(source[ip])) {
 				Token t = new Token(source[ip].ToString(), Singles[source[ip]], column, line);
@@ -91,6 +113,12 @@ namespace TinyLang {
 			}
 
 			return new Token("ERROR", TokenKind.End, column, line);
+		}
+
+		Token MakeDouble(TokenKind kind) {
+			Advance();
+			Advance();
+			return new Token(source[(ip - 2)..ip], kind, column - 2, line);
 		}
 
 		Token Identifier() {
@@ -157,6 +185,11 @@ namespace TinyLang {
 		void Advance() {
 			ip++;
 			column++;
+		}
+
+		char Peek(int depth = 0) {
+			if (ip + depth >= source.Length) return '\0';
+			return source[ip + depth];
 		}
 
 		void SkipWhitespace() {

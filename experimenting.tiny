@@ -1,25 +1,7 @@
-var int a = 10;
-
-# do_things has an explicit return value of 20
-fn do_things(b: var int): int(20) {
-	b = b * b;
-
-	fn do_other_things(b: var int) {
-		b = b * 2;
-	};
-
-	do_other_things(b);
-	result = b;
+if 10 + 2 < 10 {
+	@println("True");
+} else if 10 + 2 < 30 {
+	@println("True 2");
+} else {
+	@println("False");
 }
-
-fn check(): int(100) {}
-
-let int bar = check();
-@println(bar);
-
-fn foo_bar() {
-	escape;
-}
-
-let int foo = do_things(a);
-@println(a, " " + "Hello! ", foo);

@@ -20,7 +20,7 @@ namespace TinyLang {
 
 		public static Value PrintLn(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				Console.Write((n != null) ? n.value : "NONE");
+				Console.Write(((object)n != null) ? n.value : "NONE");
 			}
 			Console.WriteLine();
 			return null;
@@ -39,6 +39,15 @@ namespace TinyLang {
 		public readonly Node left, right;
 
 		public BinOp(Token op, Node left, Node right) : base(op) {
+			this.left = left;
+			this.right = right;
+		}
+	}
+
+	sealed class ConditionalOp : Node {
+		public readonly Node left, right;
+
+		public ConditionalOp(Token op, Node left, Node right) : base(op) {
 			this.left = left;
 			this.right = right;
 		}
@@ -79,6 +88,18 @@ namespace TinyLang {
 			this.type = type;
 			this.mutable = mutable;
 			this.expr = expr;
+		}
+	}
+
+	sealed class IfStmt : Node {
+		public readonly Node expr;
+		public readonly Block trueBody;
+		public readonly Node falseBody;
+
+		public IfStmt(Node expr, Block trueBody, Node falseBody) : base(null) {
+			this.expr = expr;
+			this.trueBody = trueBody;
+			this.falseBody = falseBody;
 		}
 	}
 

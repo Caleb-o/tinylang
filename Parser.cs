@@ -135,13 +135,28 @@ namespace TinyLang {
 			return n;
 		}
 
-		Node Expr(Block block) {
+		Node Arithmetic(Block block) {
 			Node n = Term(block);
 
 			while(currentToken.Kind == TokenKind.Plus || currentToken.Kind == TokenKind.Minus) {
 				Token op = currentToken;
 				Consume(currentToken.Kind);
 				n = new BinOp(op, n, Term(block));
+			}
+
+			return n;
+		}
+
+		Node Expr(Block block) {
+			Node n = Arithmetic(block);
+
+			while(currentToken.Kind == TokenKind.EqualEqual || currentToken.Kind == TokenKind.NotEqual ||
+				currentToken.Kind == TokenKind.Greater || currentToken.Kind == TokenKind.GreaterEqual ||
+				currentToken.Kind == TokenKind.Less || currentToken.Kind == TokenKind.LessEqual
+				) {
+				Token op = currentToken;
+				Consume(currentToken.Kind);
+				n = new ConditionalOp(op, n, Arithmetic(block));
 			}
 
 			return n;
@@ -247,6 +262,26 @@ namespace TinyLang {
 			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
 		}
 
+		IfStmt IfStatement(Block block) {
+			Consume(TokenKind.If);
+
+			Node expr = Expr(block);
+			Block true_body = Body();
+			Node false_body = null;
+
+			if (currentToken.Kind == TokenKind.Else) {
+				Consume(TokenKind.Else);
+
+				if (currentToken.Kind == TokenKind.If) {
+					false_body = IfStatement(block);
+				} else {
+					false_body = Body();
+				}
+			}
+
+			return new IfStmt(expr, true_body, false_body);
+		}
+
 		void StatementList(Block block, TokenKind closing) {
 			while(currentToken.Kind != closing) {
 				Statement(block);
@@ -265,6 +300,11 @@ namespace TinyLang {
 					Consume(TokenKind.Let);
 					VariableDeclaration(block, false);
 					break;
+				}
+
+				case TokenKind.If: {
+					block.statements.Add(IfStatement(block));
+					return; // Avoid semicolon
 				}
 
 				case TokenKind.At: {

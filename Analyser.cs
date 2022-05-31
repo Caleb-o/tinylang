@@ -162,6 +162,8 @@ namespace TinyLang {
 				case BuiltinFunctionCall: VisitBuiltinCall((BuiltinFunctionCall)node); break;
 				case Var: VisitVar((Var)node); break;
 				case Escape: VisitEscape((Escape)node); break;
+				case IfStmt: VisitIfStatement((IfStmt)node); break;
+				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
@@ -174,6 +176,11 @@ namespace TinyLang {
 		void VisitBinOp(BinOp binop) {
 			Visit(binop.left);
 			Visit(binop.right);
+		}
+
+		void VisitConditionalOp(ConditionalOp conditional) {
+			Visit(conditional.left);
+			Visit(conditional.right);
 		}
 
 		void VisitVar(Var var) {
@@ -192,6 +199,15 @@ namespace TinyLang {
 			if (scope.identifier == "global") {
 				// TODO: This can probably occur for early returns
 				Error("Cannot escape from global scope");
+			}
+		}
+
+		void VisitIfStatement(IfStmt ifstmt) {
+			Visit(ifstmt.expr);
+			Visit(ifstmt.trueBody);
+
+			if (ifstmt.falseBody != null) {
+				Visit(ifstmt.falseBody);
 			}
 		}
 
