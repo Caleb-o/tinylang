@@ -24,6 +24,13 @@ A small interpreted language to try and learn more about language design and dev
 * Pascal
 * Python
 
+## Data Types
+* int
+* float
+* boolean
+* string
+* void (to signify no return)
+
 ## Examples
 
 ### Hello, World!
@@ -49,6 +56,7 @@ let int bar = foo * foo;
 ### Functions
 ```julia
 fn simple() {
+	# void is the assumed return type when omitted
 	@println("Hello!");
 }
 
@@ -110,7 +118,7 @@ increment_reference(my_var); # 3
 
 ### Value Capturing
 ```julia
-# Since nested functions exists, it would be easier if we could
+# Since nested functions exist, it would be easier if we could
 # modify values in outer scopes. If a variable being modified 
 # doesn't exist in its own scope, it will climb up to find a variable with that name
 var int a = 10;
