@@ -46,7 +46,7 @@ A small interpreted language to try and learn more about language design and dev
 ### Hello, World!
 ```julia
 # This is a builtin function, which are called by prefixing 
-# an function call with an @. They are defined in the VM.
+# a function call with an @. They are defined in the VM.
 @println("Hello, World!");
 ```
 
@@ -66,18 +66,19 @@ let int bar = foo * foo;
 ### Functions
 ```julia
 fn simple() {
-	# void is the assumed return type when omitted
+	# void is the assumed return type when the return type is omitted
 	@println("Hello!");
 }
 
 fn return_integer(): int {
-	# Notice there is no return as an implicit
+	# Notice there is no return statement here, as an implicit
 	# 'result' variable is made with the type int
 	# and will be returned on function exit
 }
 
 fn return_default_integer(): int(1234) {
 	# Functions can define a default return value
+	# It is a niche feature, but feels right to have
 }
 
 simple(); # Hello!
@@ -141,7 +142,9 @@ do {
 ```julia
 # By default, function parameters are immutable, so they cannot
 # be mutated. If they are marked with var, they then become mutable
-# Only mutable variables can be passed in
+# Only mutable variables can be passed in, as it wouldn't make sense
+# to mutate a literal
+
 # Note: This also works with nested functions
 fn increment_reference(my_ref: var int) {
 	# my_ref = my_var
@@ -160,6 +163,7 @@ increment_reference(my_var); # 3
 
 ### Fibonacci
 ```julia
+# Recursive function to get the Nth value of the fibonacci sequence
 fn fibonacci(n: int): int {
 	if n > 1 {
 		result = fibonacci(n - 1) + fibonacci(n - 2);
