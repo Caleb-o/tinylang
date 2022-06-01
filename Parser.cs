@@ -37,7 +37,7 @@ namespace TinyLang {
 			}
 		}
 
-		List<Parameter> ParameterList() {
+		List<Parameter> ParameterList(Block block) {
 			List<Parameter> parameters = new List<Parameter>();
 
 			Consume(TokenKind.OpenParen);
@@ -61,11 +61,10 @@ namespace TinyLang {
 					mutable = true;
 				}
 
-				Token type_identifier = currentToken;
-				Consume(TokenKind.Identifier);
+				Type type = CollectType(block);
 
 				foreach(Token id in identifiers) {
-					parameters.Add(new Parameter(id, new Type(Application.GetTypeID(type_identifier.Lexeme)), mutable));
+					parameters.Add(new Parameter(id, type, mutable));
 				}
 				ConsumeIfExists(TokenKind.Comma);
 			}
@@ -191,29 +190,7 @@ namespace TinyLang {
 		}
 
 		void VariableDeclaration(Block block, bool mutable) {
-			List<Token> type_identifiers = new List<Token>();
-
-			if (currentToken.Kind == TokenKind.OpenSquare) {
-				Consume(TokenKind.OpenSquare);
-
-				while(currentToken.Kind != TokenKind.CloseSquare) {
-					type_identifiers.Add(currentToken);
-					Consume(TokenKind.Identifier);
-
-					ConsumeIfExists(TokenKind.Comma);
-				}
-
-				Consume(TokenKind.CloseSquare);
-			} else {
-				type_identifiers.Add(currentToken);
-				Consume(TokenKind.Identifier);
-			}
-
-			List<int> typeIds = new List<int>();
-
-			foreach(Token identifier in type_identifiers) {
-				typeIds.Add(Application.GetTypeID(identifier.Lexeme));
-			}
+			Type type = CollectType(block);
 
 			while (currentToken.Kind == TokenKind.Identifier) {
 				Token identifier = currentToken;
@@ -222,7 +199,7 @@ namespace TinyLang {
 				Consume(TokenKind.Equals);
 				Node expr = Expr(block);
 
-				block.statements.Add(new VarDecl(identifier.Lexeme, new Type(typeIds.ToArray()), mutable, expr));
+				block.statements.Add(new VarDecl(identifier.Lexeme, type, mutable, expr));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 		}
@@ -275,51 +252,61 @@ namespace TinyLang {
 			return block;
 		}
 
+		Type CollectType(Block block) {
+			if (currentToken.Kind == TokenKind.OpenSquare) {
+				List<Token> identifiers = new List<Token>();
+				Consume(TokenKind.OpenSquare);
+
+				while (currentToken.Kind == TokenKind.Identifier) {
+					identifiers.Add(currentToken);
+					Consume(TokenKind.Identifier);
+
+					ConsumeIfExists(TokenKind.Comma);
+				}
+
+				Consume(TokenKind.CloseSquare);
+
+				List<int> typeIDs = new List<int>();
+
+				foreach(Token t in identifiers) {
+					typeIDs.Add(Application.GetTypeID(t.Lexeme));
+				}
+
+				return new Type(typeIDs.ToArray());
+			} else {
+				Token return_identifier = currentToken;
+				Consume(TokenKind.Identifier);
+
+				return new Type(Application.GetTypeID(return_identifier.Lexeme));
+			}
+		}
+
 		void FunctionDef(Block block) {
 			Consume(TokenKind.Function);
 
 			Token identifier = currentToken;
 			Consume(TokenKind.Identifier);
 
-			List<Parameter> parameters = ParameterList();
+			List<Parameter> parameters = ParameterList(block);
 
 			Return return_type = null;
 			if (currentToken.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
+				TokenKind lastNext = currentToken.Kind;
 
-				if (currentToken.Kind == TokenKind.OpenSquare) {
-					List<Token> identifiers = new List<Token>();
-					Consume(TokenKind.OpenSquare);
+				Type type = CollectType(block);
 
-					while (currentToken.Kind == TokenKind.Identifier) {
-						identifiers.Add(currentToken);
-						Consume(TokenKind.Identifier);
-
-						ConsumeIfExists(TokenKind.Comma);
-					}
-
-					Consume(TokenKind.CloseSquare);
-
-					List<int> typeIDs = new List<int>();
-
-					foreach(Token t in identifiers) {
-						typeIDs.Add(Application.GetTypeID(t.Lexeme));
-					}
-
-					return_type = new Return(new Type(typeIDs.ToArray()), null);
+				if (lastNext == TokenKind.OpenSquare) {
+					return_type = new Return(type, null);
 				} else {
-					Token return_identifier = currentToken;
-					Consume(TokenKind.Identifier);
-
 					Node expr = null;
 					if (currentToken.Kind == TokenKind.OpenParen) {
 						Consume(TokenKind.OpenParen);
 						expr = Expr(block);
 						Consume(TokenKind.CloseParen);
 					}
-					return_type = new Return(new Type(Application.GetTypeID(return_identifier.Lexeme)), expr);
+					return_type = new Return(type, expr);
 				}
-				
 			}
 
 			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));

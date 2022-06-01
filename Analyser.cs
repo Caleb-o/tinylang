@@ -257,7 +257,7 @@ namespace TinyLang {
 			}
 
 			// Insert implicit return value
-			if (!func.def.returnType.type.IsVoid()) {
+			if (func.def.returnType != null) {
 				scope.Insert(new VarSym(
 					"result",
 					func.def.returnType.type,

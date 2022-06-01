@@ -65,7 +65,7 @@ namespace TinyLang {
 							}
 							idx++;
 						}
-						Console.WriteLine($"[{outStr}]");
+						Console.WriteLine($"Value [{outStr}] : {n.kind}");
 						break;
 					}
 
