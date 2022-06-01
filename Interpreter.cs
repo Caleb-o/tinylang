@@ -21,7 +21,12 @@ namespace TinyLang {
 		Value DefaultValue(Return ret) {
 			// TODO: If return is a record/struct, then return a Visit on a mandatory
 			// constructor for the type
-			switch(ret.type) {
+			if (!ret.type.IsSingleType()) {
+				Error($"Complex types aren't currently supported");
+				return null;
+			}
+
+			switch(ret.type.type[0]) {
 				case "int": return new Value(ValueKind.Int, 0);
 				case "float": return new Value(ValueKind.Float, 0);
 				case "boolean": return new Value(ValueKind.Bool, false);
@@ -214,7 +219,7 @@ namespace TinyLang {
 			}
 			
 			// Insert an implicit return value
-			if (function.sym.def.returnType.type != "void") {
+			if (!function.sym.def.returnType.type.Matches(new Type("void"))) {
 				if (function.sym.def.returnType.expr != null) {
 					fnscope.members["result"] = Visit(function.sym.def.returnType.expr);
 				} else {
@@ -227,7 +232,7 @@ namespace TinyLang {
 
 			Value result = null;
 
-			if (function.sym.def.returnType.type != "void") {
+			if (!function.sym.def.returnType.type.Matches(new Type("void"))) {
 				result = ResolveVar("result");
 			}
 			callStack.stack.Remove(fnscope);

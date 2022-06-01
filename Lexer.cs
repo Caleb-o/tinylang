@@ -13,6 +13,7 @@ namespace TinyLang {
 		Escape, If, Else, While, Do,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
+		OpenSquare, CloseSquare,
 
 		NotEqual, EqualEqual, Greater, Less, GreaterEqual, LessEqual,
 	}
@@ -63,6 +64,8 @@ namespace TinyLang {
 			{ ')', TokenKind.CloseParen },
 			{ '{', TokenKind.OpenCurly },
 			{ '}', TokenKind.CloseCurly },
+			{ '[', TokenKind.OpenSquare },
+			{ ']', TokenKind.CloseSquare },
 			{ '>', TokenKind.Greater },
 			{ '<', TokenKind.Less },
 		};

@@ -5,9 +5,9 @@ namespace TinyLang {
 	abstract class Symbol {
 		public string identifier;
 		public int scopeLevel;
-		public Symbol type;
+		public Type type;
 
-		public Symbol(string identifier, Symbol type) {
+		public Symbol(string identifier, Type type) {
 			this.identifier = identifier;
 			this.type = type;
 			this.scopeLevel = 0;
@@ -17,7 +17,7 @@ namespace TinyLang {
 	sealed class VarSym : Symbol {
 		public readonly bool mutable;
 
-		public VarSym(string identifier, Symbol type, bool mutable)
+		public VarSym(string identifier, Type type, bool mutable)
 			: base(identifier, type) {
 			this.mutable = mutable;
 		}
@@ -25,7 +25,7 @@ namespace TinyLang {
 
 	sealed class BuiltinTypeSym : Symbol {
 		public BuiltinTypeSym(string identifier)
-			: base(identifier, null) {}
+			: base(identifier, new Type(identifier)) {}
 	}
 
 	sealed class FunctionSym : Symbol {
@@ -78,6 +78,25 @@ namespace TinyLang {
 
 			return parent.Lookup(identifier, false);
 		}
+
+		public Symbol LookupType(Type type, bool local) {
+			if (type.IsSingleType()) {
+				string identifier = type.type[0];
+
+				if (symbols.ContainsKey(identifier)) {
+					return symbols[identifier];
+				}
+
+				if (local) {
+					return null;
+				}
+
+				return parent.Lookup(identifier, false);
+			}
+
+			// Unsupported
+			return null;
+		}
 	}
 
 	sealed class Analyser {
@@ -99,51 +118,27 @@ namespace TinyLang {
 			scope = scope.parent;
 		}
 
-		string FindType(Node node, string expects) {
+		Type FindType(Node node) {
 			switch(node) {
 				case Var: {
-					string var_type = scope.Lookup(((Var)node).token.Lexeme, false).type.identifier;
-
-					if (var_type != expects) {
-						return var_type;
-					}
-					return null;
+					return scope.Lookup(((Var)node).token.Lexeme, false).type;
 				}
 
 				case FunctionCall: {
-					string return_type = ((FunctionCall)node).sym.def.returnType.type;
-
-					if (return_type != expects) {
-						return return_type;
-					}
-
-					return null;
+					// FIXME: This should use the type
+					return ((FunctionCall)node).sym.def.returnType.type;
 				}
 
 				case BinOp: {
-					string left = FindType(((BinOp)node).left, expects);
-					if (left != null) {
-						return left;
-					}
-					
-					string right = FindType(((BinOp)node).right, expects);
-					if (right != null) {
-						return right;
-					}
-					return null;
+					return FindType(((BinOp)node).left);
 				}
 
 				case Literal: {
-					string lit_type = ((Literal)node).token.Kind.ToString().ToLower();
-
-					if (lit_type != expects) {
-						return lit_type;
-					}
-					return null;
+					return new Type(((Literal)node).token.Kind.ToString().ToLower());
 				}
 
 				case UnaryOp: {
-					return FindType(((UnaryOp)node).right, expects);
+					return FindType(((UnaryOp)node).right);
 				}
 
 				default:
@@ -237,7 +232,7 @@ namespace TinyLang {
 			foreach(Parameter param in function.parameters) {
 				VarSym variable = new VarSym(
 					param.token.Lexeme,
-					scope.Lookup(param.type.Lexeme, false),
+					param.type,
 					param.mutable
 				);
 				scope.Insert(variable);
@@ -245,10 +240,10 @@ namespace TinyLang {
 			}
 
 			// Insert implicit return value
-			if (func.def.returnType.type != "void") {
+			if (!func.def.returnType.type.IsVoid()) {
 				scope.Insert(new VarSym(
 					"result",
-					scope.Lookup(func.def.returnType.type, false),
+					func.def.returnType.type,
 					true
 				));
 			}
@@ -275,11 +270,11 @@ namespace TinyLang {
 			int current = 0;
 			foreach(Node node in function.arguments) {
 				VarSym parameter = func.parameters[current];
-				string expected = parameter.type.identifier;
-				string failed_type = FindType(node, expected);
+				Type expected = parameter.type;
+				Type ntype = FindType(node);
 
-				if (failed_type != null) {
-					Error($"'{function.token.Lexeme}' argument at position {current + 1} expected type {expected} but received {failed_type}");
+				if (!ntype.Matches(expected)) {
+					Error($"'{function.token.Lexeme}' argument at position {current + 1} expected type {expected} but received {ntype}");
 				}
 
 				// Incompatible mutability
@@ -314,14 +309,14 @@ namespace TinyLang {
 
 			Visit(decl.expr);
 
-			string received = FindType(decl.expr, decl.type.Lexeme);
-			if (received != null) {
-				Error($"'{decl.identifier}' expected type {decl.type.Lexeme} but received {received}");
+			Type received = FindType(decl.expr);
+			if (!received.Matches(decl.type)) {
+				Error($"'{decl.identifier}' expected type {decl.type} but received {received}");
 			}
 
 			scope.Insert(new VarSym(
 				decl.identifier,
-				scope.Lookup(decl.type.Lexeme, false),
+				decl.type,
 				decl.mutable
 			));
 		}
@@ -335,9 +330,9 @@ namespace TinyLang {
 
 			Visit(assign.expr);
 
-			string received = FindType(assign.expr, sym.type.identifier);
-			if (received != null) {
-				Error($"'{assign.identifier}' expected type {sym.type.identifier} but received {received}");
+			Type received = FindType(assign.expr);
+			if (!received.Matches(sym.type)) {
+				Error($"'{assign.identifier}' expected type {sym.type} but received {received}");
 			}
 
 			if (!sym.mutable) {

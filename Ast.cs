@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 namespace TinyLang {
-	class BuiltinFn {
+	sealed class BuiltinFn {
 		public readonly Builtins.Fn function;
 		public readonly int parity;
 
@@ -32,6 +32,52 @@ namespace TinyLang {
 
 		public Node(Token token) {
 			this.token = token;
+		}
+	}
+
+	sealed class Type : Node {
+		// type_id, id?
+		// This also helps with tuples and unpacking
+		// eg. let (boolean ok, int value) = get_value();
+		public readonly List<string> type;
+
+		public Type(string value) : base(null) {
+			this.type = new List<string>() { value };
+		}
+
+		public Type(List<string> type) : base(null) {
+			this.type = type;
+		}
+
+		public bool IsVoid() {
+			return type == null;
+		}
+
+		public bool IsSingleType() {
+			return type != null && type.Count == 1;
+		}
+
+		public bool Matches(Type other) {
+			if (type.Count != other.type.Count) {
+				return false;
+			}
+
+			for(int i = 0; i < type.Count; i++) {
+				// Proof that types need to be represented better, with something
+				// like an integer as an ID
+				string type_me = type[i];
+				string type_other = other.type[i];
+
+				if (type_me != type_other) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		public override string ToString() {
+			return "{" + string.Join(", ", type) + "}";
 		}
 	}
 
@@ -65,11 +111,11 @@ namespace TinyLang {
 		public Literal(Token token) : base(token) {}
 	}
 
-	sealed class Identifier : Node {
-		public readonly string value;
+	sealed class TupleLiteral: Node {
+		public readonly List<Node> exprs;
 
-		public Identifier(string value) : base(null) {
-			this.value = value;
+		public TupleLiteral(List<Node> exprs) : base(null) {
+			this.exprs = exprs;
 		}
 	}
 
@@ -80,10 +126,10 @@ namespace TinyLang {
 	sealed class VarDecl : Node {
 		public readonly string identifier;
 		public readonly bool mutable;
-		public readonly Token type;
+		public readonly Type type;
 		public readonly Node expr;
 
-		public VarDecl(string identifier, Token type, bool mutable, Node expr) : base(null) {
+		public VarDecl(string identifier, Type type, bool mutable, Node expr) : base(null) {
 			this.identifier = identifier;
 			this.type = type;
 			this.mutable = mutable;
@@ -134,10 +180,10 @@ namespace TinyLang {
 	}
 
 	sealed class Parameter : Node {
-		public readonly Token type;
+		public readonly Type type;
 		public readonly bool mutable;
 
-		public Parameter(Token identifier, Token type, bool mutable) : base(identifier) {
+		public Parameter(Token identifier, Type type, bool mutable) : base(identifier) {
 			this.type = type;
 			this.mutable = mutable;
 		}
@@ -155,10 +201,10 @@ namespace TinyLang {
 	sealed class Return : Node {
 		// Return is the default value and type info
 		// rather than the statement
-		public readonly string type;
+		public readonly Type type;
 		public readonly Node expr;
 
-		public Return(string type, Node expr) : base(null) {
+		public Return(Type type, Node expr) : base(null) {
 			this.type = type;
 			this.expr = expr;
 		}
@@ -188,9 +234,9 @@ namespace TinyLang {
 		public readonly string identifier;
 		public readonly BuiltinFn native;
 		public readonly List<Node> arguments;
-		public readonly string returnType;
+		public readonly Type returnType;
 
-		public BuiltinFunctionCall(string identifier, List<Node> arguments, string returnType) : base(null) {
+		public BuiltinFunctionCall(string identifier, List<Node> arguments, Type returnType) : base(null) {
 			this.identifier = identifier;
 			this.arguments = arguments;
 			this.returnType = returnType;
