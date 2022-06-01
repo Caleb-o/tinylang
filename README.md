@@ -23,7 +23,6 @@ A small interpreted language to try and learn more about language design and dev
 * Imports (Lazy?) - Import other scripts lazily, so they only get included once a call to the import is made
 
 ### Fixes / Modifications
-* Use numeric IDs for types instead of raw strings (somewhat faster comparisons etc)
 * References should hold the variable itself and not an identifier (this confuses the resolution and requires scope climbing to resolve) 
 
 ## Desirables
