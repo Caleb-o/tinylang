@@ -158,7 +158,7 @@ namespace TinyLang {
 		public readonly string identifier; 
 		public readonly RecordType type;
 		public readonly int scopeLevel;
-		public Dictionary<string, Value> members = new Dictionary<string, Value>();
+		public Dictionary<string, VarSym> members = new Dictionary<string, VarSym>();
 
 		public ActivationRecord(string identifier, RecordType type, int scopeLevel) {
 			this.identifier = identifier;

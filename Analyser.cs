@@ -16,6 +16,8 @@ namespace TinyLang {
 
 	sealed class VarSym : Symbol {
 		public readonly bool mutable;
+		public Value value;
+		public VarSym references;
 
 		public VarSym(string identifier, Type type, bool mutable)
 			: base(identifier, type) {

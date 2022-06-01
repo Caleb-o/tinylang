@@ -43,7 +43,7 @@ namespace TinyLang {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
 
 				foreach(var record in callStack.stack[i].members) {
-					Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.kind}]");
+					Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.value.kind}]");
 				}
 			}
 			Console.WriteLine();
@@ -66,7 +66,7 @@ namespace TinyLang {
 			return null;
 		}
 
-		Value ResolveVar(string identifier, int offset = 0) {
+		VarSym ResolveVar(string identifier, int offset = 0) {
 			ActivationRecord record = ResolveRecord(identifier);
 
 			if (record != null) {
@@ -170,17 +170,17 @@ namespace TinyLang {
 		}
 
 		void VisitVarDecl(VarDecl decl) {
-			callStack.stack[^1].members[decl.identifier] = Visit(decl.expr);
+			callStack.stack[^1].members[decl.identifier] = new VarSym(decl.identifier, decl.type, decl.mutable);
+			callStack.stack[^1].members[decl.identifier].value = Visit(decl.expr);
 		}
 
 		void VisitAssignment(Assignment assign) {
-			// Hack: This allows modifying values from other scopes
-			Value value = ResolveVar(assign.identifier);
+			VarSym variable = ResolveVar(assign.identifier);
 
-			if ((object)value.references != null) {
-				value.references.value = Visit(assign.expr);
+			if ((object)variable.references != null) {
+				variable.references.value = Visit(assign.expr);
 			} else {
-				ResolveRecord(assign.identifier).members[assign.identifier] = Visit(assign.expr);
+				ResolveRecord(assign.identifier).members[assign.identifier].value = Visit(assign.expr);
 			}
 		}
 
@@ -193,25 +193,20 @@ namespace TinyLang {
 
 			int idx = 0;
 			foreach(Node arg in function.arguments) {
-				fnscope.members[function.sym.parameters[idx].identifier] = Visit(arg);
+				string identifier = function.sym.parameters[idx].identifier;
+				fnscope.members[identifier] = function.sym.parameters[idx];
+				fnscope.members[identifier].value = Visit(arg);
 				
 				if (arg is Var) {
-					// HACK:  Climb the ladder of references until we hit the uppermost variable
-					//		  Obviously this is a terrible solution as it requires more work
-					// FIXME: The reference should ideally never change, so a simple assignment
-					//		  to the original name should be valid. Using a name is also not great,
-					//		  as it may conflict with other scopes and will require more resolution
-					//		  later on.
-					Value val = ResolveVar(arg.token.Lexeme);
-					Value upper_variable = val.references;
+					VarSym variable = ResolveVar(arg.token.Lexeme);	
 
-					while ((object)val.references != null){ 
-						upper_variable = val.references;
+					while ((object)variable.references != null){
+						variable = variable.references;
 					}
 
 					fnscope.members[
 						function.sym.parameters[idx].identifier
-					].references = upper_variable;
+					].references = variable;
 				}
 
 				idx++;
@@ -220,9 +215,9 @@ namespace TinyLang {
 			// Insert an implicit return value
 			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
 				if (function.sym.def.returnType.expr != null) {
-					fnscope.members["result"] = Visit(function.sym.def.returnType.expr);
+					fnscope.members["result"].value = Visit(function.sym.def.returnType.expr);
 				} else {
-					fnscope.members["result"] = DefaultValue(function.sym.def.returnType);
+					fnscope.members["result"].value = DefaultValue(function.sym.def.returnType);
 				}
 			}
 
@@ -232,7 +227,7 @@ namespace TinyLang {
 			Value result = null;
 
 			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
-				result = ResolveVar("result");
+				result = ResolveVar("result").value;
 			}
 			callStack.stack.Remove(fnscope);
 
@@ -249,8 +244,8 @@ namespace TinyLang {
 		}
 
 		Value VisitVar(Var var) {
-			Value value = ResolveVar(var.token.Lexeme);
-			return ((object)value.references != null) ? value.references : value;
+			VarSym variable = ResolveVar(var.token.Lexeme);
+			return ((object)variable.references != null) ? variable.references.value : variable.value;
 		}
 
 		Value VisitLiteral(Literal literal) {
