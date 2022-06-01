@@ -137,6 +137,7 @@ do {
 ```
 
 ### Referencing Variables
+***Note:**This feature is still a work in progress, so it may not work as intended.*
 ```julia
 # By default, function parameters are immutable, so they cannot
 # be mutated. If they are marked with var, they then become mutable
@@ -153,29 +154,6 @@ increment_reference(my_var); # 2
 increment_reference(my_var); # 3
 
 @println(my_var); # 3
-```
-
-### Value Capturing
-```julia
-# Since nested functions exist, it would be easier if we could
-# modify values in outer scopes. If a variable being modified 
-# doesn't exist in its own scope, it will climb up to find a variable with that name
-var int a = 10;
-
-fn foo() {
-	fn bar() {
-		fn baz() {
-			a = 10;
-		};
-
-		baz();
-	}
-
-	bar();
-}
-
-foo();
-@println(a); # 10
 ```
 
 ## Programs
