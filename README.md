@@ -20,6 +20,7 @@ A small interpreted language to try and learn more about language design and dev
 	* List - [1, 2, 3]
 	* Dictionary - {"foo": 123, "bar": 456}
 * Ranges - 0..100, 0..=100
+* Imports (Lazy?) - Import other scripts lazily, so they only get included once a call to the import is made
 
 ### Fixes / Modifications
 * Use numeric IDs for types instead of raw strings (somewhat faster comparisons etc)
