@@ -204,7 +204,9 @@ namespace TinyLang {
 			int idx = 0;
 			foreach(Node arg in function.arguments) {
 				string identifier = function.sym.parameters[idx].identifier;
-				fnscope.members[identifier] = function.sym.parameters[idx];
+				VarSym parameter = function.sym.parameters[idx];
+				// We must use a new VarSym in the scope, otherwise issues occur
+				fnscope.members[identifier] = new VarSym(parameter.identifier, parameter.type, parameter.mutable);
 				fnscope.members[identifier].value = Visit(arg);
 				
 				if (arg is Var) {
@@ -239,7 +241,7 @@ namespace TinyLang {
 			Value result = null;
 
 			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
-				result = ResolveVar("result").value;
+				result = fnscope.members["result"].value;
 			}
 			callStack.stack.Remove(fnscope);
 
