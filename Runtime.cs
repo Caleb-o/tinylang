@@ -11,7 +11,7 @@ namespace TinyLang {
 		C++ might be a good primer for the main language
 	*/
 	enum ValueKind {
-		Int, Float, String, Bool,
+		Int, Float, String, Bool, Tuple,
 	}
 
 	class Value {

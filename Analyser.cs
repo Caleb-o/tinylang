@@ -143,7 +143,21 @@ namespace TinyLang {
 					return FindType(((UnaryOp)node).right);
 				}
 
+				case ComplexLiteral: {
+					ComplexLiteral literal = (ComplexLiteral)node;
+					List<int> typeIDs = new List<int>();
+
+					foreach(Node expr in literal.exprs) {
+						// Note: This can probably be more than one in the future,
+						// 		 so a better method may be required
+						typeIDs.Add(FindType(expr).type[0]);
+					}
+
+					return new Type(typeIDs.ToArray());
+				}
+
 				default:
+					Error($"Unknown node in find type: {node}");
 					return null;
 			}
 		}
@@ -165,6 +179,7 @@ namespace TinyLang {
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
+				case ComplexLiteral: break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
 
 				default:

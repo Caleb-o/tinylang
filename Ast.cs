@@ -16,13 +16,66 @@ namespace TinyLang {
 		public delegate Value Fn(List<Value> arguments);
 		public static Dictionary<string, BuiltinFn> Functions = new Dictionary<string, BuiltinFn>() {
 			{ "println", new BuiltinFn(PrintLn, -1) },
+			{ "printobj", new BuiltinFn(PrintObj, -1) },
 		};
 
 		public static Value PrintLn(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				Console.Write(((object)n != null) ? n.value : "NONE");
+				switch(n.kind) {
+					case ValueKind.Tuple: {
+						string outStr = "";
+
+						int idx = 0;
+						List<Value> values = (List<Value>)n.value;
+						foreach(Value value in values) {
+							outStr += value.value;
+
+							if (idx < values.Count - 1) {
+								outStr += ", ";
+							}
+							idx++;
+						}
+						Console.Write($"[{outStr}]");
+						break;
+					}
+
+					default: {
+						Console.Write(((object)n != null) ? n.value : "NONE");
+						break;
+					}
+				}
 			}
 			Console.WriteLine();
+			return null;
+		}
+
+		public static Value PrintObj(List<Value> arguments) {
+			foreach(Value n in arguments) {
+				switch(n.kind) {
+					case ValueKind.Tuple: {
+						string outStr = "";
+
+						int idx = 0;
+						List<Value> values = (List<Value>)n.value;
+						foreach(Value value in values) {
+							outStr += value.value;
+
+							if (idx < values.Count - 1) {
+								outStr += ", ";
+							}
+							idx++;
+						}
+						Console.WriteLine($"[{outStr}]");
+						break;
+					}
+
+					default: {
+						object value = ((object)n != null) ? n.value : "NONE";
+						Console.WriteLine($"Value {value} : {n.kind}");
+						break;
+					}
+				}
+			}
 			return null;
 		}
 	}
@@ -79,10 +132,16 @@ namespace TinyLang {
 		public override string ToString() {
 			string outstr = "";
 
+			int idx = 0;
 			foreach(int id in type) {
-				outstr += Application.GetTypeName(id) + ", ";
+				outstr += Application.GetTypeName(id);
+
+				if (idx < type.Length - 1) {
+					outstr += ", ";
+				}
+				idx++;
 			}
-			return "{" + outstr + "}";
+			return "[" + outstr + "]";
 		}
 	}
 
@@ -200,6 +259,15 @@ namespace TinyLang {
 
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;
+		}
+	}
+
+	// Used for literal tuples, lists and dictionaries
+	sealed class ComplexLiteral : Node {
+		public readonly List<Node> exprs;
+
+		public ComplexLiteral(List<Node> exprs) : base(null) {
+			this.exprs = exprs;
 		}
 	}
 

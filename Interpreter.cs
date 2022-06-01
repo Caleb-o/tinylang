@@ -5,6 +5,7 @@ namespace TinyLang {
 	class Interpreter {
 		CallStack callStack;
 
+
 		public Interpreter() {
 			callStack = new CallStack();
 		}
@@ -18,23 +19,32 @@ namespace TinyLang {
 			callStack.stack.Remove(callStack.stack[^1]);
 		}
 
-		Value DefaultValue(Return ret) {
-			// TODO: If return is a record/struct, then return a Visit on a mandatory
-			// constructor for the type
-			if (!ret.type.IsSingleType()) {
-				Error($"Complex types aren't currently supported");
-				return null;
-			}
-
-			switch(ret.type.type[0]) {
+		Value GetDefaultSingle(int typeID) {
+			switch(typeID) {
 				// FIXME: This is bad becaue it *could* change
 				case 0: return new Value(ValueKind.Int, 0);
 				case 1: return new Value(ValueKind.Float, 0);
 				case 2: return new Value(ValueKind.Bool, false);
 				case 3: return new Value(ValueKind.Bool, "");
 			}
-
+			
 			throw new InvalidCastException("Unreachable");
+		}
+
+		Value DefaultValue(Return ret) {
+			// TODO: If return is a record/struct, then return a Visit on a mandatory
+			// constructor for the type
+			if (ret.type.IsSingleType()) {
+				return GetDefaultSingle(ret.type.type[0]);
+			}
+
+			List<Value> values = new List<Value>();
+
+			foreach(int typeID in ret.type.type) {
+				values.Add(GetDefaultSingle(typeID));
+			}
+
+			return new Value(ValueKind.Tuple, values);
 		}
 
 		void PrintCallStack() {
@@ -43,7 +53,11 @@ namespace TinyLang {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
 
 				foreach(var record in callStack.stack[i].members) {
-					Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.value.kind}]");
+					if ((object)record.Value.value != null) {
+						Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.value.kind}]");
+					} else {
+						Console.WriteLine($"{record.Key.PadLeft(16)} = None");
+					}
 				}
 			}
 			Console.WriteLine();
@@ -80,7 +94,6 @@ namespace TinyLang {
 		Value Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); return null;
-				case Literal: return VisitLiteral((Literal)node);
 				case BinOp: return VisitBinOp((BinOp)node);
 				case ConditionalOp: return VisitConditionalOp((ConditionalOp)node);
 				case UnaryOp: return VisitUnaryOp((UnaryOp)node);
@@ -91,10 +104,11 @@ namespace TinyLang {
 				case FunctionDef: return null;
 				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
 				case BuiltinFunctionCall: VisitBuiltinFunctionCall((BuiltinFunctionCall)node); return null;
-				// FIXME: We need to somehow signal a return from the function
 				case Escape: return null;
 
 				case Var: return VisitVar((Var)node);
+				case Literal: return VisitLiteral((Literal)node);
+				case ComplexLiteral: return VisitComplexLiteral((ComplexLiteral)node);
 				case Assignment: VisitAssignment((Assignment)node); return null;
 				case VarDecl: VisitVarDecl((VarDecl)node); return null;
 			}
@@ -140,16 +154,12 @@ namespace TinyLang {
 		void VisitBlock(Block block) {
 			foreach(Node node in block.statements) {
 				Visit(node);
-
-				if (node is Escape) {
-					break;
-				}
 			}
 		}
 
 		void VisitIfStmt(IfStmt ifstmt) {
 			if ((bool)VisitConditionalOp((ConditionalOp)ifstmt.expr).value) {
-				Visit(ifstmt.trueBody);
+				VisitBlock(ifstmt.trueBody);
 			} else if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
 			}
@@ -157,15 +167,15 @@ namespace TinyLang {
 
 		void VisitWhile(While whilestmt) {
 			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
-				Visit(whilestmt.body);
+				VisitBlock(whilestmt.body);
 			}
 		}
 
 		void VisitDoWhile(DoWhile whilestmt) {
-			Visit(whilestmt.body);
+			VisitBlock(whilestmt.body);
 
 			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
-				Visit(whilestmt.body);
+				VisitBlock(whilestmt.body);
 			}
 		}
 
@@ -214,6 +224,8 @@ namespace TinyLang {
 			
 			// Insert an implicit return value
 			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
+				fnscope.members["result"] = new VarSym("result", function.sym.def.returnType.type, true);
+
 				if (function.sym.def.returnType.expr != null) {
 					fnscope.members["result"].value = Visit(function.sym.def.returnType.expr);
 				} else {
@@ -259,6 +271,16 @@ namespace TinyLang {
 					Error($"Unknown literal type {literal.token.Kind}");
 					return null;
 			}
+		}
+
+		Value VisitComplexLiteral(ComplexLiteral literal) {
+			List<Value> values = new List<Value>();
+
+			foreach(Node expr in literal.exprs) {
+				values.Add(Visit(expr));
+			}
+
+			return new Value(ValueKind.Tuple, values);
 		}
 	}
 }
