@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace TinyLang {
 	abstract class Symbol {
-		public string identifier;
+		public readonly string identifier;
 		public int scopeLevel;
-		public Type type;
+		public readonly Type type;
 
 		public Symbol(string identifier, Type type) {
 			this.identifier = identifier;
@@ -25,7 +25,7 @@ namespace TinyLang {
 
 	sealed class BuiltinTypeSym : Symbol {
 		public BuiltinTypeSym(string identifier)
-			: base(identifier, new Type(identifier)) {}
+			: base(identifier, new Type(Application.GetTypeID(identifier))) {}
 	}
 
 	sealed class FunctionSym : Symbol {
@@ -81,7 +81,7 @@ namespace TinyLang {
 
 		public Symbol LookupType(Type type, bool local) {
 			if (type.IsSingleType()) {
-				string identifier = type.type[0];
+				int typeID = type.type[0];
 
 				if (symbols.ContainsKey(identifier)) {
 					return symbols[identifier];
@@ -134,7 +134,7 @@ namespace TinyLang {
 				}
 
 				case Literal: {
-					return new Type(((Literal)node).token.Kind.ToString().ToLower());
+					return new Type(Application.GetTypeID(((Literal)node).token.Kind.ToString().ToLower()));
 				}
 
 				case UnaryOp: {

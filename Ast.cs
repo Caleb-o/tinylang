@@ -36,16 +36,16 @@ namespace TinyLang {
 	}
 
 	sealed class Type : Node {
-		// type_id, id?
-		// This also helps with tuples and unpacking
+		// This should help with tuples, lists, dicts etc
+		// in the future... hopefully
 		// eg. let (boolean ok, int value) = get_value();
-		public readonly List<string> type;
+		public readonly int[] type;
 
-		public Type(string value) : base(null) {
-			this.type = new List<string>() { value };
+		public Type(int typeId) : base(null) {
+			this.type = new int[] { typeId };
 		}
 
-		public Type(List<string> type) : base(null) {
+		public Type(int[] type) : base(null) {
 			this.type = type;
 		}
 
@@ -54,21 +54,21 @@ namespace TinyLang {
 		}
 
 		public bool IsSingleType() {
-			return type != null && type.Count == 1;
+			return type != null && type.Length == 1;
 		}
 
 		public bool Matches(Type other) {
-			if (type.Count != other.type.Count) {
+			if (type.Length != other.type.Length) {
 				return false;
 			}
 
-			for(int i = 0; i < type.Count; i++) {
-				// Proof that types need to be represented better, with something
-				// like an integer as an ID
-				string type_me = type[i];
-				string type_other = other.type[i];
+			// This may help a little
+			if (type.Length == 1 && other.IsSingleType()) {
+				return type[0] == other.type[0];
+			}
 
-				if (type_me != type_other) {
+			for(int i = 0; i < type.Length; i++) {
+				if (type[i] != other.type[i]) {
 					return false;
 				}
 			}
@@ -77,7 +77,12 @@ namespace TinyLang {
 		}
 
 		public override string ToString() {
-			return "{" + string.Join(", ", type) + "}";
+			string outstr = "";
+
+			foreach(int id in type) {
+				outstr += Application.GetTypeName(id) + ", ";
+			}
+			return "{" + outstr + "}";
 		}
 	}
 
@@ -261,8 +266,26 @@ namespace TinyLang {
 	sealed class Application : Node {
 		public readonly Block block;
 
+		static int TypeIdCounter = 0;
+		static Dictionary<string, int> typeIDs = new Dictionary<string, int>();
+		static Dictionary<int, string> typeNames = new Dictionary<int, string>();
+
 		public Application(Block block) : base(null) {
 			this.block = block;
+		}
+
+		public static int GetTypeID(string identifier) {
+			if (typeIDs.ContainsKey(identifier)) {
+				return typeIDs[identifier];
+			}
+
+			typeNames[TypeIdCounter] = identifier;
+			typeIDs[identifier] = TypeIdCounter;
+			return TypeIdCounter++;
+		}
+
+		public static string GetTypeName(int typeID) {
+			return typeNames.GetValueOrDefault(typeID, null);
 		}
 	}
 }

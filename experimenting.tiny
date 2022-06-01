@@ -1,3 +1,5 @@
+# Note: Not currently supported, but this is what using tuples could look like
+
 fn return_multiple(): [boolean(true), int(10)] {
 	# result = [true, 10]
 }

@@ -27,10 +27,11 @@ namespace TinyLang {
 			}
 
 			switch(ret.type.type[0]) {
-				case "int": return new Value(ValueKind.Int, 0);
-				case "float": return new Value(ValueKind.Float, 0);
-				case "boolean": return new Value(ValueKind.Bool, false);
-				case "string": return new Value(ValueKind.Bool, "");
+				// FIXME: This is bad becaue it *could* change
+				case 0: return new Value(ValueKind.Int, 0);
+				case 1: return new Value(ValueKind.Float, 0);
+				case 2: return new Value(ValueKind.Bool, false);
+				case 3: return new Value(ValueKind.Bool, "");
 			}
 
 			throw new InvalidCastException("Unreachable");
@@ -219,7 +220,7 @@ namespace TinyLang {
 			}
 			
 			// Insert an implicit return value
-			if (!function.sym.def.returnType.type.Matches(new Type("void"))) {
+			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
 				if (function.sym.def.returnType.expr != null) {
 					fnscope.members["result"] = Visit(function.sym.def.returnType.expr);
 				} else {
@@ -232,7 +233,7 @@ namespace TinyLang {
 
 			Value result = null;
 
-			if (!function.sym.def.returnType.type.Matches(new Type("void"))) {
+			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
 				result = ResolveVar("result");
 			}
 			callStack.stack.Remove(fnscope);

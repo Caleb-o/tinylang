@@ -65,7 +65,7 @@ namespace TinyLang {
 				Consume(TokenKind.Identifier);
 
 				foreach(Token id in identifiers) {
-					parameters.Add(new Parameter(id, new Type(type_identifier.Lexeme), mutable));
+					parameters.Add(new Parameter(id, new Type(Application.GetTypeID(type_identifier.Lexeme)), mutable));
 				}
 				ConsumeIfExists(TokenKind.Comma);
 			}
@@ -172,7 +172,7 @@ namespace TinyLang {
 		}
 
 		void VariableDeclaration(Block block, bool mutable) {
-			Token type_id = currentToken;
+			Token type_identifier = currentToken;
 			Consume(TokenKind.Identifier);
 
 			while (currentToken.Kind == TokenKind.Identifier) {
@@ -182,7 +182,7 @@ namespace TinyLang {
 				Consume(TokenKind.Equals);
 				Node expr = Expr(block);
 
-				block.statements.Add(new VarDecl(identifier.Lexeme, new Type(type_id.Lexeme), mutable, expr));
+				block.statements.Add(new VarDecl(identifier.Lexeme, new Type(Application.GetTypeID(type_identifier.Lexeme)), mutable, expr));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 		}
@@ -210,7 +210,7 @@ namespace TinyLang {
 			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
-			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type("void")));
+			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type(Application.GetTypeID("void"))));
 		}
 
 		void Escape(Block block) {
@@ -243,7 +243,7 @@ namespace TinyLang {
 
 			List<Parameter> parameters = ParameterList();
 
-			Return return_type = new Return(new Type("void"), null);
+			Return return_type = new Return(new Type(Application.GetTypeID("void")), null);
 			if (currentToken.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 
@@ -256,7 +256,7 @@ namespace TinyLang {
 					expr = Expr(block);
 					Consume(TokenKind.CloseParen);
 				}
-				return_type = new Return(new Type(return_identifier.Lexeme), expr);
+				return_type = new Return(new Type(Application.GetTypeID(return_identifier.Lexeme)), expr);
 			}
 
 			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
