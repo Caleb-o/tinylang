@@ -16,9 +16,8 @@ namespace TinyLang {
 
 	class Value {
 		public readonly ValueKind kind;
-		public readonly object value;
-		// Which identifier it is referencing
-		public string references = null;
+		public object value;
+		public Value references = null;
 
 		public Value(ValueKind kind, object value) {
 			this.kind = kind;

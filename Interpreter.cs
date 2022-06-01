@@ -177,9 +177,8 @@ namespace TinyLang {
 			// Hack: This allows modifying values from other scopes
 			Value value = ResolveVar(assign.identifier);
 
-			if (value.references != null) {
-				string identifier = value.references;
-				ResolveRecord(identifier).members[identifier] = Visit(assign.expr);
+			if ((object)value.references != null) {
+				value.references.value = Visit(assign.expr);
 			} else {
 				ResolveRecord(assign.identifier).members[assign.identifier] = Visit(assign.expr);
 			}
@@ -204,11 +203,10 @@ namespace TinyLang {
 					//		  as it may conflict with other scopes and will require more resolution
 					//		  later on.
 					Value val = ResolveVar(arg.token.Lexeme);
-					string upper_variable = arg.token.Lexeme;
+					Value upper_variable = val.references;
 
-					while (val.references != null){ 
+					while ((object)val.references != null){ 
 						upper_variable = val.references;
-						val = ResolveVar(val.references);
 					}
 
 					fnscope.members[
@@ -252,7 +250,7 @@ namespace TinyLang {
 
 		Value VisitVar(Var var) {
 			Value value = ResolveVar(var.token.Lexeme);
-			return (value.references != null) ? ResolveVar(value.references) : value;
+			return ((object)value.references != null) ? value.references : value;
 		}
 
 		Value VisitLiteral(Literal literal) {
