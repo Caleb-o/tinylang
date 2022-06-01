@@ -48,11 +48,23 @@ namespace TinyLang {
 			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
 		}
 
-		ActivationRecord ResolveVar(string identifier, int offset = 0) {
+		// Finds the closest AR that contains a member with the identifier
+		ActivationRecord ResolveRecord(string identifier, int offset = 0) {
 			for(int i = callStack.stack.Count - (offset + 1); i >= 0; i--) {
 				if (callStack.stack[i].members.ContainsKey(identifier)) {
 					return callStack.stack[i];
 				}
+			}
+
+			Error($"Unreachable: unable to find variable '{identifier}'");
+			return null;
+		}
+
+		Value ResolveVar(string identifier, int offset = 0) {
+			ActivationRecord record = ResolveRecord(identifier);
+
+			if (record != null) {
+				return record.members[identifier];
 			}
 
 			Error($"Unreachable: unable to find variable '{identifier}'");
@@ -157,15 +169,14 @@ namespace TinyLang {
 
 		void VisitAssignment(Assignment assign) {
 			// Hack: This allows modifying values from other scopes
-			string identifier = assign.identifier;
-			ActivationRecord record = ResolveVar(identifier);
+			Value value = ResolveVar(assign.identifier);
 
-			if (record.members[assign.identifier].references != null) {
-				identifier = record.members[assign.identifier].references;
-				record = ResolveVar(identifier);
+			if (value.references != null) {
+				string identifier = value.references;
+				ResolveRecord(identifier).members[identifier] = Visit(assign.expr);
+			} else {
+				ResolveRecord(assign.identifier).members[assign.identifier] = Visit(assign.expr);
 			}
-
-			record.members[identifier] = Visit(assign.expr);
 		}
 
 		Value VisitFunctionCall(FunctionCall function) {
@@ -186,12 +197,12 @@ namespace TinyLang {
 					//		  to the original name should be valid. Using a name is also not great,
 					//		  as it may conflict with other scopes and will require more resolution
 					//		  later on.
-					Value val = ResolveVar(arg.token.Lexeme).members[arg.token.Lexeme];
+					Value val = ResolveVar(arg.token.Lexeme);
 					string upper_variable = arg.token.Lexeme;
 
 					while (val.references != null){ 
 						upper_variable = val.references;
-						val = ResolveVar(val.references).members[val.references];
+						val = ResolveVar(val.references);
 					}
 
 					fnscope.members[
@@ -217,7 +228,7 @@ namespace TinyLang {
 			Value result = null;
 
 			if (function.sym.def.returnType.type != "void") {
-				result = ResolveVar("result").members["result"];
+				result = ResolveVar("result");
 			}
 			callStack.stack.Remove(fnscope);
 
@@ -234,16 +245,8 @@ namespace TinyLang {
 		}
 
 		Value VisitVar(Var var) {
-			// Variable resolution through records
-			for(int idx = callStack.stack.Count - 1; idx >= 0; idx--) {
-				if (callStack.stack[idx].members.ContainsKey(var.token.Lexeme)) {
-					Value val = callStack.stack[idx].members[var.token.Lexeme];
-					return (val.references != null) ? ResolveVar(val.references).members[val.references] : val;
-				}
-
-			}
-			Error($"Unknown variable read '{var.token.Lexeme}'");
-			return null;
+			Value value = ResolveVar(var.token.Lexeme);
+			return (value.references != null) ? ResolveVar(value.references) : value;
 		}
 
 		Value VisitLiteral(Literal literal) {
