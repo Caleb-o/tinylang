@@ -283,7 +283,7 @@ namespace TinyLang {
 
 			List<Parameter> parameters = ParameterList();
 
-			Return return_type = new Return(new Type(Application.GetTypeID("void")), null);
+			Return return_type = null;
 			if (currentToken.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 

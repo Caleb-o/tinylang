@@ -225,7 +225,7 @@ namespace TinyLang {
 			}
 			
 			// Insert an implicit return value
-			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
+			if (function.sym.def.returnType != null) {
 				fnscope.members["result"] = new VarSym("result", function.sym.def.returnType.type, true);
 
 				if (function.sym.def.returnType.expr != null) {
@@ -240,7 +240,7 @@ namespace TinyLang {
 
 			Value result = null;
 
-			if (!function.sym.def.returnType.type.Matches(new Type(Application.GetTypeID("void")))) {
+			if (function.sym.def.returnType != null) {
 				result = fnscope.members["result"].value;
 			}
 			callStack.stack.Remove(fnscope);
