@@ -1,17 +1,6 @@
-# Note: Not currently supported, but this is what using tuples could look like
-
-fn return_multiple(): [boolean(true), int(10)] {
-	# result = [true, 10]
+fn swap_int(x, y: int): [int, int] {
+	result = @(y, x);
 }
 
-# [int] - list
-# [string:int] - dictionary
-# [boolean, int] - tuple?
-
-# Unpack a tuple
-let [boolean ok, int value] = return_multiple();
-@println(ok, ": value = ", value);
-
-# Store a tuple
-let [boolean, int] state = return_multiple();
-@println(state[0], ": value = ", state[1]);
+let [int, int] swapped = swap_int(10, 20);
+@println(swapped);
