@@ -4,12 +4,14 @@ A small interpreted language to try and learn more about language design and dev
 ***Note:** This language is very young and does not have everything a modern language may have. It is also not intended for use, other than for learning.*
 
 ## Contents
-* [Desirables](#desirables)
 * [DataTypes](#data-types)
 * [Examples](#examples)
 * [Programs](#programs)
+* [Builtins](#builtin-functions)
 
 ## TODO
+
+### Features
 * Structures - User types
 * Enums - Either C-like or Rust-like
 * Traits/Interfaces - Add "generic" functionality to structs eg. Hashable requiring a hash function
@@ -18,6 +20,10 @@ A small interpreted language to try and learn more about language design and dev
 	* List - [1, 2, 3]
 	* Dictionary - {"foo": 123, "bar": 456}
 * Ranges - 0..100, 0..=100
+
+### Fixes / Modifications
+* Use numeric IDs for types instead of raw strings (somewhat faster comparisons etc)
+* References should hold the variable itself and not an identifier (this confuses the resolution and requires scope climbing to resolve) 
 
 ## Desirables
 * Bytecode interpreter
