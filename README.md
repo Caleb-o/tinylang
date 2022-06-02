@@ -9,6 +9,9 @@ A small interpreted language to try and learn more about language design and dev
 * [Programs](#programs)
 * [Builtins](#builtin-functions)
 
+## Other
+* [Caveats](./CAVEATS.md)
+
 ## TODO
 
 ### Features
