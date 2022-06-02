@@ -264,10 +264,10 @@ namespace TinyLang {
 
 		Value VisitLiteral(Literal literal) {
 			switch(literal.token.Kind) {
-				case TokenKind.Int:			return new Value(ValueKind.Int, int.Parse(literal.token.Lexeme));
-				case TokenKind.Float:		return new Value(ValueKind.Float, float.Parse(literal.token.Lexeme));
-				case TokenKind.Boolean:		return new Value(ValueKind.Bool, bool.Parse(literal.token.Lexeme));
-				case TokenKind.String:		return new Value(ValueKind.String, literal.token.Lexeme);
+				case TokenKind.Int:			return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Int);
+				case TokenKind.Float:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Float);
+				case TokenKind.Boolean:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Bool);
+				case TokenKind.String:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.String);
 
 				default:
 					Error($"Unknown literal type {literal.token.Kind}");

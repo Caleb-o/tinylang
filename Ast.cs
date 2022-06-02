@@ -337,9 +337,31 @@ namespace TinyLang {
 		static int TypeIdCounter = 0;
 		static Dictionary<string, int> typeIDs = new Dictionary<string, int>();
 		static Dictionary<int, string> typeNames = new Dictionary<int, string>();
+		public static Dictionary<string, Value> literals = new Dictionary<string, Value>();
 
 		public Application(Block block) : base(null) {
 			this.block = block;
+		}
+
+		public static Value GetOrInsertLiteral(string lexeme, ValueKind kind) {
+			if (literals.ContainsKey(lexeme)) {
+				return literals[lexeme];
+			}
+
+			object value = null;
+
+			switch(kind) {
+				case ValueKind.Int:			value = int.Parse(lexeme); break;
+				case ValueKind.Float:		value = float.Parse(lexeme); break;
+				case ValueKind.Bool:		value = bool.Parse(lexeme); break;
+				case ValueKind.String:		value = lexeme; break;
+
+				default:
+					throw new InvalidOperationException($"Unknown literal type {kind}");
+			}
+
+			literals[lexeme] = new Value(kind, value);
+			return literals[lexeme];
 		}
 
 		public static int GetTypeID(string identifier) {
