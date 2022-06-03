@@ -203,11 +203,13 @@ namespace TinyLang {
 
 	sealed class IfStmt : Node {
 		public readonly Node expr;
+		public readonly VarDecl initStatement;
 		public readonly Block trueBody;
 		public readonly Node falseBody;
 
-		public IfStmt(Node expr, Block trueBody, Node falseBody) : base(null) {
+		public IfStmt(Node expr, VarDecl initStatement, Block trueBody, Node falseBody) : base(null) {
 			this.expr = expr;
+			this.initStatement = initStatement;
 			this.trueBody = trueBody;
 			this.falseBody = falseBody;
 		}

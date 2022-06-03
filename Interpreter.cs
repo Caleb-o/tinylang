@@ -165,6 +165,10 @@ namespace TinyLang {
 		}
 
 		void VisitIfStmt(IfStmt ifstmt) {
+			if (ifstmt.initStatement != null) {
+				VisitVarDecl(ifstmt.initStatement);
+			}
+
 			if ((bool)VisitConditionalOp((ConditionalOp)ifstmt.expr).value) {
 				VisitBlock(ifstmt.trueBody);
 			} else if (ifstmt.falseBody != null) {

@@ -253,6 +253,10 @@ namespace TinyLang {
 		}
 
 		void VisitIfStatement(IfStmt ifstmt) {
+			if (ifstmt.initStatement != null) {
+				VisitVariableDeclaration(ifstmt.initStatement);
+			}
+
 			Visit(ifstmt.expr);
 			Visit(ifstmt.trueBody);
 
@@ -263,7 +267,7 @@ namespace TinyLang {
 
 		void VisitWhile(While whilestmt) {
 			if (whilestmt.initStatement != null) {
-				Visit(whilestmt.initStatement);
+				VisitVariableDeclaration(whilestmt.initStatement);
 			}
 
 			Visit(whilestmt.expr);

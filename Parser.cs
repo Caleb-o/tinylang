@@ -331,6 +331,13 @@ namespace TinyLang {
 		IfStmt IfStatement(Block block) {
 			Consume(TokenKind.If);
 
+			VarDecl initStatement = null;
+
+			if (currentToken.Kind == TokenKind.Var || currentToken.Kind == TokenKind.Let) {
+				Consume(currentToken.Kind);
+				initStatement = VariableDeclaration(block, currentToken.Kind == TokenKind.Let);
+			}
+
 			Node expr = Expr(block);
 			Block true_body = Body();
 			Node false_body = null;
@@ -345,7 +352,7 @@ namespace TinyLang {
 				}
 			}
 
-			return new IfStmt(expr, true_body, false_body);
+			return new IfStmt(expr, initStatement, true_body, false_body);
 		}
 
 		void While(Block block) {
