@@ -47,7 +47,7 @@ namespace TinyLang {
 					}
 
 					default: {
-						Console.Write(((object)n != null) ? n.value : "NONE");
+						Console.Write((n != null) ? n.value : "NONE");
 						break;
 					}
 				}
@@ -77,7 +77,7 @@ namespace TinyLang {
 					}
 
 					default: {
-						object value = ((object)n != null) ? n.value : "NONE";
+						object value = (n != null) ? n.value : "NONE";
 						Console.WriteLine($"Value {value} : {n.type.GetKind()}");
 						break;
 					}

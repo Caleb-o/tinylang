@@ -52,7 +52,7 @@ namespace TinyLang {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
 
 				foreach(var record in callStack.stack[i].members) {
-					if ((object)record.Value.value != null) {
+					if (record.Value.value != null) {
 						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");
 					} else {
 						Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
@@ -132,8 +132,8 @@ namespace TinyLang {
 
 		Value VisitConditionalOp(ConditionalOp conditional) {
 			switch(conditional.token.Kind) {
-				case TokenKind.EqualEqual: 		return Visit(conditional.left) == Visit(conditional.right);
-				case TokenKind.NotEqual: 		return Visit(conditional.left) != Visit(conditional.right);
+				case TokenKind.EqualEqual: 		return Value.EqualityEqual(Visit(conditional.left), Visit(conditional.right));
+				case TokenKind.NotEqual: 		return Value.EqualityNotEqual(Visit(conditional.left), Visit(conditional.right));
 
 				case TokenKind.Greater: 		return Visit(conditional.left) > Visit(conditional.right);
 				case TokenKind.GreaterEqual: 	return Visit(conditional.left) >= Visit(conditional.right);
@@ -203,7 +203,7 @@ namespace TinyLang {
 			VarSym variable = ResolveVar(identifier);
 
 			if (assign.identifier is Var) {
-				if ((object)variable.references != null) {
+				if (variable.references != null) {
 					variable.references.value = Visit(assign.expr);
 				} else {
 					ResolveRecord(identifier).members[identifier].value = Visit(assign.expr);
@@ -241,7 +241,7 @@ namespace TinyLang {
 				if (arg is Var) {
 					VarSym variable = ResolveVar(arg.token.Lexeme);	
 
-					while ((object)variable.references != null){
+					while (variable.references != null){
 						variable = variable.references;
 					}
 
@@ -292,7 +292,7 @@ namespace TinyLang {
 
 		Value VisitVar(Var var) {
 			VarSym variable = ResolveVar(var.token.Lexeme);
-			return ((object)variable.references != null) ? variable.references.value : variable.value;
+			return (variable.references != null) ? variable.references.value : variable.value;
 		}
 
 		Value VisitLiteral(Literal literal) {

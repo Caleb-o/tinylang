@@ -128,7 +128,7 @@ namespace TinyLang {
 			}
 		}
 
-		public static Value operator==(Value me, Value other) {
+		public static Value EqualityEqual(Value me, Value other) {
 			switch(me.type.GetKind()) {
 				case TypeKind.Int: 		return new Value(me.type, (int)me.value == (int)other.value);
 				case TypeKind.Float: 	return new Value(me.type, (float)me.value == (float)other.value);
@@ -140,7 +140,7 @@ namespace TinyLang {
 			}
 		}
 
-		public static Value operator!=(Value me, Value other) {
+		public static Value EqualityNotEqual(Value me, Value other) {
 			switch(me.type.GetKind()) {
 				case TypeKind.Int: 		return new Value(me.type, (int)me.value != (int)other.value);
 				case TypeKind.Float: 	return new Value(me.type, (float)me.value != (float)other.value);
