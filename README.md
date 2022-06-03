@@ -169,7 +169,7 @@ increment_reference(my_var); # 3
 
 ## Sample Scripts
 
-### Fibonacci
+### [Fibonacci](./examples/fibonacci.tiny) (Recursive)
 ```julia
 # Recursive function to get the Nth value of the fibonacci sequence
 fn fibonacci(n: int): int {
@@ -178,6 +178,30 @@ fn fibonacci(n: int): int {
 	} else {
 		result = n;
 	}
+}
+
+@println(fibonacci(24)); # 46368
+```
+
+### [Fibonacci](./examples/fibonacci2.tiny) (Variable Swaps)
+```julia
+fn fibonacci(n: int): int {
+	var int a = 0, b = 1, c = 0;
+
+	if (n == 0) {
+		result = n;
+		return;
+	}
+
+	while var int i = 2; i <= n {
+		i = i + 1;
+
+		c = a + b;
+		a = b;
+		b = c;
+	}
+
+	result = b;
 }
 
 @println(fibonacci(24)); # 46368
