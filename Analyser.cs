@@ -176,7 +176,7 @@ namespace TinyLang {
 				case Escape: VisitEscape((Escape)node); break;
 				case IfStmt: VisitIfStatement((IfStmt)node); break;
 				case While: VisitWhile((While)node); break;
-				case DoWhile: VisitWhile((While)node); break;
+				case DoWhile: VisitDoWhile((DoWhile)node); break;
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
@@ -235,6 +235,15 @@ namespace TinyLang {
 		}
 
 		void VisitWhile(While whilestmt) {
+			if (whilestmt.initStatement != null) {
+				Visit(whilestmt.initStatement);
+			}
+			
+			Visit(whilestmt.expr);
+			Visit(whilestmt.body);
+		}
+
+		void VisitDoWhile(DoWhile whilestmt) {
 			Visit(whilestmt.expr);
 			Visit(whilestmt.body);
 		}

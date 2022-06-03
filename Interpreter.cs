@@ -172,6 +172,10 @@ namespace TinyLang {
 		}
 
 		void VisitWhile(While whilestmt) {
+			if (whilestmt.initStatement != null) {
+				VisitVarDecl(whilestmt.initStatement);
+			}
+
 			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
 				VisitBlock(whilestmt.body);
 			}

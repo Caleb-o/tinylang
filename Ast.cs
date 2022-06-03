@@ -215,11 +215,13 @@ namespace TinyLang {
 
 	sealed class While : Node {
 		public readonly Node expr;
+		public readonly VarDecl initStatement;
 		public readonly Block body;
 
-		public While(Node expr, Block body) : base(null) {
+		public While(Node expr, Block body, VarDecl initStatement) : base(null) {
 			this.expr = expr;
 			this.body = body;
+			this.initStatement = initStatement;
 		}
 	}
 

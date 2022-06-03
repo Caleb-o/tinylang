@@ -6,7 +6,7 @@ A small interpreted language to try and learn more about language design and dev
 ## Contents
 * [DataTypes](#data-types)
 * [Examples](#examples)
-* [Programs](#programs)
+* [Sample Scripts](#sample-scripts)
 * [Builtins](#builtin-functions)
 
 ## Other
@@ -132,6 +132,12 @@ while i < 10 {
 	@println(i);
 }
 
+# -- Declare a variable within the while statement
+while var int j = 0; j < 10 {
+	j = j + 1;
+	@println(j);
+}
+
 # -- Do While loop
 i = 0;
 
@@ -162,7 +168,7 @@ increment_reference(my_var); # 3
 @println(my_var); # 3
 ```
 
-## Programs
+## Sample Scripts
 
 ### Fibonacci
 ```julia

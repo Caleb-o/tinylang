@@ -189,7 +189,20 @@ namespace TinyLang {
 			return arguments;
 		}
 
-		void VariableDeclaration(Block block, bool mutable) {
+		VarDecl VariableDeclaration(Block block, bool mutable) {
+			Type type = CollectType(block);
+
+			Token identifier = currentToken;
+			Consume(TokenKind.Identifier);
+
+			Consume(TokenKind.Equals);
+			Node expr = Expr(block);
+			Consume(TokenKind.SemiColon);
+
+			return new VarDecl(identifier.Lexeme, type, mutable, expr);
+		}
+
+		void VariableDeclarations(Block block, bool mutable) {
 			Type type = CollectType(block);
 
 			while (currentToken.Kind == TokenKind.Identifier) {
@@ -327,7 +340,14 @@ namespace TinyLang {
 
 		void While(Block block) {
 			Consume(TokenKind.While);
-			block.statements.Add(new While(Expr(block), Body()));
+			VarDecl variable = null;
+
+			if (currentToken.Kind == TokenKind.Var) {
+				Consume(TokenKind.Var);
+				variable = VariableDeclaration(block, true);
+			}
+
+			block.statements.Add(new While(Expr(block), Body(), variable));
 		}
 
 		void DoWhile(Block block) {
@@ -335,7 +355,7 @@ namespace TinyLang {
 			Block body = Body();
 			Consume(TokenKind.While);
 			
-			block.statements.Add(new While(Expr(block), body));
+			block.statements.Add(new While(Expr(block), body, null));
 		}
 
 		void StatementList(Block block, TokenKind closing) {
@@ -348,13 +368,13 @@ namespace TinyLang {
 			switch(currentToken.Kind) {
 				case TokenKind.Var: {
 					Consume(TokenKind.Var);
-					VariableDeclaration(block, true);
+					VariableDeclarations(block, true);
 					break;
 				}
 
 				case TokenKind.Let: {
 					Consume(TokenKind.Let);
-					VariableDeclaration(block, false);
+					VariableDeclarations(block, false);
 					break;
 				}
 
