@@ -231,7 +231,7 @@ namespace TinyLang {
 		}
 
 		void Escape(Block block) {
-			Consume(TokenKind.Escape);
+			Consume(TokenKind.Return);
 			block.statements.Add(new Escape());
 		}
 
@@ -378,7 +378,7 @@ namespace TinyLang {
 					break;
 				}
 
-				case TokenKind.Escape: {
+				case TokenKind.Return: {
 					Escape(block);
 					break;
 				}
