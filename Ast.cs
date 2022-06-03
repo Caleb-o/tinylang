@@ -236,10 +236,10 @@ namespace TinyLang {
 	}
 
 	sealed class Assignment : Node {
-		public readonly string identifier;
+		public readonly Node identifier;
 		public readonly Node expr;
 
-		public Assignment(string identifier, Node expr) : base(null) {
+		public Assignment(Node identifier, Node expr) : base(null) {
 			this.identifier = identifier;
 			this.expr = expr;
 		}

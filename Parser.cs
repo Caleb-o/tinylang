@@ -224,7 +224,13 @@ namespace TinyLang {
 
 		void Assignment(Block block, Token identifier) {
 			Consume(TokenKind.Equals);
-			block.statements.Add(new Assignment(identifier.Lexeme, Expr(block)));
+			block.statements.Add(new Assignment(new Var(identifier), Expr(block)));
+		}
+
+		void IndexAssignment(Block block, Token identifier) {
+			Index index = IndexStmt(block, identifier);
+			Consume(TokenKind.Equals);
+			block.statements.Add(new Assignment(index, Expr(block)));
 		}
 
 		FunctionCall FunctionCall(Block block, Token identifier) {
@@ -434,9 +440,9 @@ namespace TinyLang {
 							block.statements.Add(FunctionCall(block, identifier));
 							break;
 						
-						// case TokenKind.OpenSquare:
-						// 	block.statements.Add(IndexStmt(block, identifier));
-						// 	break;
+						case TokenKind.OpenSquare:
+							IndexAssignment(block, identifier);
+							break;
 
 						// TODO: Support alternate assignment operators += -= *= /=
 						case TokenKind.Equals:

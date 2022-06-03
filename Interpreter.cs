@@ -196,12 +196,26 @@ namespace TinyLang {
 		}
 
 		void VisitAssignment(Assignment assign) {
-			VarSym variable = ResolveVar(assign.identifier);
+			VarSym variable = ResolveVar(assign.identifier.token.Lexeme);
 
-			if ((object)variable.references != null) {
-				variable.references.value = Visit(assign.expr);
+			if (assign.identifier is Var) {
+				if ((object)variable.references != null) {
+					variable.references.value = Visit(assign.expr);
+				} else {
+					ResolveRecord(assign.token.Lexeme).members[assign.token.Lexeme].value = Visit(assign.expr);
+				}
 			} else {
-				ResolveRecord(assign.identifier).members[assign.identifier].value = Visit(assign.expr);
+				// Indexing
+				Index index = (Index)assign.identifier;
+				int indexValue = GetIndexValue((Index)index);
+
+				List<Value> values = (List<Value>)variable.value.value;
+
+				if (indexValue < 0 || indexValue > values.Count - 1) {
+					Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {indexValue} where the length is {values.Count}");
+				}
+
+				values[indexValue] = Visit(assign.expr);
 			}
 		}
 
@@ -300,8 +314,12 @@ namespace TinyLang {
 			return new Value(ValueKind.Tuple, values);
 		}
 
+		int GetIndexValue(Index index) {
+			return (int)Visit(index.exprs[0]).value;
+		}
+
 		Value VisitIndex(Index index) {
-			int value = (int)Visit(index.exprs[0]).value;
+			int indexValue = GetIndexValue(index);
 			VarSym variable = ResolveVar(index.token.Lexeme);
 
 			// Hack: Currently it's not possible to check if the type is a tuple or not at compile time
@@ -311,11 +329,10 @@ namespace TinyLang {
 
 			List<Value> values = (List<Value>)variable.value.value;
 
-			if (value < 0 || value > values.Count - 1) {
-				Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {value} where the length is {values.Count}");
+			if (indexValue < 0 || indexValue > values.Count - 1) {
+				Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {indexValue} where the length is {values.Count}");
 			}
-
-			return values[value];
+			return values[indexValue];
 		}
 	}
 }

@@ -384,7 +384,13 @@ namespace TinyLang {
 		}
 
 		void VisitAssignment(Assignment assign) {
-			VarSym sym = (VarSym)scope.Lookup(assign.identifier, (assign.identifier == "result"));
+			string identifier = assign.identifier.token.Lexeme;
+
+			if (assign.identifier is not Var && assign.identifier is not Index) {
+				Error($"'{identifier}' Assignment must use an indentifier or index");
+			}
+
+			VarSym sym = (VarSym)scope.Lookup(identifier, identifier == "result");
 
 			if (sym == null) {
 				Error($"Variable '{assign.identifier}' does not exist in any scope");
@@ -392,13 +398,16 @@ namespace TinyLang {
 
 			Visit(assign.expr);
 
-			Type received = FindType(assign.expr);
-			if (!received.Matches(sym.type)) {
-				Error($"'{assign.identifier}' expected type {sym.type} but received {received}");
+			if (sym.type.type.Length == 1) {
+				Type received = FindType(assign.expr);
+				if (!received.Matches(sym.type)) {
+					Error($"'{identifier}' expected type {sym.type} but received {received}");
+				}
 			}
 
+
 			if (!sym.mutable) {
-				Error($"Cannot reassign to immutable variable '{assign.identifier}'");
+				Error($"Cannot reassign to immutable variable '{identifier}'");
 			}
 		}
 	}
