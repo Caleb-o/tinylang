@@ -359,7 +359,11 @@ namespace TinyLang {
 			Visit(decl.expr);
 
 			Type received = FindType(decl.expr);
-			if (!received.Matches(decl.type)) {
+			if (decl.type.IsUntyped()) {
+				// Assign the type from the RHS
+				decl.type = received;
+			}
+			else if (!received.Matches(decl.type)) {
 				Error($"'{decl.identifier}' expected type {decl.type} but received {received}");
 			}
 

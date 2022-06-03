@@ -10,7 +10,7 @@ namespace TinyLang {
 		Plus, Minus, Star, Slash, At,
 
 		Let, Var, Identifier, Record, Function,
-		Return, If, Else, While, Do,
+		Return, If, Else, While, Do, Auto,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
 		OpenSquare, CloseSquare,
@@ -38,6 +38,7 @@ namespace TinyLang {
 		static Dictionary<string, TokenKind> KeyWords = new Dictionary<string, TokenKind>() {
 			{ "var", TokenKind.Var },
 			{ "let", TokenKind.Let },
+			{ "auto", TokenKind.Auto },
 			{ "return", TokenKind.Return },
 			{ "fn", TokenKind.Function },
 			{ "record", TokenKind.Record },

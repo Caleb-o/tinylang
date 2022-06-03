@@ -269,7 +269,11 @@ namespace TinyLang {
 		}
 
 		Type CollectType(Block block) {
-			if (currentToken.Kind == TokenKind.OpenParen) {
+			if (currentToken.Kind == TokenKind.Auto) {
+				Consume(TokenKind.Auto);
+				return new Type(TypeKind.Untyped);
+			}
+			else if (currentToken.Kind == TokenKind.OpenParen) {
 				List<Token> identifiers = new List<Token>();
 				Consume(TokenKind.OpenParen);
 

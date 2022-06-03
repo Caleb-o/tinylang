@@ -140,7 +140,7 @@ namespace TinyLang {
 	sealed class VarDecl : Node {
 		public readonly string identifier;
 		public readonly bool mutable;
-		public readonly Type type;
+		public Type type;
 		public readonly Node expr;
 
 		public VarDecl(string identifier, Type type, bool mutable, Node expr) : base(null) {

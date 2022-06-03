@@ -13,7 +13,7 @@ namespace TinyLang {
 	}
 
 	enum TypeKind {
-		Int, Float, Bool, String, Tuple,
+		Int, Float, Bool, String, Tuple, Untyped,
 	}
 
 	class Type {
@@ -32,6 +32,10 @@ namespace TinyLang {
 
 		public Type(int[] typeIDs) {
 			this.typeIDs = typeIDs;
+		}
+
+		public bool IsUntyped() {
+			return typeIDs != null && typeIDs.Length == 1 && typeIDs[0] == (int)TypeKind.Untyped;
 		}
 
 		public bool IsSingleType() {
