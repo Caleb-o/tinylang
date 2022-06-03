@@ -269,9 +269,9 @@ namespace TinyLang {
 		}
 
 		Type CollectType(Block block) {
-			if (currentToken.Kind == TokenKind.OpenSquare) {
+			if (currentToken.Kind == TokenKind.OpenParen) {
 				List<Token> identifiers = new List<Token>();
-				Consume(TokenKind.OpenSquare);
+				Consume(TokenKind.OpenParen);
 
 				while (currentToken.Kind == TokenKind.Identifier) {
 					identifiers.Add(currentToken);
@@ -280,7 +280,7 @@ namespace TinyLang {
 					ConsumeIfExists(TokenKind.Comma);
 				}
 
-				Consume(TokenKind.CloseSquare);
+				Consume(TokenKind.CloseParen);
 
 				List<int> typeIDs = new List<int>();
 
@@ -313,7 +313,7 @@ namespace TinyLang {
 
 				Type type = CollectType(block);
 
-				if (lastNext == TokenKind.OpenSquare) {
+				if (lastNext == TokenKind.OpenParen) {
 					return_type = new Return(type, null);
 				} else {
 					Node expr = null;
