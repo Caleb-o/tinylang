@@ -181,6 +181,7 @@ namespace TinyLang {
 
 				case Literal: break;
 				case ComplexLiteral: break;
+				case Index: VisitIndex((Index)node); break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
 
 				default:
@@ -202,6 +203,32 @@ namespace TinyLang {
 			if (scope.Lookup(var.token.Lexeme, false) == null) {
 				Error($"Variable '{var.token.Lexeme}' does not exist in any scope");
 			}
+		}
+
+		void VisitIndex(Index index) {
+			VarSym variable = (VarSym)scope.Lookup(index.token.Lexeme, false);
+
+			if (variable == null) {
+				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
+			}
+
+			if (index.exprs.Count > variable.type.type.Length) {
+				Error($"Variable '{index.token.Lexeme}' is trying to access {index.exprs.Count} levels, when only {variable.type.type.Length} exist");
+			}
+
+			foreach(Node expr in index.exprs) {
+				Type ntype = FindType(expr);
+
+				// Hack
+				if (ntype.type[0] != Application.GetTypeID("int")) {
+					Error("Index expected an integer");
+				}
+
+				Visit(expr);
+			}
+
+			// Assign the type
+			index.type = variable.type;
 		}
 
 		void VisitBlock(Block block) {
@@ -238,7 +265,7 @@ namespace TinyLang {
 			if (whilestmt.initStatement != null) {
 				Visit(whilestmt.initStatement);
 			}
-			
+
 			Visit(whilestmt.expr);
 			Visit(whilestmt.body);
 		}

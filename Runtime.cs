@@ -158,6 +158,31 @@ namespace TinyLang {
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
 			}
 		}
+
+		public override string ToString()
+		{
+			switch (kind) {
+				case ValueKind.Tuple: {
+					string outstr = "";
+
+					List<Value> values = (List<Value>)value;
+
+					int index = 0;
+					foreach(Value value in values) {
+						outstr += value;
+
+						if (index++ < values.Count - 1) {
+							outstr += ", ";
+						}
+					}
+
+					return $"({outstr})";
+				}
+
+				default:
+					return value.ToString();
+			}
+		}
 	}
 
 	class ActivationRecord {

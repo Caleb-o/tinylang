@@ -124,11 +124,16 @@ namespace TinyLang {
 					Token identifier = currentToken;
 					Consume(TokenKind.Identifier);
 
-					if (currentToken.Kind == TokenKind.OpenParen) {
-						return FunctionCall(block, identifier);
-					}
-					else {
-						return Variable(identifier);
+					switch (currentToken.Kind) {
+						case TokenKind.OpenParen:
+							return FunctionCall(block, identifier);
+
+
+						case TokenKind.OpenSquare:
+							return IndexStmt(block, identifier);
+
+						default:
+							return Variable(identifier);
 					}
 				}
 
@@ -358,6 +363,23 @@ namespace TinyLang {
 			block.statements.Add(new While(Expr(block), body, null));
 		}
 
+		Index IndexStmt(Block block, Token identifier) {
+			List<Node> exprs = new List<Node>();
+			
+			// while(currentToken.Kind == TokenKind.OpenSquare) {
+			// 	Consume(TokenKind.OpenSquare);
+			// 	exprs.Add(Expr(block));
+			// 	Consume(TokenKind.CloseSquare);
+			// }
+			
+			// FIXME: Allow the above to work throughout (Nested tuples)
+			Consume(TokenKind.OpenSquare);
+			exprs.Add(Expr(block));
+			Consume(TokenKind.CloseSquare);
+
+			return new Index(identifier, exprs);
+		}
+
 		void StatementList(Block block, TokenKind closing) {
 			while(currentToken.Kind != closing) {
 				Statement(block);
@@ -411,6 +433,10 @@ namespace TinyLang {
 						case TokenKind.OpenParen:
 							block.statements.Add(FunctionCall(block, identifier));
 							break;
+						
+						// case TokenKind.OpenSquare:
+						// 	block.statements.Add(IndexStmt(block, identifier));
+						// 	break;
 
 						// TODO: Support alternate assignment operators += -= *= /=
 						case TokenKind.Equals:

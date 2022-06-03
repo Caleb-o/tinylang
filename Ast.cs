@@ -273,6 +273,16 @@ namespace TinyLang {
 		}
 	}
 
+	// Eg. tuple[0][1]
+	sealed class Index : Node {
+		public readonly List<Node> exprs;
+		public Type type;
+
+		public Index(Token identifier, List<Node> exprs) : base(identifier) {
+			this.exprs = exprs;
+		}
+	}
+
 	sealed class Return : Node {
 		// Return is the default value and type info
 		// rather than the statement

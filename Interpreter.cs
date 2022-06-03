@@ -54,7 +54,7 @@ namespace TinyLang {
 
 				foreach(var record in callStack.stack[i].members) {
 					if ((object)record.Value.value != null) {
-						Console.WriteLine($"{record.Key.PadLeft(16)} = {record.Value.value} [{record.Value.value.kind}]");
+						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.kind}] = {record.Value.value}");
 					} else {
 						Console.WriteLine($"{record.Key.PadLeft(16)} = None");
 					}
@@ -109,6 +109,7 @@ namespace TinyLang {
 				case Var: return VisitVar((Var)node);
 				case Literal: return VisitLiteral((Literal)node);
 				case ComplexLiteral: return VisitComplexLiteral((ComplexLiteral)node);
+				case Index: return VisitIndex((Index)node);
 				case Assignment: VisitAssignment((Assignment)node); return null;
 				case VarDecl: VisitVarDecl((VarDecl)node); return null;
 			}
@@ -297,6 +298,18 @@ namespace TinyLang {
 			}
 
 			return new Value(ValueKind.Tuple, values);
+		}
+
+		Value VisitIndex(Index index) {
+			int value = (int)Visit(index.exprs[0]).value;
+			VarSym variable = ResolveVar(index.token.Lexeme);
+			List<Value> values = (List<Value>)variable.value.value;
+
+			if (value < 0 || value > values.Count - 1) {
+				Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {value} where the length is {values.Count}");
+			}
+
+			return values[value];
 		}
 	}
 }
