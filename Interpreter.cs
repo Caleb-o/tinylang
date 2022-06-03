@@ -303,6 +303,12 @@ namespace TinyLang {
 		Value VisitIndex(Index index) {
 			int value = (int)Visit(index.exprs[0]).value;
 			VarSym variable = ResolveVar(index.token.Lexeme);
+
+			// Hack: Currently it's not possible to check if the type is a tuple or not at compile time
+			if (variable.value.kind != ValueKind.Tuple) {
+				Error($"'{index.token.Lexeme}' is not a tuple");
+			}
+
 			List<Value> values = (List<Value>)variable.value.value;
 
 			if (value < 0 || value > values.Count - 1) {
