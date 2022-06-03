@@ -2,6 +2,12 @@ using System;
 using System.Collections.Generic;
 
 namespace TinyLang {
+	// Dummy exception for unwinding the stack
+	public class EscapeException : Exception
+	{
+		public EscapeException() {}
+	}
+
 	enum RecordType {
 		Program, Function,
 	}

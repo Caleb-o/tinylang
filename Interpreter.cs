@@ -104,7 +104,7 @@ namespace TinyLang {
 				case FunctionDef: return null;
 				case FunctionCall: return VisitFunctionCall((FunctionCall)node);
 				case BuiltinFunctionCall: VisitBuiltinFunctionCall((BuiltinFunctionCall)node); return null;
-				case Escape: return null;
+				case Escape: VisitEscape((Escape)node); return null;
 
 				case Var: return VisitVar((Var)node);
 				case Literal: return VisitLiteral((Literal)node);
@@ -155,6 +155,12 @@ namespace TinyLang {
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+		}
+
+		// http://craftinginterpreters.com/functions.html#return-statements
+		void VisitEscape(Escape escape) {
+			// Unwinds the stack
+			throw new EscapeException();
 		}
 
 		void VisitIfStmt(IfStmt ifstmt) {
@@ -236,7 +242,11 @@ namespace TinyLang {
 			}
 
 			callStack.stack.Add(fnscope);
-			VisitBlock(function.sym.def.block);
+
+			// A bit of a hack to allow for returning from functions
+			try {
+				VisitBlock(function.sym.def.block);
+			} catch(EscapeException) {}
 
 			Value result = null;
 

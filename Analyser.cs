@@ -103,6 +103,7 @@ namespace TinyLang {
 
 	sealed class Analyser {
 		public SymbolScope scope;
+		Block currentBlock;
 
 		public void Run(Application app) {
 			// Setup the global scope with builtins
@@ -204,6 +205,9 @@ namespace TinyLang {
 		}
 
 		void VisitBlock(Block block) {
+			// Hack for returns
+			currentBlock = block;
+
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
@@ -214,6 +218,11 @@ namespace TinyLang {
 				// TODO: This can probably occur for early returns
 				Error("Cannot escape from global scope");
 			}
+
+			if (currentBlock.escape != null) {
+				Error("Block cannot contain more than one escape statement!");
+			}
+			currentBlock.escape = ret;
 		}
 
 		void VisitIfStatement(IfStmt ifstmt) {

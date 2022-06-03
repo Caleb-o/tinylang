@@ -232,14 +232,7 @@ namespace TinyLang {
 
 		void Escape(Block block) {
 			Consume(TokenKind.Escape);
-
-			if (block.escape != null) {
-				Error("Block already contains an escape statement");
-			}
-
-			Escape esc = new Escape();
-			block.escape = esc;
-			block.statements.Add(esc);
+			block.statements.Add(new Escape());
 		}
 
 		Block Body() {
