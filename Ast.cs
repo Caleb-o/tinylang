@@ -19,10 +19,17 @@ namespace TinyLang {
 			{ "printobj", new BuiltinFn(PrintObj, -1) },
 		};
 
+		public static void InitTypes() {
+			Application.GetTypeID("int");
+			Application.GetTypeID("float");
+			Application.GetTypeID("boolean");
+			Application.GetTypeID("string");
+		}
+
 		public static Value PrintLn(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				switch(n.kind) {
-					case ValueKind.Tuple: {
+				switch(n.type.GetKind()) {
+					case TypeKind.Tuple: {
 						string outStr = "";
 
 						int idx = 0;
@@ -51,8 +58,8 @@ namespace TinyLang {
 
 		public static Value PrintObj(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				switch(n.kind) {
-					case ValueKind.Tuple: {
+				switch(n.type.GetKind()) {
+					case TypeKind.Tuple: {
 						string outStr = "";
 
 						int idx = 0;
@@ -65,13 +72,13 @@ namespace TinyLang {
 							}
 							idx++;
 						}
-						Console.WriteLine($"Value [{outStr}] : {n.kind}");
+						Console.WriteLine($"Value [{outStr}] : {n.type.GetKind()}");
 						break;
 					}
 
 					default: {
 						object value = ((object)n != null) ? n.value : "NONE";
-						Console.WriteLine($"Value {value} : {n.kind}");
+						Console.WriteLine($"Value {value} : {n.type.GetKind()}");
 						break;
 					}
 				}
@@ -85,63 +92,6 @@ namespace TinyLang {
 
 		public Node(Token token) {
 			this.token = token;
-		}
-	}
-
-	sealed class Type : Node {
-		// This should help with tuples, lists, dicts etc
-		// in the future... hopefully
-		// eg. let (boolean ok, int value) = get_value();
-		public readonly int[] type;
-
-		public Type(int typeId) : base(null) {
-			this.type = new int[] { typeId };
-		}
-
-		public Type(int[] type) : base(null) {
-			this.type = type;
-		}
-
-		public bool IsVoid() {
-			return type == null;
-		}
-
-		public bool IsSingleType() {
-			return type != null && type.Length == 1;
-		}
-
-		public bool Matches(Type other) {
-			if (type.Length != other.type.Length) {
-				return false;
-			}
-
-			// This may help a little
-			if (type.Length == 1 && other.IsSingleType()) {
-				return type[0] == other.type[0];
-			}
-
-			for(int i = 0; i < type.Length; i++) {
-				if (type[i] != other.type[i]) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		public override string ToString() {
-			string outstr = "";
-
-			int idx = 0;
-			foreach(int id in type) {
-				outstr += Application.GetTypeName(id);
-
-				if (idx < type.Length - 1) {
-					outstr += ", ";
-				}
-				idx++;
-			}
-			return "[" + outstr + "]";
 		}
 	}
 
@@ -357,7 +307,7 @@ namespace TinyLang {
 			this.block = block;
 		}
 
-		public static Value GetOrInsertLiteral(string lexeme, ValueKind kind) {
+		public static Value GetOrInsertLiteral(string lexeme, TypeKind kind) {
 			if (literals.ContainsKey(lexeme)) {
 				return literals[lexeme];
 			}
@@ -365,16 +315,16 @@ namespace TinyLang {
 			object value = null;
 
 			switch(kind) {
-				case ValueKind.Int:			value = int.Parse(lexeme); break;
-				case ValueKind.Float:		value = float.Parse(lexeme); break;
-				case ValueKind.Bool:		value = bool.Parse(lexeme); break;
-				case ValueKind.String:		value = lexeme; break;
+				case TypeKind.Int:			value = int.Parse(lexeme); break;
+				case TypeKind.Float:		value = float.Parse(lexeme); break;
+				case TypeKind.Bool:			value = bool.Parse(lexeme); break;
+				case TypeKind.String:		value = lexeme; break;
 
 				default:
 					throw new InvalidOperationException($"Unknown literal type {kind}");
 			}
 
-			literals[lexeme] = new Value(kind, value);
+			literals[lexeme] = new Value(new Type(kind), value);
 			return literals[lexeme];
 		}
 
@@ -389,7 +339,7 @@ namespace TinyLang {
 		}
 
 		public static string GetTypeName(int typeID) {
-			return typeNames.GetValueOrDefault(typeID, null);
+			return typeNames.GetValueOrDefault(typeID, "None");
 		}
 	}
 }

@@ -250,7 +250,7 @@ namespace TinyLang {
 			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
-			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type(Application.GetTypeID("void"))));
+			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type()));
 		}
 
 		void Escape(Block block) {
@@ -285,7 +285,8 @@ namespace TinyLang {
 				List<int> typeIDs = new List<int>();
 
 				foreach(Token t in identifiers) {
-					typeIDs.Add(Application.GetTypeID(t.Lexeme));
+					int id = Application.GetTypeID(t.Lexeme);
+					typeIDs.Add(id);
 				}
 
 				return new Type(typeIDs.ToArray());

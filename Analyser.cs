@@ -26,8 +26,8 @@ namespace TinyLang {
 	}
 
 	sealed class BuiltinTypeSym : Symbol {
-		public BuiltinTypeSym(string identifier)
-			: base(identifier, new Type(Application.GetTypeID(identifier))) {}
+		public BuiltinTypeSym(TypeKind kind, string identifier)
+			: base(identifier, new Type(kind)) {}
 	}
 
 	sealed class FunctionSym : Symbol {
@@ -54,10 +54,10 @@ namespace TinyLang {
 		}
 
 		public void InitBuiltins() {
-			Insert(new BuiltinTypeSym("int"));
-			Insert(new BuiltinTypeSym("float"));
-			Insert(new BuiltinTypeSym("string"));
-			Insert(new BuiltinTypeSym("boolean"));
+			Insert(new BuiltinTypeSym(TypeKind.Int, "int"));
+			Insert(new BuiltinTypeSym(TypeKind.Float, "float"));
+			Insert(new BuiltinTypeSym(TypeKind.Bool, "boolean"));
+			Insert(new BuiltinTypeSym(TypeKind.String, "string"));
 		}
 
 		public void Insert(Symbol sym) {
@@ -79,25 +79,6 @@ namespace TinyLang {
 			}
 
 			return parent.Lookup(identifier, false);
-		}
-
-		public Symbol LookupType(Type type, bool local) {
-			if (type.IsSingleType()) {
-				int typeID = type.type[0];
-
-				if (symbols.ContainsKey(identifier)) {
-					return symbols[identifier];
-				}
-
-				if (local) {
-					return null;
-				}
-
-				return parent.Lookup(identifier, false);
-			}
-
-			// Unsupported
-			return null;
 		}
 	}
 
@@ -128,8 +109,13 @@ namespace TinyLang {
 				}
 
 				case FunctionCall: {
-					// FIXME: This should use the type
-					return ((FunctionCall)node).sym.def.returnType.type;
+					FunctionDef def = ((FunctionCall)node).sym.def;
+
+					if (def.returnType != null) {
+						return def.returnType.type;
+					} else {
+						return new Type();
+					}
 				}
 
 				case BinOp: {
@@ -137,7 +123,7 @@ namespace TinyLang {
 				}
 
 				case Literal: {
-					return new Type(Application.GetTypeID(((Literal)node).token.Kind.ToString().ToLower()));
+					return new Type(Type.FromToken(node.token.Kind));
 				}
 
 				case UnaryOp: {
@@ -151,7 +137,7 @@ namespace TinyLang {
 					foreach(Node expr in literal.exprs) {
 						// Note: This can probably be more than one in the future,
 						// 		 so a better method may be required
-						typeIDs.Add(FindType(expr).type[0]);
+						typeIDs.Add((int)FindType(expr).GetKind());
 					}
 
 					return new Type(typeIDs.ToArray());
@@ -212,15 +198,12 @@ namespace TinyLang {
 				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
 			}
 
-			if (index.exprs.Count > variable.type.type.Length) {
-				Error($"Variable '{index.token.Lexeme}' is trying to access {index.exprs.Count} levels, when only {variable.type.type.Length} exist");
+			if (index.exprs.Count > variable.type.typeIDs.Length) {
+				Error($"Variable '{index.token.Lexeme}' is trying to access {index.exprs.Count} levels, when only {variable.type.typeIDs.Length} exist");
 			}
 
 			foreach(Node expr in index.exprs) {
-				Type ntype = FindType(expr);
-
-				// Hack
-				if (ntype.type[0] != Application.GetTypeID("int")) {
+				if (FindType(expr).typeIDs[0] != Application.GetTypeID("int")) {
 					Error("Index expected an integer");
 				}
 
@@ -400,15 +383,13 @@ namespace TinyLang {
 				Error($"Variable '{assign.identifier}' does not exist in any scope");
 			}
 
+			// This is required for some nodes to fetch symbols, which are used in FindType
 			Visit(assign.expr);
 
-			if (sym.type.type.Length == 1) {
-				Type received = FindType(assign.expr);
-				if (!received.Matches(sym.type)) {
-					Error($"'{identifier}' expected type {sym.type} but received {received}");
-				}
+			Type received = FindType(assign.expr);
+			if (!sym.type.Matches(received)) {
+				Error($"'{identifier}' expected type {sym.type} but received {received}");
 			}
-
 
 			if (!sym.mutable) {
 				Error($"Cannot reassign to immutable variable '{identifier}'");

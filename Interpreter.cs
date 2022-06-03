@@ -20,12 +20,11 @@ namespace TinyLang {
 		}
 
 		Value GetDefaultSingle(int typeID) {
-			switch(typeID) {
-				// FIXME: This is bad becaue it *could* change
-				case 0: return new Value(ValueKind.Int, 0);
-				case 1: return new Value(ValueKind.Float, 0);
-				case 2: return new Value(ValueKind.Bool, false);
-				case 3: return new Value(ValueKind.Bool, "");
+			switch((TypeKind)typeID) {
+				case TypeKind.Int: return new Value(new Type(TypeKind.Int), 0);
+				case TypeKind.Float: return new Value(new Type(TypeKind.Float), 0.0f);
+				case TypeKind.Bool: return new Value(new Type(TypeKind.Bool), false);
+				case TypeKind.String: return new Value(new Type(TypeKind.String), "");
 			}
 			
 			throw new InvalidCastException("Unreachable");
@@ -35,16 +34,16 @@ namespace TinyLang {
 			// TODO: If return is a record/struct, then return a Visit on a mandatory
 			// constructor for the type
 			if (ret.type.IsSingleType()) {
-				return GetDefaultSingle(ret.type.type[0]);
+				return GetDefaultSingle(ret.type.typeIDs[0]);
 			}
 
 			List<Value> values = new List<Value>();
 
-			foreach(int typeID in ret.type.type) {
+			foreach(int typeID in ret.type.typeIDs) {
 				values.Add(GetDefaultSingle(typeID));
 			}
 
-			return new Value(ValueKind.Tuple, values);
+			return new Value(new Type(ret.type.typeIDs), values);
 		}
 
 		void PrintCallStack() {
@@ -54,7 +53,7 @@ namespace TinyLang {
 
 				foreach(var record in callStack.stack[i].members) {
 					if ((object)record.Value.value != null) {
-						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.kind}] = {record.Value.value}");
+						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");
 					} else {
 						Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
 					}
@@ -298,10 +297,10 @@ namespace TinyLang {
 
 		Value VisitLiteral(Literal literal) {
 			switch(literal.token.Kind) {
-				case TokenKind.Int:			return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Int);
-				case TokenKind.Float:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Float);
-				case TokenKind.Boolean:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.Bool);
-				case TokenKind.String:		return Application.GetOrInsertLiteral(literal.token.Lexeme, ValueKind.String);
+				case TokenKind.Int:			return Application.GetOrInsertLiteral(literal.token.Lexeme, TypeKind.Int);
+				case TokenKind.Float:		return Application.GetOrInsertLiteral(literal.token.Lexeme, TypeKind.Float);
+				case TokenKind.Boolean:		return Application.GetOrInsertLiteral(literal.token.Lexeme, TypeKind.Bool);
+				case TokenKind.String:		return Application.GetOrInsertLiteral(literal.token.Lexeme, TypeKind.String);
 
 				default:
 					Error($"Unknown literal type {literal.token.Kind}");
@@ -311,12 +310,16 @@ namespace TinyLang {
 
 		Value VisitComplexLiteral(ComplexLiteral literal) {
 			List<Value> values = new List<Value>();
+			List<int> typeIDs = new List<int>();
 
 			foreach(Node expr in literal.exprs) {
-				values.Add(Visit(expr));
+				Value val = Visit(expr);
+				values.Add(val);
+				// FIXME: Allow nested types
+				typeIDs.Add((int)val.type.GetKind());
 			}
 
-			return new Value(ValueKind.Tuple, values);
+			return new Value(new Type(typeIDs.ToArray()), values);
 		}
 
 		int GetIndexValue(Index index) {
@@ -326,11 +329,6 @@ namespace TinyLang {
 		Value VisitIndex(Index index) {
 			int indexValue = GetIndexValue(index);
 			VarSym variable = ResolveVar(index.token.Lexeme);
-
-			// Hack: Currently it's not possible to check if the type is a tuple or not at compile time
-			if (variable.value.kind != ValueKind.Tuple) {
-				Error($"'{index.token.Lexeme}' is not a tuple");
-			}
 
 			List<Value> values = (List<Value>)variable.value.value;
 
