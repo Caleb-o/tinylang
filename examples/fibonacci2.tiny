@@ -1,0 +1,21 @@
+# Fibonacci using variable swaps instead of recursion
+fn fibonacci(n: int): int {
+	var int a = 0, b = 1, c = 0;
+
+	if (n == 0) {
+		result = n;
+		return;
+	}
+
+	while var int i = 2; i <= n {
+		i = i + 1;
+
+		c = a + b;
+		a = b;
+		b = c;
+	}
+
+	result = b;
+}
+
+@println(fibonacci(24));

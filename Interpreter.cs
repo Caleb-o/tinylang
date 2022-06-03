@@ -196,13 +196,14 @@ namespace TinyLang {
 		}
 
 		void VisitAssignment(Assignment assign) {
-			VarSym variable = ResolveVar(assign.identifier.token.Lexeme);
+			string identifier = assign.identifier.token.Lexeme;
+			VarSym variable = ResolveVar(identifier);
 
 			if (assign.identifier is Var) {
 				if ((object)variable.references != null) {
 					variable.references.value = Visit(assign.expr);
 				} else {
-					ResolveRecord(assign.token.Lexeme).members[assign.token.Lexeme].value = Visit(assign.expr);
+					ResolveRecord(identifier).members[identifier].value = Visit(assign.expr);
 				}
 			} else {
 				// Indexing
@@ -212,7 +213,7 @@ namespace TinyLang {
 				List<Value> values = (List<Value>)variable.value.value;
 
 				if (indexValue < 0 || indexValue > values.Count - 1) {
-					Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {indexValue} where the length is {values.Count}");
+					Error($"Index out of bounds on '{identifier}'. Indexing with {indexValue} where the length is {values.Count}");
 				}
 
 				values[indexValue] = Visit(assign.expr);
