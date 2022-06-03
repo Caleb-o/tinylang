@@ -147,7 +147,6 @@ do {
 ```
 
 ### Referencing Variables
-***Note:**This feature is still a work in progress, so it may not work as intended.*
 ```julia
 # By default, function parameters are immutable, so they cannot
 # be mutated. If they are marked with var, they then become mutable
@@ -186,3 +185,4 @@ fn fibonacci(n: int): int {
 
 ## Builtin Functions
 * println(...) : Variadic function to print values to the console
+* printobj(...) : Variadic function to print more information about values
