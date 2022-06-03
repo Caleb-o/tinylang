@@ -76,7 +76,7 @@ namespace TinyLang {
 				}
 			}
 
-			Error($"Unreachable: unable to find variable '{identifier}'");
+			Error($"unable to find record with variable '{identifier}'");
 			return null;
 		}
 
@@ -87,7 +87,7 @@ namespace TinyLang {
 				return record.members[identifier];
 			}
 
-			Error($"Unreachable: unable to find variable '{identifier}'");
+			Error($"unable to find variable '{identifier}'");
 			return null;
 		}
 
