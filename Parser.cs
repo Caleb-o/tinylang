@@ -77,12 +77,9 @@ namespace TinyLang {
 			return new Var(token);
 		}
 
-		ComplexLiteral TupleLiteral(Block block) {
-			Consume(TokenKind.At);
-
-			List<Node> exprs = new List<Node>();
+		ComplexLiteral TupleLiteral(Block block, Node firstExpr) {
+			List<Node> exprs = new List<Node>() { firstExpr };
 			
-			Consume(TokenKind.OpenParen);
 			while(currentToken.Kind != TokenKind.CloseParen) {
 				exprs.Add(Expr(block));
 				ConsumeIfExists(TokenKind.Comma);
@@ -101,10 +98,6 @@ namespace TinyLang {
 					return new UnaryOp(current, Factor(block));
 				}
 
-				case TokenKind.At: {
-					return TupleLiteral(block);
-				}
-
 				case TokenKind.Int:
 				case TokenKind.Float:
 				case TokenKind.Boolean:
@@ -116,6 +109,12 @@ namespace TinyLang {
 				case TokenKind.OpenParen: {
 					Consume(TokenKind.OpenParen);
 					Node n = Expr(block);
+
+					if (currentToken.Kind == TokenKind.Comma) {
+						Consume(TokenKind.Comma);
+						return TupleLiteral(block, n);
+					}
+
 					Consume(TokenKind.CloseParen);
 					return n;
 				}
