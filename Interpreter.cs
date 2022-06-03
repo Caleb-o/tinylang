@@ -56,7 +56,7 @@ namespace TinyLang {
 					if ((object)record.Value.value != null) {
 						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.kind}] = {record.Value.value}");
 					} else {
-						Console.WriteLine($"{record.Key.PadLeft(16)} = None");
+						Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
 					}
 				}
 			}
