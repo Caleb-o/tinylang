@@ -168,7 +168,7 @@ namespace TinyLang {
 				VisitVarDecl(ifstmt.initStatement);
 			}
 
-			if ((bool)VisitConditionalOp((ConditionalOp)ifstmt.expr).value) {
+			if ((bool)Visit(ifstmt.expr).value) {
 				VisitBlock(ifstmt.trueBody);
 			} else if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
@@ -180,7 +180,7 @@ namespace TinyLang {
 				VisitVarDecl(whilestmt.initStatement);
 			}
 
-			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
+			while ((bool)Visit(whilestmt.expr).value) {
 				VisitBlock(whilestmt.body);
 			}
 		}
@@ -188,7 +188,7 @@ namespace TinyLang {
 		void VisitDoWhile(DoWhile whilestmt) {
 			VisitBlock(whilestmt.body);
 
-			while ((bool)VisitConditionalOp((ConditionalOp)whilestmt.expr).value) {
+			while ((bool)Visit(whilestmt.expr).value) {
 				VisitBlock(whilestmt.body);
 			}
 		}

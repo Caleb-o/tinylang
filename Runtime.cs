@@ -73,6 +73,10 @@ namespace TinyLang {
 				return false;
 			}
 
+			if (typeIDs.Length != other.typeIDs.Length) {
+				return false;
+			}
+
 			for(int idx = 0; idx < typeIDs.Length; idx++) {
 				if (typeIDs[idx] != other.typeIDs[idx]) {
 					return false;

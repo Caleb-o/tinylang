@@ -98,6 +98,16 @@ namespace TinyLang {
 			throw new Exception($"Analyser: {msg} : [{scope.identifier}]");
 		}
 
+		void ErrorWith(string msg, Node node) {
+			Token token = node.token;
+
+			if (token == null) {
+				Error(msg);
+			}
+
+			throw new Exception($"Analyser: {msg} : [{scope.identifier} {token.Column}:{token.Line}]");
+		}
+
 		void ClimbScope() {
 			scope = scope.parent;
 		}
@@ -128,6 +138,15 @@ namespace TinyLang {
 
 				case UnaryOp: {
 					return FindType(((UnaryOp)node).right);
+				}
+
+				case ConditionalOp: {
+					return FindType(((ConditionalOp)node).left);
+				}
+
+				case Index: {
+					// Hack: Indexes do not allow more than one level, so we hardcode a single level
+					return new Type(((Index)node).type.typeIDs[0]);
 				}
 
 				case ComplexLiteral: {
@@ -167,7 +186,24 @@ namespace TinyLang {
 					return null;
 				}
 
+				case ConditionalOp: {
+					ConditionalOp conditional = (ConditionalOp)node;
+					Type left = FindType(conditional.left);
+					Type right = FindType(conditional.right);
+					
+					if (!expects.Matches(left)) {
+						return left;
+					}
+
+					if (!expects.Matches(right)) {
+						return right;
+					}
+
+					return null;
+				}
+
 				case Var:
+				case Index:
 				case UnaryOp:
 				case Literal:
 				case FunctionCall:
@@ -280,6 +316,14 @@ namespace TinyLang {
 			}
 
 			Visit(ifstmt.expr);
+
+			Type expected = FindType(ifstmt.expr);
+			Type realType = ExpectType(ifstmt.expr, expected);
+
+			if (realType != null) {
+				ErrorWith($"If expr expected type {expected} but received {realType}", ifstmt.expr);
+			}
+
 			Visit(ifstmt.trueBody);
 
 			if (ifstmt.falseBody != null) {
@@ -293,11 +337,27 @@ namespace TinyLang {
 			}
 
 			Visit(whilestmt.expr);
+
+			Type expected = FindType(whilestmt.expr);
+			Type realType = ExpectType(whilestmt.expr, expected);
+
+			if (realType != null) {
+				Error($"While expr expected type {expected} but received {realType}");
+			}
+
 			Visit(whilestmt.body);
 		}
 
 		void VisitDoWhile(DoWhile whilestmt) {
 			Visit(whilestmt.expr);
+
+			Type expected = FindType(whilestmt.expr);
+			Type realType = ExpectType(whilestmt.expr, expected);
+
+			if (realType != null) {
+				Error($"Do While expr expected type {expected} but received {realType}");
+			}
+
 			Visit(whilestmt.body);
 		}
 
