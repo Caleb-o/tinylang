@@ -149,6 +149,44 @@ namespace TinyLang {
 			}
 		}
 
+		Type ExpectType(Node node, Type expects) {
+			switch(node) {
+				case BinOp: {
+					BinOp binop = (BinOp)node;
+					Type left = FindType(binop.left);
+					Type right = FindType(binop.right);
+
+					if (!expects.Matches(left)) {
+						return left;
+					}
+
+					if (!expects.Matches(right)) {
+						return right;
+					}
+
+					return null;
+				}
+
+				case Var:
+				case UnaryOp:
+				case Literal:
+				case FunctionCall:
+				case ComplexLiteral: {
+					Type type = FindType(node);
+
+					if (!expects.Matches(type)) {
+						return type;
+					}
+
+					return null;
+				}
+
+				default:
+					Error($"Unknown node in ExpectType {node}");
+					return null;
+			}
+		}
+
 		void Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); break;
@@ -203,6 +241,7 @@ namespace TinyLang {
 			}
 
 			foreach(Node expr in index.exprs) {
+				// Hack: This is the easiest way to check for a type, but it isn't reliable
 				if (FindType(expr).typeIDs[0] != Application.GetTypeID("int")) {
 					Error("Index expected an integer");
 				}
@@ -319,11 +358,10 @@ namespace TinyLang {
 			int current = 0;
 			foreach(Node node in function.arguments) {
 				VarSym parameter = func.parameters[current];
-				Type expected = parameter.type;
-				Type ntype = FindType(node);
+				Type realType = ExpectType(node, parameter.type);
 
-				if (!ntype.Matches(expected)) {
-					Error($"'{function.token.Lexeme}' argument at position {current + 1} expected type {expected} but received {ntype}");
+				if (realType != null) {
+					Error($"'{parameter.identifier}' expected type {parameter.type} but received {realType}");
 				}
 
 				// Incompatible mutability
@@ -363,8 +401,11 @@ namespace TinyLang {
 				// Assign the type from the RHS
 				decl.type = received;
 			}
-			else if (!received.Matches(decl.type)) {
-				Error($"'{decl.identifier}' expected type {decl.type} but received {received}");
+
+			Type realType = ExpectType(decl.expr, received);
+
+			if (realType != null) {
+				Error($"'{decl.identifier}' expected type {decl.type} but received {realType}");
 			}
 
 			scope.Insert(new VarSym(
@@ -390,9 +431,10 @@ namespace TinyLang {
 			// This is required for some nodes to fetch symbols, which are used in FindType
 			Visit(assign.expr);
 
-			Type received = FindType(assign.expr);
-			if (!sym.type.Matches(received)) {
-				Error($"'{identifier}' expected type {sym.type} but received {received}");
+			Type realType = ExpectType(assign.expr, sym.type);
+
+			if (realType != null) {
+				Error($"'{identifier}' expected type {sym.type} but received {realType}");
 			}
 
 			if (!sym.mutable) {
