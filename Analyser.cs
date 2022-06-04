@@ -168,7 +168,7 @@ namespace TinyLang {
 
 				case ComplexLiteral: {
 					ComplexLiteral literal = (ComplexLiteral)node;
-					List<int> typeIDs = new List<int>();
+					List<int> typeIDs = new List<int>() { (int)literal.kind };
 
 					foreach(Node expr in literal.exprs) {
 						// Note: This can probably be more than one in the future,
@@ -223,14 +223,37 @@ namespace TinyLang {
 				case Index:
 				case UnaryOp:
 				case Literal:
-				case FunctionCall:
-				case ComplexLiteral: {
+				case FunctionCall: {
 					Type type = FindType(node);
 
 					if (!expects.Matches(type)) {
 						return type;
 					}
 
+					return null;
+				}
+
+				case ComplexLiteral: {
+					ComplexLiteral literal = (ComplexLiteral)node;
+
+					if (literal.kind == TypeKind.List) {
+						int listType = expects.typeIDs[1];
+
+						foreach(Node expr in literal.exprs) {
+							Type realType = FindType(expr);
+
+							if (!realType.Matches(new Type(listType))) {
+								return realType;
+							}
+						}
+					} else {
+						// Tuple
+						Type type = FindType(node);
+
+						if (!expects.Matches(type)) {
+							return type;
+						}
+					}
 					return null;
 				}
 
@@ -257,12 +280,23 @@ namespace TinyLang {
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
-				case ComplexLiteral: break;
+				case ComplexLiteral: VisitComplexLiteral((ComplexLiteral)node); break;
 				case Index: VisitIndex((Index)node); break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
 
 				default:
 					throw new Exception($"Unimplemented node in analyser: {node.GetType()}");
+			}
+		}
+
+		void VisitComplexLiteral(ComplexLiteral literal) {
+			if (literal.kind == TypeKind.List) {
+				Type first = FindType(literal);
+				Type realType = ExpectType(literal, first);
+
+				if (realType != null) {
+					Error($"List expected type {first} but received {realType}");
+				}
 			}
 		}
 
@@ -276,9 +310,9 @@ namespace TinyLang {
 			Visit(conditional.right);
 			
 			Type left = FindType(conditional.left);
-			Type right = FindType(conditional.right);
+			Type right = ExpectType(conditional.right, left);
 
-			if (!left.Matches(right)) {
+			if (right != null) {
 				Error($"Conditional expected type {left} but received {right}");
 			}
 		}

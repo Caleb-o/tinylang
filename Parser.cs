@@ -77,6 +77,19 @@ namespace TinyLang {
 			return new Var(token);
 		}
 
+		ComplexLiteral ListLiteral(Block block) {
+			Consume(TokenKind.OpenSquare);
+			List<Node> exprs = new List<Node>();
+			
+			while(currentToken.Kind != TokenKind.CloseSquare) {
+				exprs.Add(Expr(block));
+				ConsumeIfExists(TokenKind.Comma);
+			}
+			Consume(TokenKind.CloseSquare);
+
+			return new ComplexLiteral(TypeKind.List, exprs);
+		}
+
 		ComplexLiteral TupleLiteral(Block block, Node firstExpr) {
 			List<Node> exprs = new List<Node>() { firstExpr };
 			
@@ -86,7 +99,7 @@ namespace TinyLang {
 			}
 			Consume(TokenKind.CloseParen);
 
-			return new ComplexLiteral(exprs);
+			return new ComplexLiteral(TypeKind.Tuple, exprs);
 		}
 
 		Node Factor(Block block) {
@@ -104,6 +117,10 @@ namespace TinyLang {
 				case TokenKind.String: {
 					Consume(currentToken.Kind);
 					return new Literal(current);
+				}
+
+				case TokenKind.OpenSquare: {
+					return ListLiteral(block);
 				}
 
 				case TokenKind.OpenParen: {
@@ -273,6 +290,14 @@ namespace TinyLang {
 				Consume(TokenKind.Auto);
 				return new Type(TypeKind.Untyped);
 			}
+			else if (currentToken.Kind == TokenKind.OpenSquare) {
+				Consume(TokenKind.OpenSquare);
+				Token return_identifier = currentToken;
+				Consume(TokenKind.Identifier);
+				Consume(TokenKind.CloseSquare);
+
+				return new Type(new int[]{ (int)TypeKind.List, Application.GetTypeID(return_identifier.Lexeme) });
+			}
 			else if (currentToken.Kind == TokenKind.OpenParen) {
 				List<Token> identifiers = new List<Token>();
 				Consume(TokenKind.OpenParen);
@@ -286,7 +311,7 @@ namespace TinyLang {
 
 				Consume(TokenKind.CloseParen);
 
-				List<int> typeIDs = new List<int>();
+				List<int> typeIDs = new List<int>() { (int)TypeKind.Tuple };
 
 				foreach(Token t in identifiers) {
 					int id = Application.GetTypeID(t.Lexeme);

@@ -51,29 +51,7 @@ namespace TinyLang {
 
 		public static Value PrintLn(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				switch(n.type.GetKind()) {
-					case TypeKind.Tuple: {
-						string outStr = "";
-
-						int idx = 0;
-						List<Value> values = (List<Value>)n.value;
-						foreach(Value value in values) {
-							outStr += value.value;
-
-							if (idx < values.Count - 1) {
-								outStr += ", ";
-							}
-							idx++;
-						}
-						Console.Write($"[{outStr}]");
-						break;
-					}
-
-					default: {
-						Console.Write((n != null) ? n.value : "NONE");
-						break;
-					}
-				}
+				Console.Write((n != null) ? n : "NONE");
 			}
 			Console.WriteLine();
 			return null;
@@ -81,30 +59,7 @@ namespace TinyLang {
 
 		public static Value PrintObj(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				switch(n.type.GetKind()) {
-					case TypeKind.Tuple: {
-						string outStr = "";
-
-						int idx = 0;
-						List<Value> values = (List<Value>)n.value;
-						foreach(Value value in values) {
-							outStr += value.value;
-
-							if (idx < values.Count - 1) {
-								outStr += ", ";
-							}
-							idx++;
-						}
-						Console.WriteLine($"Value [{outStr}] : {n.type.GetKind()}");
-						break;
-					}
-
-					default: {
-						object value = (n != null) ? n.value : "NONE";
-						Console.WriteLine($"Value {value} : {n.type.GetKind()}");
-						break;
-					}
-				}
+				Console.WriteLine($"Value {n} : {n.type.GetKind()}");
 			}
 			return null;
 		}
@@ -241,9 +196,11 @@ namespace TinyLang {
 
 	// Used for literal tuples, lists and dictionaries
 	sealed class ComplexLiteral : Node {
+		public readonly TypeKind kind;
 		public readonly List<Node> exprs;
 
-		public ComplexLiteral(List<Node> exprs) : base(null) {
+		public ComplexLiteral(TypeKind kind, List<Node> exprs) : base(null) {
+			this.kind = kind;
 			this.exprs = exprs;
 		}
 	}

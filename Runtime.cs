@@ -18,7 +18,7 @@ namespace TinyLang {
 	}
 
 	enum TypeKind {
-		Int, Float, Bool, String, Tuple, Untyped,
+		Int, Float, Bool, String, Tuple, List, Untyped,
 	}
 
 	class Type {
@@ -48,15 +48,8 @@ namespace TinyLang {
 		}
 
 		public TypeKind GetKind() {
-			if (typeIDs.Length > 1) {
-				return TypeKind.Tuple;
-			}
-
-			switch(typeIDs[0]) {
-				case (int)TypeKind.Int: 	return TypeKind.Int;
-				case (int)TypeKind.Float: 	return TypeKind.Float;
-				case (int)TypeKind.Bool: 	return TypeKind.Bool;
-				case (int)TypeKind.String: 	return TypeKind.String;
+			if (typeIDs[0] <= (int)TypeKind.List) {
+				return (TypeKind)typeIDs[0];
 			}
 
 			throw new InvalidOperationException($"Unknown kind provided '{typeIDs[0]}'");
@@ -104,8 +97,11 @@ namespace TinyLang {
 				idx++;
 			}
 
-			if (typeIDs.Length > 1) {
+			if (typeIDs[0] == (int)TypeKind.Tuple) {
 				return $"({outstr})";
+			}
+			else if (typeIDs[0] == (int)TypeKind.List) {
+				return $"[{outstr}]";
 			} else {
 				return outstr;
 			}
@@ -144,6 +140,7 @@ namespace TinyLang {
 				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value == (bool)other.value);
 				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value == (string)other.value);
 				
+				case TypeKind.List:
 				case TypeKind.Tuple: {
 					if (!me.type.Matches(other.type)) {
 						return new Value(new Type(TypeKind.Bool), false);
@@ -173,6 +170,7 @@ namespace TinyLang {
 				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value != (bool)other.value);
 				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value != (string)other.value);
 				
+				case TypeKind.List:
 				case TypeKind.Tuple: {
 					if (me.type.Matches(other.type)) {
 						return new Value(new Type(TypeKind.Bool), false);
@@ -197,8 +195,14 @@ namespace TinyLang {
 
 		public static Value operator>(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value > (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value > (float)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value > (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value > (float)other.value);
+				
+				case TypeKind.Tuple:
+				case TypeKind.List: {
+					bool different = ((List<Value>)me.value).Count > ((List<Value>)other.value).Count;
+					return new Value(new Type(TypeKind.Bool), different);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -207,8 +211,14 @@ namespace TinyLang {
 
 		public static Value operator>=(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value >= (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value >= (float)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value >= (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value >= (float)other.value);
+
+				case TypeKind.Tuple:
+				case TypeKind.List: {
+					bool different = ((List<Value>)me.value).Count >= ((List<Value>)other.value).Count;
+					return new Value(new Type(TypeKind.Bool), different);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -217,8 +227,14 @@ namespace TinyLang {
 
 		public static Value operator<(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value < (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value < (float)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value < (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value < (float)other.value);
+
+				case TypeKind.Tuple:
+				case TypeKind.List: {
+					bool different = ((List<Value>)me.value).Count < ((List<Value>)other.value).Count;
+					return new Value(new Type(TypeKind.Bool), different);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -227,8 +243,14 @@ namespace TinyLang {
 
 		public static Value operator<=(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value <= (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value <= (float)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value <= (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value <= (float)other.value);
+
+				case TypeKind.Tuple:
+				case TypeKind.List: {
+					bool different = ((List<Value>)me.value).Count <= ((List<Value>)other.value).Count;
+					return new Value(new Type(TypeKind.Bool), different);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -241,6 +263,17 @@ namespace TinyLang {
 				case TypeKind.Float: 	return new Value(me.type, (float)me.value + (float)other.value);
 				case TypeKind.Bool: 	return other;
 				case TypeKind.String: 	return new Value(me.type, (string)me.value + (string)other.value);
+
+				case TypeKind.Tuple:
+				case TypeKind.List: {
+					List<Value> meList = (List<Value>)me.value;
+					List<Value> otherList = (List<Value>)other.value;
+
+					List<Value> newList = new List<Value>(meList);
+					newList.AddRange(otherList);
+
+					return new Value(me.type, newList);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -288,6 +321,7 @@ namespace TinyLang {
 		public override string ToString()
 		{
 			switch (type.GetKind()) {
+				case TypeKind.List:
 				case TypeKind.Tuple: {
 					string outstr = "";
 
@@ -302,7 +336,7 @@ namespace TinyLang {
 						}
 					}
 
-					return $"({outstr})";
+					return (type.GetKind() == TypeKind.Tuple) ? $"({outstr})" : $"[{outstr}]";
 				}
 
 				default:

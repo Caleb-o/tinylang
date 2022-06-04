@@ -27,7 +27,7 @@ namespace TinyLang {
 				case TypeKind.String: return new Value(new Type(TypeKind.String), "");
 			}
 			
-			throw new InvalidCastException("Unreachable");
+			throw new InvalidCastException($"Type {(TypeKind)typeID} does not support a default value");
 		}
 
 		Value DefaultValue(Return ret) {
@@ -307,13 +307,13 @@ namespace TinyLang {
 
 		Value VisitComplexLiteral(ComplexLiteral literal) {
 			List<Value> values = new List<Value>();
-			List<int> typeIDs = new List<int>();
+			List<int> typeIDs = new List<int>() { (int)literal.kind };
 
 			foreach(Node expr in literal.exprs) {
 				Value val = Visit(expr);
 				values.Add(val);
 				// FIXME: Allow nested types
-				typeIDs.Add((int)val.type.GetKind());
+				typeIDs.Add((int)val.type.typeIDs[0]);
 			}
 
 			return new Value(new Type(typeIDs.ToArray()), values);
