@@ -40,7 +40,11 @@ namespace TinyLang {
 			List<Value> values = new List<Value>();
 
 			foreach(int typeID in ret.type.typeIDs) {
-				values.Add(GetDefaultSingle(typeID));
+				if (typeID == (int)TypeKind.Tuple || typeID == (int)TypeKind.List) {
+					continue;
+				} else {
+					values.Add(GetDefaultSingle(typeID));
+				}
 			}
 
 			return new Value(new Type(ret.type.typeIDs), values);
