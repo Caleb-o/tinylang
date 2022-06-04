@@ -344,16 +344,22 @@ namespace TinyLang {
 		}
 	}
 
+	class Scope {
+		public Dictionary<string, VarSym> members = new Dictionary<string, VarSym>();
+	}
+
 	class ActivationRecord {
 		public readonly string identifier; 
 		public readonly RecordType type;
-		public readonly int scopeLevel;
-		public Dictionary<string, VarSym> members = new Dictionary<string, VarSym>();
+		public readonly int depth;
+		public List<Scope> scope = new List<Scope>();
 
-		public ActivationRecord(string identifier, RecordType type, int scopeLevel) {
+		public ActivationRecord(string identifier, RecordType type, int depth) {
 			this.identifier = identifier;
 			this.type = type;
-			this.scopeLevel = scopeLevel;
+			this.depth = depth;
+
+			scope.Add(new Scope());
 		}
 	}
 

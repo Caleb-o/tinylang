@@ -55,11 +55,13 @@ namespace TinyLang {
 			for(int i = callStack.stack.Count - 1; i >= 0; i--) {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
 
-				foreach(var record in callStack.stack[i].members) {
-					if (record.Value.value != null) {
-						Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");
-					} else {
-						Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
+				for(int scope = callStack.stack[i].scope.Count - 1; scope >= 0; scope--) {
+					foreach(var record in callStack.stack[i].scope[scope].members) {
+						if (record.Value.value != null) {
+							Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");
+						} else {
+							Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
+						}
 					}
 				}
 			}
@@ -74,10 +76,12 @@ namespace TinyLang {
 		}
 
 		// Finds the closest AR that contains a member with the identifier
-		ActivationRecord ResolveRecord(string identifier, int offset = 0) {
+		Scope ResolveRecord(string identifier, int offset = 0) {
 			for(int i = callStack.stack.Count - (offset + 1); i >= 0; i--) {
-				if (callStack.stack[i].members.ContainsKey(identifier)) {
-					return callStack.stack[i];
+				for(int scope = callStack.stack[i].scope.Count - 1; scope >= 0; scope--) {
+					if (callStack.stack[i].scope[scope].members.ContainsKey(identifier)) {
+						return callStack.stack[i].scope[scope];
+					}
 				}
 			}
 
@@ -86,7 +90,7 @@ namespace TinyLang {
 		}
 
 		VarSym ResolveVar(string identifier, int offset = 0) {
-			ActivationRecord record = ResolveRecord(identifier);
+			Scope record = ResolveRecord(identifier);
 
 			if (record != null) {
 				return record.members[identifier];
@@ -158,9 +162,13 @@ namespace TinyLang {
 		}
 
 		void VisitBlock(Block block) {
+			callStack.stack[^1].scope.Add(new Scope());
+
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+
+			callStack.stack[^1].scope.Remove(callStack.stack[^1].scope[^1]);
 		}
 
 		// http://craftinginterpreters.com/functions.html#return-statements
@@ -200,8 +208,8 @@ namespace TinyLang {
 		}
 
 		void VisitVarDecl(VarDecl decl) {
-			callStack.stack[^1].members[decl.identifier] = new VarSym(decl.identifier, decl.type, decl.mutable);
-			callStack.stack[^1].members[decl.identifier].value = Visit(decl.expr);
+			callStack.stack[^1].scope[^1].members[decl.identifier] = new VarSym(decl.identifier, decl.type, decl.mutable);
+			callStack.stack[^1].scope[^1].members[decl.identifier].value = Visit(decl.expr);
 		}
 
 		void VisitAssignment(Assignment assign) {
@@ -228,7 +236,7 @@ namespace TinyLang {
 			ActivationRecord fnscope = new ActivationRecord(
 				function.token.Lexeme,
 				RecordType.Function,
-				callStack.stack[^1].scopeLevel + 1
+				callStack.stack[^1].depth + 1
 			);
 
 			int idx = 0;
@@ -236,8 +244,8 @@ namespace TinyLang {
 				string identifier = function.sym.parameters[idx].identifier;
 				VarSym parameter = function.sym.parameters[idx];
 				// We must use a new VarSym in the scope, otherwise issues occur
-				fnscope.members[identifier] = new VarSym(parameter.identifier, parameter.type, parameter.mutable);
-				fnscope.members[identifier].value = Visit(arg);
+				fnscope.scope[^1].members[identifier] = new VarSym(parameter.identifier, parameter.type, parameter.mutable);
+				fnscope.scope[^1].members[identifier].value = Visit(arg);
 				
 				if (arg is Var) {
 					VarSym variable = ResolveVar(arg.token.Lexeme);	
@@ -246,7 +254,7 @@ namespace TinyLang {
 						variable = variable.references;
 					}
 
-					fnscope.members[
+					fnscope.scope[^1].members[
 						function.sym.parameters[idx].identifier
 					].references = variable;
 				}
@@ -256,12 +264,12 @@ namespace TinyLang {
 			
 			// Insert an implicit return value
 			if (function.sym.def.returnType != null) {
-				fnscope.members["result"] = new VarSym("result", function.sym.def.returnType.type, true);
+				fnscope.scope[^1].members["result"] = new VarSym("result", function.sym.def.returnType.type, true);
 
 				if (function.sym.def.returnType.expr != null) {
-					fnscope.members["result"].value = Visit(function.sym.def.returnType.expr);
+					fnscope.scope[^1].members["result"].value = Visit(function.sym.def.returnType.expr);
 				} else {
-					fnscope.members["result"].value = DefaultValue(function.sym.def.returnType);
+					fnscope.scope[^1].members["result"].value = DefaultValue(function.sym.def.returnType);
 				}
 			}
 
@@ -275,7 +283,7 @@ namespace TinyLang {
 			Value result = null;
 
 			if (function.sym.def.returnType != null) {
-				result = fnscope.members["result"].value;
+				result = fnscope.scope[^1].members["result"].value;
 			}
 			callStack.stack.Remove(fnscope);
 
