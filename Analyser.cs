@@ -237,13 +237,17 @@ namespace TinyLang {
 					ComplexLiteral literal = (ComplexLiteral)node;
 
 					if (literal.kind == TypeKind.List) {
-						int listType = expects.typeIDs[1];
+						// Only having the list as an ID is an untyped list
+						// Which means it can be bound to anything
+						if (expects.typeIDs.Length > 1) {
+							int listType = expects.typeIDs[1];
 
-						foreach(Node expr in literal.exprs) {
-							Type realType = FindType(expr);
+							foreach(Node expr in literal.exprs) {
+								Type realType = FindType(expr);
 
-							if (!realType.Matches(new Type(listType))) {
-								return realType;
+								if (!realType.Matches(new Type(listType))) {
+									return realType;
+								}
 							}
 						}
 					} else {
