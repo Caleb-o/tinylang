@@ -4,26 +4,49 @@ using System.Collections.Generic;
 namespace TinyLang {
 	sealed class BuiltinFn {
 		public readonly Builtins.Fn function;
+		public readonly Type[] required;
 		public readonly int parity;
 
-		public BuiltinFn(Builtins.Fn function, int parity) {
+		public BuiltinFn(Builtins.Fn function, Type[] required, int parity) {
 			this.function = function;
+			this.required = required;
 			this.parity = parity;
 		}
 	}
 
 	static class Builtins {
 		public delegate Value Fn(List<Value> arguments);
-		public static Dictionary<string, BuiltinFn> Functions = new Dictionary<string, BuiltinFn>() {
-			{ "println", new BuiltinFn(PrintLn, -1) },
-			{ "printobj", new BuiltinFn(PrintObj, -1) },
-		};
+		public static Dictionary<string, BuiltinFn> Functions;
 
 		public static void InitTypes() {
 			Application.GetTypeID("int");
 			Application.GetTypeID("float");
 			Application.GetTypeID("boolean");
 			Application.GetTypeID("string");
+		}
+
+		public static void InitBuiltins() {
+			Functions = new Dictionary<string, BuiltinFn>() {
+				{ "println", new BuiltinFn(PrintLn, null, -1) },
+				{ "printobj", new BuiltinFn(PrintObj, null, -1) },
+				{ 
+					"assert", new BuiltinFn(Assert, new Type[] {
+						new Type(new int[] { 
+							Application.GetTypeID("string"),
+						}),
+						new Type(new int[] { 
+							Application.GetTypeID("boolean")
+						}),
+					}, 2)
+				},
+			};
+		}
+
+		public static Value Assert(List<Value> arguments) {
+			if (!(bool)arguments[1].value) {
+				throw new Exception($"Assertion Failed: {(string)arguments[0].value}");
+			}
+			return null;
 		}
 
 		public static Value PrintLn(List<Value> arguments) {

@@ -8,6 +8,11 @@ namespace TinyLang {
 		public EscapeException() {}
 	}
 
+	public class AssertionException : Exception
+	{
+		public AssertionException() {}
+	}
+
 	enum RecordType {
 		Program, Function,
 	}

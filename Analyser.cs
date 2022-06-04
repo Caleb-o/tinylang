@@ -445,7 +445,7 @@ namespace TinyLang {
 				Type realType = ExpectType(node, parameter.type);
 
 				if (realType != null) {
-					Error($"'{parameter.identifier}' expected type {parameter.type} but received {realType}");
+					Error($"'{parameter.identifier}' expected type {parameter.type} but received {realType} at position {current+1}");
 				}
 
 				// Incompatible mutability
@@ -467,9 +467,18 @@ namespace TinyLang {
 				Error($"Builtin function '{builtin.identifier}' expected {builtin.native.parity} argument(s) but received {builtin.arguments.Count}");
 			}
 
-			// TODO: Typecheck builtin function arguments
+			int idx = 0;
 			foreach(Node node in builtin.arguments) {
 				Visit(node);
+
+				if (idx < builtin.native.parity) {
+					Type realType = ExpectType(node, builtin.native.required[idx]);
+
+					if (realType != null) {
+						ErrorWith($"'{builtin.identifier}' expected type {builtin.native.required[idx]} but received {realType} at position {idx+1}", node);
+					}
+					idx++;
+				}
 			}
 		}
 

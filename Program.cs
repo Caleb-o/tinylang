@@ -13,6 +13,8 @@ namespace TinyLang {
 
 			try {
 				Builtins.InitTypes();
+				Builtins.InitBuiltins();
+
 				Application app = parser.Parse();
 				
 				Analyser analyser = new Analyser();
@@ -22,7 +24,7 @@ namespace TinyLang {
 				interpreter.Run(app);
 			} catch(Exception e) {
 				Console.WriteLine($"Error: {e.Message}");
-				Console.WriteLine($"Trace: {e.StackTrace}");
+				// Console.WriteLine($"Trace: {e.StackTrace}");
 			}
 		}
 	}
