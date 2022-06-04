@@ -264,7 +264,6 @@ namespace TinyLang {
 				case TypeKind.Bool: 	return other;
 				case TypeKind.String: 	return new Value(me.type, (string)me.value + (string)other.value);
 
-				case TypeKind.Tuple:
 				case TypeKind.List: {
 					List<Value> meList = (List<Value>)me.value;
 					List<Value> otherList = (List<Value>)other.value;

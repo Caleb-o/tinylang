@@ -19,10 +19,10 @@ namespace TinyLang {
 		public static Dictionary<string, BuiltinFn> Functions;
 
 		public static void InitTypes() {
-			Application.GetTypeID("int");
-			Application.GetTypeID("float");
-			Application.GetTypeID("boolean");
-			Application.GetTypeID("string");
+			Application.InsertTypeID("int");
+			Application.InsertTypeID("float");
+			Application.InsertTypeID("boolean");
+			Application.InsertTypeID("string");
 		}
 
 		public static void InitBuiltins() {
@@ -308,14 +308,23 @@ namespace TinyLang {
 			return literals[lexeme];
 		}
 
+		public static void InsertTypeID(string identifier) {
+			if (typeIDs.ContainsKey(identifier)) {
+				throw new Exception($"Type identifier '{identifier}' already exists");
+			}
+
+			typeNames[TypeIdCounter] = identifier;
+			typeIDs[identifier] = TypeIdCounter;
+
+			TypeIdCounter++;
+		}
+
 		public static int GetTypeID(string identifier) {
 			if (typeIDs.ContainsKey(identifier)) {
 				return typeIDs[identifier];
 			}
 
-			typeNames[TypeIdCounter] = identifier;
-			typeIDs[identifier] = TypeIdCounter;
-			return TypeIdCounter++;
+			throw new Exception($"Type identifier '{identifier}' does not exist");
 		}
 
 		public static string GetTypeName(int typeID) {

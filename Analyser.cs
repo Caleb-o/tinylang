@@ -190,13 +190,13 @@ namespace TinyLang {
 				case BinOp: {
 					BinOp binop = (BinOp)node;
 					Type left = FindType(binop.left);
-					Type right = FindType(binop.right);
+					Type right = ExpectType(binop.right, left);
 
 					if (!expects.Matches(left)) {
 						return left;
 					}
 
-					if (!expects.Matches(right)) {
+					if (right != null) {
 						return right;
 					}
 
@@ -244,11 +244,11 @@ namespace TinyLang {
 
 							foreach(Node expr in literal.exprs) {
 								Type realType = FindType(expr);
-
 								if (!realType.Matches(new Type(listType))) {
 									return realType;
 								}
 							}
+
 						}
 					} else {
 						// Tuple
@@ -284,7 +284,8 @@ namespace TinyLang {
 				case ConditionalOp: VisitConditionalOp((ConditionalOp)node); break;
 
 				case Literal: break;
-				case ComplexLiteral: VisitComplexLiteral((ComplexLiteral)node); break;
+				// case ComplexLiteral: VisitComplexLiteral((ComplexLiteral)node); break;
+				case ComplexLiteral: break;
 				case Index: VisitIndex((Index)node); break;
 				case UnaryOp: Visit(((UnaryOp)node).right); break;
 
@@ -293,20 +294,22 @@ namespace TinyLang {
 			}
 		}
 
-		void VisitComplexLiteral(ComplexLiteral literal) {
-			if (literal.kind == TypeKind.List) {
-				Type first = FindType(literal);
-				Type realType = ExpectType(literal, first);
-
-				if (realType != null) {
-					Error($"List expected type {first} but received {realType}");
-				}
-			}
-		}
-
 		void VisitBinOp(BinOp binop) {
 			Visit(binop.left);
 			Visit(binop.right);
+
+			Type left = FindType(binop.left);
+
+			// The one exception
+			if (left.typeIDs[0] == (int)TypeKind.Tuple) {
+				return;
+			}
+
+			Type realType = ExpectType(binop.right, left);
+
+			if (realType != null) {
+				Error($"Binary operation expected type {left} but received {realType}");
+			}
 		}
 
 		void VisitConditionalOp(ConditionalOp conditional) {
@@ -527,13 +530,12 @@ namespace TinyLang {
 
 			Visit(decl.expr);
 
-			Type received = FindType(decl.expr);
 			if (decl.type.IsUntyped()) {
 				// Assign the type from the RHS
-				decl.type = received;
+				decl.type = FindType(decl.expr);
 			}
 
-			Type realType = ExpectType(decl.expr, received);
+			Type realType = ExpectType(decl.expr, decl.type);
 
 			if (realType != null) {
 				Error($"'{decl.identifier}' expected type {decl.type} but received {realType}");
