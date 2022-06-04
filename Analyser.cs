@@ -145,8 +145,25 @@ namespace TinyLang {
 				}
 
 				case Index: {
-					// Hack: Indexes do not allow more than one level, so we hardcode a single level
-					return new Type(((Index)node).type.typeIDs[0]);
+					// Hack: Trying to evaluate an index by interpreting it
+					if (((Index)node).exprs[0] is not Literal) {
+						ErrorWith("Indexing can only use literals currently", ((Index)node).exprs[0]);
+					}
+
+					Interpreter interpreter = new Interpreter();
+					Value index = interpreter.Visit(((Index)node).exprs[0]);
+
+					if (!index.type.Matches(new Type(TypeKind.Int))) {
+						Error($"Index expected an integer but received {index.type}");
+					}
+
+					int indexValue = (int)index.value;
+
+					if (indexValue < 0 || indexValue >= ((Index)node).type.typeIDs.Length) {
+						Error($"Index out of range: {indexValue}");
+					}
+
+					return new Type(((Index)node).type.typeIDs[indexValue]);
 				}
 
 				case ComplexLiteral: {
@@ -489,12 +506,13 @@ namespace TinyLang {
 			}
 
 			// This is required for some nodes to fetch symbols, which are used in FindType
+			Visit(assign.identifier);
 			Visit(assign.expr);
 
-			Type realType = ExpectType(assign.expr, sym.type);
+			Type realType = ExpectType(assign.expr, FindType(assign.identifier));
 
 			if (realType != null) {
-				Error($"'{identifier}' expected type {sym.type} but received {realType}");
+				Error($"Variable '{identifier}' expected type {sym.type} but received {realType}");
 			}
 
 			if (!sym.mutable) {

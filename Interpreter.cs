@@ -64,7 +64,9 @@ namespace TinyLang {
 
 		void Error(string msg) {
 			PrintCallStack();
-			throw new InvalidOperationException($"Runtime: {msg} [{callStack.stack[^1].identifier}]");
+
+			string identifier = (callStack.stack.Count > 0) ? callStack.stack[^1].identifier : "None";
+			throw new InvalidOperationException($"Runtime: {msg} [{identifier}]");
 		}
 
 		// Finds the closest AR that contains a member with the identifier
@@ -90,7 +92,7 @@ namespace TinyLang {
 			return null;
 		}
 
-		Value Visit(Node node) {
+		public Value Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); return null;
 				case BinOp: return VisitBinOp((BinOp)node);
@@ -212,12 +214,7 @@ namespace TinyLang {
 				// Indexing
 				Index index = (Index)assign.identifier;
 				int indexValue = GetIndexValue((Index)index);
-
 				List<Value> values = (List<Value>)variable.value.value;
-
-				if (indexValue < 0 || indexValue > values.Count - 1) {
-					Error($"Index out of bounds on '{identifier}'. Indexing with {indexValue} where the length is {values.Count}");
-				}
 
 				values[indexValue] = Visit(assign.expr);
 			}

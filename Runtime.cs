@@ -134,10 +134,27 @@ namespace TinyLang {
 
 		public static Value EqualityEqual(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value == (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value == (float)other.value);
-				case TypeKind.Bool: 	return new Value(me.type, (bool)me.value == (bool)other.value);
-				case TypeKind.String: 	return new Value(me.type, (string)me.value == (string)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value == (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value == (float)other.value);
+				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value == (bool)other.value);
+				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value == (string)other.value);
+				
+				case TypeKind.Tuple: {
+					if (!me.type.Matches(other.type)) {
+						return new Value(new Type(TypeKind.Bool), false);
+					}
+
+					List<Value> meValues = (List<Value>)me.value;
+					List<Value> otherValues = (List<Value>)other.value;
+
+					for(int idx = 0; idx < meValues.Count; idx++) {
+						if ((bool)Value.EqualityNotEqual(meValues[idx], otherValues[idx]).value) {
+							return new Value(new Type(TypeKind.Bool), false);
+						}
+					}
+
+					return new Value(new Type(TypeKind.Bool), true);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -146,10 +163,27 @@ namespace TinyLang {
 
 		public static Value EqualityNotEqual(Value me, Value other) {
 			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value != (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value != (float)other.value);
-				case TypeKind.Bool: 	return new Value(me.type, (bool)me.value != (bool)other.value);
-				case TypeKind.String: 	return new Value(me.type, (string)me.value != (string)other.value);
+				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value != (int)other.value);
+				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value != (float)other.value);
+				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value != (bool)other.value);
+				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value != (string)other.value);
+				
+				case TypeKind.Tuple: {
+					if (me.type.Matches(other.type)) {
+						return new Value(new Type(TypeKind.Bool), false);
+					}
+
+					List<Value> meValues = (List<Value>)me.value;
+					List<Value> otherValues = (List<Value>)other.value;
+
+					for(int idx = 0; idx < meValues.Count; idx++) {
+						if ((bool)Value.EqualityEqual(meValues[idx], otherValues[idx]).value) {
+							return new Value(new Type(TypeKind.Bool), false);
+						}
+					}
+
+					return new Value(new Type(TypeKind.Bool), true);
+				}
 				
 				// This should be unreachable
 				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
