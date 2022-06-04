@@ -15,7 +15,13 @@ namespace TinyLang {
 				"global", RecordType.Program, 0
 			));
 
-			Visit(app.block);
+			try {
+				Visit(app.block);
+			} catch (AssertionException assert) {
+				Console.WriteLine(assert.Message);
+				PrintCallStack();
+			}
+			
 			callStack.stack.Remove(callStack.stack[^1]);
 		}
 
@@ -56,6 +62,8 @@ namespace TinyLang {
 				Console.WriteLine($"[{i}] {callStack.stack[i].identifier}");
 
 				for(int scope = callStack.stack[i].scope.Count - 1; scope >= 0; scope--) {
+					Console.WriteLine($"  [{scope}] block");
+
 					foreach(var record in callStack.stack[i].scope[scope].members) {
 						if (record.Value.value != null) {
 							Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");

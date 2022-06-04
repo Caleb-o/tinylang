@@ -44,7 +44,7 @@ namespace TinyLang {
 
 		public static Value Assert(List<Value> arguments) {
 			if (!(bool)arguments[1].value) {
-				throw new Exception($"Assertion Failed: {(string)arguments[0].value}");
+				throw new AssertionException($"Assertion Failed: {(string)arguments[0].value}");
 			}
 			return null;
 		}

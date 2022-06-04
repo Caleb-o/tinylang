@@ -10,7 +10,7 @@ namespace TinyLang {
 
 	public class AssertionException : Exception
 	{
-		public AssertionException() {}
+		public AssertionException(string message) : base(message) {}
 	}
 
 	enum RecordType {
