@@ -274,6 +274,13 @@ namespace TinyLang {
 		void VisitConditionalOp(ConditionalOp conditional) {
 			Visit(conditional.left);
 			Visit(conditional.right);
+			
+			Type left = FindType(conditional.left);
+			Type right = FindType(conditional.right);
+
+			if (!left.Matches(right)) {
+				Error($"Conditional expected type {left} but received {right}");
+			}
 		}
 
 		void VisitVar(Var var) {
