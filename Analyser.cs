@@ -124,7 +124,7 @@ namespace TinyLang {
 					if (def.returnType != null) {
 						return def.returnType.type;
 					} else {
-						return new Type();
+						return null;
 					}
 				}
 
@@ -133,7 +133,7 @@ namespace TinyLang {
 				}
 
 				case Literal: {
-					return new Type(Type.FromToken(node.token.Kind));
+					return new Type(Value.TypeFromToken(node.token.Kind));
 				}
 
 				case UnaryOp: {
@@ -150,33 +150,28 @@ namespace TinyLang {
 						ErrorWith("Indexing can only use literals currently", ((Index)node).exprs[0]);
 					}
 
+					// FIXME: Replace with an evaluator instead of interpreting
 					Interpreter interpreter = new Interpreter();
 					Value index = interpreter.Visit(((Index)node).exprs[0]);
 
-					if (!index.type.Matches(new Type(TypeKind.Int))) {
-						Error($"Index expected an integer but received {index.type}");
+					if (index.Kind.Kind == TypeKind.Int) {
+						Error($"Index expected an integer but received {index.Kind}");
 					}
 
-					int indexValue = (int)index.value;
-
-					if (indexValue < 0 || indexValue >= ((Index)node).type.typeIDs.Length) {
-						Error($"Index out of range: {indexValue}");
-					}
-
-					return new Type(((Index)node).type.typeIDs[indexValue]);
+					return ((Index)node).type;
 				}
 
 				case ComplexLiteral: {
 					ComplexLiteral literal = (ComplexLiteral)node;
-					List<int> typeIDs = new List<int>() { (int)literal.kind };
+					List<TypeKind> typeIDs = new List<TypeKind>();
 
 					foreach(Node expr in literal.exprs) {
 						// Note: This can probably be more than one in the future,
 						// 		 so a better method may be required
-						typeIDs.Add((int)FindType(expr).GetKind());
+						typeIDs.Add(FindType(expr).Kind);
 					}
 
-					return new Type(typeIDs.ToArray());
+					return new Type(literal.kind.Kind, typeIDs.ToArray());
 				}
 
 				default:
@@ -189,6 +184,7 @@ namespace TinyLang {
 			switch(node) {
 				case BinOp: {
 					BinOp binop = (BinOp)node;
+					// FIXME
 					Type left = FindType(binop.left);
 					Type right = ExpectType(binop.right, left);
 
@@ -236,11 +232,11 @@ namespace TinyLang {
 				case ComplexLiteral: {
 					ComplexLiteral literal = (ComplexLiteral)node;
 
-					if (literal.kind == TypeKind.List) {
+					if (literal.kind.Kind == TypeKind.List) {
 						// Only having the list as an ID is an untyped list
 						// Which means it can be bound to anything
-						if (expects.typeIDs.Length > 1) {
-							int listType = expects.typeIDs[1];
+						if (expects.SubKind.Length > 1) {
+							TypeKind listType = expects.SubKind[0];
 
 							foreach(Node expr in literal.exprs) {
 								Type realType = FindType(expr);
@@ -301,7 +297,7 @@ namespace TinyLang {
 			Type left = FindType(binop.left);
 
 			// The one exception
-			if (left.typeIDs[0] == (int)TypeKind.Tuple) {
+			if (left.Kind == TypeKind.Tuple) {
 				return;
 			}
 
@@ -337,13 +333,13 @@ namespace TinyLang {
 				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
 			}
 
-			if (index.exprs.Count > variable.type.typeIDs.Length) {
-				Error($"Variable '{index.token.Lexeme}' is trying to access {index.exprs.Count} levels, when only {variable.type.typeIDs.Length} exist");
+			if (index.exprs.Count > variable.type.SubKind.Length) {
+				Error($"Variable '{index.token.Lexeme}' is trying to access {index.exprs.Count} levels, when only {variable.type.SubKind.Length} exist");
 			}
 
 			foreach(Node expr in index.exprs) {
 				// Hack: This is the easiest way to check for a type, but it isn't reliable
-				if (FindType(expr).typeIDs[0] != Application.GetTypeID("int")) {
+				if (FindType(expr).Kind != TypeKind.Int) {
 					Error("Index expected an integer");
 				}
 
@@ -530,7 +526,7 @@ namespace TinyLang {
 
 			Visit(decl.expr);
 
-			if (decl.type.IsUntyped()) {
+			if (decl.type.Kind == TypeKind.Untyped) {
 				// Assign the type from the RHS
 				decl.type = FindType(decl.expr);
 			}

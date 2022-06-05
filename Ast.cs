@@ -18,33 +18,24 @@ namespace TinyLang {
 		public delegate Value Fn(List<Value> arguments);
 		public static Dictionary<string, BuiltinFn> Functions;
 
-		public static void InitTypes() {
-			Application.InsertTypeID("int");
-			Application.InsertTypeID("float");
-			Application.InsertTypeID("boolean");
-			Application.InsertTypeID("string");
-		}
-
 		public static void InitBuiltins() {
 			Functions = new Dictionary<string, BuiltinFn>() {
 				{ "println", new BuiltinFn(PrintLn, null, -1) },
 				{ "printobj", new BuiltinFn(PrintObj, null, -1) },
 				{ 
-					"assert", new BuiltinFn(Assert, new Type[] {
-						new Type(new int[] { 
-							Application.GetTypeID("string"),
-						}),
-						new Type(new int[] { 
-							Application.GetTypeID("boolean")
-						}),
-					}, 2)
+					"assert", new BuiltinFn(Assert,
+						new Type[] { 
+							new Type(TypeKind.String),
+						}
+						, 2
+					)
 				},
 			};
 		}
 
 		public static Value Assert(List<Value> arguments) {
-			if (!(bool)arguments[1].value) {
-				throw new AssertionException($"Assertion Failed: {(string)arguments[0].value}");
+			if (!(bool)arguments[1].Data) {
+				throw new AssertionException($"Assertion Failed: {(string)arguments[0].Data}");
 			}
 			return null;
 		}
@@ -59,7 +50,7 @@ namespace TinyLang {
 
 		public static Value PrintObj(List<Value> arguments) {
 			foreach(Value n in arguments) {
-				Console.WriteLine($"Value {n} : {n.type.GetKind()}");
+				Console.WriteLine($"Value {n} : {n.Kind}");
 			}
 			return null;
 		}
@@ -196,10 +187,10 @@ namespace TinyLang {
 
 	// Used for literal tuples, lists and dictionaries
 	sealed class ComplexLiteral : Node {
-		public readonly TypeKind kind;
+		public readonly Type kind;
 		public readonly List<Node> exprs;
 
-		public ComplexLiteral(TypeKind kind, List<Node> exprs) : base(null) {
+		public ComplexLiteral(Type kind, List<Node> exprs) : base(null) {
 			this.kind = kind;
 			this.exprs = exprs;
 		}
@@ -292,43 +283,20 @@ namespace TinyLang {
 				return literals[lexeme];
 			}
 
-			object value = null;
+			Value value;
 
 			switch(kind) {
-				case TypeKind.Int:			value = int.Parse(lexeme); break;
-				case TypeKind.Float:		value = float.Parse(lexeme); break;
-				case TypeKind.Bool:			value = bool.Parse(lexeme); break;
-				case TypeKind.String:		value = lexeme; break;
+				case TypeKind.Int:			value = new IntValue(int.Parse(lexeme)); break;
+				case TypeKind.Float:		value = new FloatValue(float.Parse(lexeme)); break;
+				case TypeKind.Bool:			value = new BoolValue(bool.Parse(lexeme)); break;
+				case TypeKind.String:		value = new StringValue(lexeme); break;
 
 				default:
 					throw new InvalidOperationException($"Unknown literal type {kind}");
 			}
 
-			literals[lexeme] = new Value(new Type(kind), value);
+			literals[lexeme] = value;
 			return literals[lexeme];
-		}
-
-		public static void InsertTypeID(string identifier) {
-			if (typeIDs.ContainsKey(identifier)) {
-				throw new Exception($"Type identifier '{identifier}' already exists");
-			}
-
-			typeNames[TypeIdCounter] = identifier;
-			typeIDs[identifier] = TypeIdCounter;
-
-			TypeIdCounter++;
-		}
-
-		public static int GetTypeID(string identifier) {
-			if (typeIDs.ContainsKey(identifier)) {
-				return typeIDs[identifier];
-			}
-
-			throw new Exception($"Type identifier '{identifier}' does not exist");
-		}
-
-		public static string GetTypeName(int typeID) {
-			return typeNames.GetValueOrDefault(typeID, "None");
 		}
 	}
 }

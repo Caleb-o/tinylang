@@ -87,7 +87,7 @@ namespace TinyLang {
 			}
 			Consume(TokenKind.CloseSquare);
 
-			return new ComplexLiteral(TypeKind.List, exprs);
+			return new ComplexLiteral(new Type(TypeKind.List), exprs);
 		}
 
 		ComplexLiteral TupleLiteral(Block block, Node firstExpr) {
@@ -99,7 +99,7 @@ namespace TinyLang {
 			}
 			Consume(TokenKind.CloseParen);
 
-			return new ComplexLiteral(TypeKind.Tuple, exprs);
+			return new ComplexLiteral(new Type(TypeKind.Tuple), exprs);
 		}
 
 		Node Factor(Block block) {
@@ -267,7 +267,7 @@ namespace TinyLang {
 			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
 			Consume(TokenKind.CloseParen);
 
-			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type()));
+			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type(TypeKind.Untyped)));
 		}
 
 		void Escape(Block block) {
@@ -296,7 +296,7 @@ namespace TinyLang {
 				Consume(TokenKind.Identifier);
 				Consume(TokenKind.CloseSquare);
 
-				return new Type(new int[]{ (int)TypeKind.List, Application.GetTypeID(return_identifier.Lexeme) });
+				return new Type(TypeKind.List, Value.TypeFromStr(return_identifier.Lexeme));
 			}
 			else if (currentToken.Kind == TokenKind.OpenParen) {
 				List<Token> identifiers = new List<Token>();
@@ -311,19 +311,19 @@ namespace TinyLang {
 
 				Consume(TokenKind.CloseParen);
 
-				List<int> typeIDs = new List<int>() { (int)TypeKind.Tuple };
+				List<TypeKind> typeIDs = new List<TypeKind>();
 
 				foreach(Token t in identifiers) {
-					int id = Application.GetTypeID(t.Lexeme);
+					TypeKind id = Value.TypeFromStr(t.Lexeme);
 					typeIDs.Add(id);
 				}
 
-				return new Type(typeIDs.ToArray());
+				return new Type(TypeKind.Tuple, typeIDs.ToArray());
 			} else {
 				Token return_identifier = currentToken;
 				Consume(TokenKind.Identifier);
 
-				return new Type(Application.GetTypeID(return_identifier.Lexeme));
+				return new Type(Value.TypeFromStr(return_identifier.Lexeme));
 			}
 		}
 

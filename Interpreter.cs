@@ -25,35 +25,40 @@ namespace TinyLang {
 			callStack.stack.Remove(callStack.stack[^1]);
 		}
 
-		Value GetDefaultSingle(int typeID) {
-			switch((TypeKind)typeID) {
-				case TypeKind.Int: return new Value(new Type(TypeKind.Int), 0);
-				case TypeKind.Float: return new Value(new Type(TypeKind.Float), 0.0f);
-				case TypeKind.Bool: return new Value(new Type(TypeKind.Bool), false);
-				case TypeKind.String: return new Value(new Type(TypeKind.String), "");
+		Value GetDefaultSingle(TypeKind typeID) {
+			switch(typeID) {
+				case TypeKind.Int: return new IntValue(0);
+				case TypeKind.Float: return new FloatValue(0.0f);
+				case TypeKind.Bool: return new BoolValue(false);
+				case TypeKind.String: return new StringValue("");
 			}
 			
-			throw new InvalidCastException($"Type {(TypeKind)typeID} does not support a default value");
+			throw new InvalidCastException($"TypeKind {(TypeKind)typeID} does not support a default value");
 		}
 
 		Value DefaultValue(Return ret) {
 			// TODO: If return is a record/struct, then return a Visit on a mandatory
 			// constructor for the type
-			if (ret.type.IsSingleType()) {
-				return GetDefaultSingle(ret.type.typeIDs[0]);
+			if (ret.type.SubKind == null) {
+				return GetDefaultSingle(ret.type.Kind);
 			}
 
 			List<Value> values = new List<Value>();
 
-			foreach(int typeID in ret.type.typeIDs) {
-				if (typeID == (int)TypeKind.Tuple || typeID == (int)TypeKind.List) {
-					continue;
-				} else {
-					values.Add(GetDefaultSingle(typeID));
-				}
+			foreach(TypeKind typeID in ret.type.SubKind) {
+				values.Add(GetDefaultSingle(typeID));
 			}
 
-			return new Value(new Type(ret.type.typeIDs), values);
+			Value value = null;
+
+			if (ret.type.Kind == TypeKind.Tuple) {
+				value = new TupleValue(values);
+			} else {
+				value = new ListValue(values);
+			}
+
+			value.SetSubKind(ret.type.SubKind);
+			return value;
 		}
 
 		void PrintCallStack() {
@@ -66,7 +71,7 @@ namespace TinyLang {
 
 					foreach(var record in callStack.stack[i].scope[scope].members) {
 						if (record.Value.value != null) {
-							Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.type.GetKind()}] = {record.Value.value}");
+							Console.WriteLine($"{record.Key.PadLeft(16)} [{record.Value.value.Kind}] = {record.Value.value}");
 						} else {
 							Console.WriteLine($"{record.Key.PadLeft(16)} = Unbound");
 						}
@@ -190,7 +195,7 @@ namespace TinyLang {
 				VisitVarDecl(ifstmt.initStatement);
 			}
 
-			if ((bool)Visit(ifstmt.expr).value) {
+			if ((bool)Visit(ifstmt.expr).Data) {
 				VisitBlock(ifstmt.trueBody);
 			} else if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
@@ -202,7 +207,7 @@ namespace TinyLang {
 				VisitVarDecl(whilestmt.initStatement);
 			}
 
-			while ((bool)Visit(whilestmt.expr).value) {
+			while ((bool)Visit(whilestmt.expr).Data) {
 				VisitBlock(whilestmt.body);
 			}
 		}
@@ -210,7 +215,7 @@ namespace TinyLang {
 		void VisitDoWhile(DoWhile whilestmt) {
 			VisitBlock(whilestmt.body);
 
-			while ((bool)Visit(whilestmt.expr).value) {
+			while ((bool)Visit(whilestmt.expr).Data) {
 				VisitBlock(whilestmt.body);
 			}
 		}
@@ -234,7 +239,7 @@ namespace TinyLang {
 				// Indexing
 				Index index = (Index)assign.identifier;
 				int indexValue = GetIndexValue((Index)index);
-				List<Value> values = (List<Value>)variable.value.value;
+				List<Value> values = (List<Value>)variable.value.Data;
 
 				values[indexValue] = Visit(assign.expr);
 			}
@@ -291,7 +296,7 @@ namespace TinyLang {
 			Value result = null;
 
 			if (function.sym.def.returnType != null) {
-				result = fnscope.scope[^1].members["result"].value;
+				result = ResolveVar("result").value;
 			}
 			callStack.stack.Remove(fnscope);
 
@@ -327,27 +332,36 @@ namespace TinyLang {
 
 		Value VisitComplexLiteral(ComplexLiteral literal) {
 			List<Value> values = new List<Value>();
-			List<int> typeIDs = new List<int>() { (int)literal.kind };
+			List<TypeKind> typeIDs = new List<TypeKind>();
 
 			foreach(Node expr in literal.exprs) {
 				Value val = Visit(expr);
 				values.Add(val);
 				// FIXME: Allow nested types
-				typeIDs.Add((int)val.type.typeIDs[0]);
+				typeIDs.Add(val.Kind.Kind);
 			}
 
-			return new Value(new Type(typeIDs.ToArray()), values);
+			Value value;
+
+			if (literal.kind.Kind == TypeKind.Tuple) {
+				value = new TupleValue(values);
+			} else {
+				value = new ListValue(values);
+			}
+
+			value.SetSubKind(typeIDs.ToArray());
+			return value;
 		}
 
 		int GetIndexValue(Index index) {
-			return (int)Visit(index.exprs[0]).value;
+			return (int)Visit(index.exprs[0]).Data;
 		}
 
 		Value VisitIndex(Index index) {
 			int indexValue = GetIndexValue(index);
 			VarSym variable = ResolveVar(index.token.Lexeme);
 
-			List<Value> values = (List<Value>)variable.value.value;
+			List<Value> values = (List<Value>)variable.value.Data;
 
 			if (indexValue < 0 || indexValue > values.Count - 1) {
 				Error($"Index out of bounds on '{index.token.Lexeme}'. Indexing with {indexValue} where the length is {values.Count}");

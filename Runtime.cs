@@ -21,62 +21,36 @@ namespace TinyLang {
 		Int, Float, Bool, String, Tuple, List, Untyped,
 	}
 
-	class Type {
-		// Type IDs will be used for tuples etc
-		public readonly int[] typeIDs;
-
-		public Type() {} // For null type
+	sealed class Type {
+		public readonly TypeKind Kind;
+		// For lists and tuples
+		public TypeKind[] SubKind { get; private set; }
 
 		public Type(TypeKind kind) {
-			this.typeIDs = new int[] { (int)kind };
+			this.Kind = kind;
 		}
 
-		public Type(int typeID) {
-			this.typeIDs = new int[] { typeID };
+		public Type(TypeKind kind, TypeKind subKind) {
+			this.Kind = kind;
+			this.SubKind = new TypeKind[] { subKind };
 		}
 
-		public Type(int[] typeIDs) {
-			this.typeIDs = typeIDs;
-		}
-
-		public bool IsUntyped() {
-			return typeIDs != null && typeIDs.Length == 1 && typeIDs[0] == (int)TypeKind.Untyped;
-		}
-
-		public bool IsSingleType() {
-			return typeIDs == null;
-		}
-
-		public TypeKind GetKind() {
-			if (typeIDs[0] <= (int)TypeKind.List) {
-				return (TypeKind)typeIDs[0];
-			}
-
-			throw new InvalidOperationException($"Unknown kind provided '{typeIDs[0]}'");
-		}
-
-		public static TypeKind FromToken(TokenKind kind) {
-			switch(kind) {
-				case TokenKind.Int: 		return TypeKind.Int;
-				case TokenKind.Float: 		return TypeKind.Float;
-				case TokenKind.Boolean: 	return TypeKind.Bool;
-				case TokenKind.String: 		return TypeKind.String;
-			}
-
-			throw new InvalidOperationException($"Invalid token kind to type kind '{kind}' -> ?");
+		public Type(TypeKind kind, TypeKind[] subKind) {
+			this.Kind = kind;
+			this.SubKind = subKind;
 		}
 
 		public bool Matches(Type other) {
-			if (typeIDs == null || other.typeIDs == null) {
+			if (Kind != other.Kind) {
 				return false;
 			}
 
-			if (typeIDs.Length != other.typeIDs.Length) {
-				return false;
+			if (SubKind == null && other.SubKind == null) {
+				return true;
 			}
 
-			for(int idx = 0; idx < typeIDs.Length; idx++) {
-				if (typeIDs[idx] != other.typeIDs[idx]) {
+			for(int i = 0; i < SubKind.Length; i++) {
+				if (SubKind[i] != other.SubKind[i]) {
 					return false;
 				}
 			}
@@ -84,263 +58,276 @@ namespace TinyLang {
 			return true;
 		}
 
-		public override string ToString() {
-			string outstr = "";
-
-			int idx = 0;
-			foreach(int id in typeIDs) {
-				outstr += Application.GetTypeName(id);
-
-				if (idx < typeIDs.Length - 1) {
-					outstr += ", ";
-				}
-				idx++;
-			}
-
-			if (typeIDs[0] == (int)TypeKind.Tuple) {
-				return $"({outstr})";
-			}
-			else if (typeIDs[0] == (int)TypeKind.List) {
-				return $"[{outstr}]";
-			} else {
-				return outstr;
-			}
-		}
-	}
-
-	class Value {
-		public readonly Type type;
-		public object value;
-		public Value references = null;
-
-		public Value(Type type, object value) {
-			this.type = type;
-			this.value = value;
-		}
-
-		// Since there is type checking, it should be possible to operate on different
-		// value types at runtime
-		public static Value operator-(Value me) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, -(int)me.value);
-				case TypeKind.Float: 	return new Value(me.type, -(float)me.value);
-				case TypeKind.Bool: 	return new Value(me.type, !(bool)me.value);
-
-				case TypeKind.String: 	throw new InvalidOperationException("Cannot use unary negation on strings");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value EqualityEqual(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value == (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value == (float)other.value);
-				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value == (bool)other.value);
-				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value == (string)other.value);
-				
-				case TypeKind.List:
-				case TypeKind.Tuple: {
-					if (!me.type.Matches(other.type)) {
-						return new Value(new Type(TypeKind.Bool), false);
-					}
-
-					List<Value> meValues = (List<Value>)me.value;
-					List<Value> otherValues = (List<Value>)other.value;
-
-					for(int idx = 0; idx < meValues.Count; idx++) {
-						if ((bool)Value.EqualityNotEqual(meValues[idx], otherValues[idx]).value) {
-							return new Value(new Type(TypeKind.Bool), false);
-						}
-					}
-
-					return new Value(new Type(TypeKind.Bool), true);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value EqualityNotEqual(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value != (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value != (float)other.value);
-				case TypeKind.Bool: 	return new Value(new Type(TypeKind.Bool), (bool)me.value != (bool)other.value);
-				case TypeKind.String: 	return new Value(new Type(TypeKind.Bool), (string)me.value != (string)other.value);
-				
-				case TypeKind.List:
-				case TypeKind.Tuple: {
-					if (me.type.Matches(other.type)) {
-						return new Value(new Type(TypeKind.Bool), false);
-					}
-
-					List<Value> meValues = (List<Value>)me.value;
-					List<Value> otherValues = (List<Value>)other.value;
-
-					for(int idx = 0; idx < meValues.Count; idx++) {
-						if ((bool)Value.EqualityEqual(meValues[idx], otherValues[idx]).value) {
-							return new Value(new Type(TypeKind.Bool), false);
-						}
-					}
-
-					return new Value(new Type(TypeKind.Bool), true);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator>(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value > (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value > (float)other.value);
-				
-				case TypeKind.Tuple:
-				case TypeKind.List: {
-					bool different = ((List<Value>)me.value).Count > ((List<Value>)other.value).Count;
-					return new Value(new Type(TypeKind.Bool), different);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator>=(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value >= (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value >= (float)other.value);
-
-				case TypeKind.Tuple:
-				case TypeKind.List: {
-					bool different = ((List<Value>)me.value).Count >= ((List<Value>)other.value).Count;
-					return new Value(new Type(TypeKind.Bool), different);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator<(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value < (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value < (float)other.value);
-
-				case TypeKind.Tuple:
-				case TypeKind.List: {
-					bool different = ((List<Value>)me.value).Count < ((List<Value>)other.value).Count;
-					return new Value(new Type(TypeKind.Bool), different);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator<=(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(new Type(TypeKind.Bool), (int)me.value <= (int)other.value);
-				case TypeKind.Float: 	return new Value(new Type(TypeKind.Bool), (float)me.value <= (float)other.value);
-
-				case TypeKind.Tuple:
-				case TypeKind.List: {
-					bool different = ((List<Value>)me.value).Count <= ((List<Value>)other.value).Count;
-					return new Value(new Type(TypeKind.Bool), different);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator+(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value + (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value + (float)other.value);
-				case TypeKind.Bool: 	return other;
-				case TypeKind.String: 	return new Value(me.type, (string)me.value + (string)other.value);
-
-				case TypeKind.List: {
-					List<Value> meList = (List<Value>)me.value;
-					List<Value> otherList = (List<Value>)other.value;
-
-					List<Value> newList = new List<Value>(meList);
-					newList.AddRange(otherList);
-
-					return new Value(me.type, newList);
-				}
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator-(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value - (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value - (float)other.value);
-				case TypeKind.Bool: 	return other;
-				case TypeKind.String: 	throw new InvalidOperationException("Cannot use minus on strings");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator*(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value * (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value * (float)other.value);
-				
-				case TypeKind.Bool:
-				case TypeKind.String: 	throw new InvalidOperationException($"Cannot use multiply on {me.type.GetKind()}");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
-		}
-
-		public static Value operator/(Value me, Value other) {
-			switch(me.type.GetKind()) {
-				case TypeKind.Int: 		return new Value(me.type, (int)me.value / (int)other.value);
-				case TypeKind.Float: 	return new Value(me.type, (float)me.value / (float)other.value);
-				
-				case TypeKind.Bool:
-				case TypeKind.String: 	throw new InvalidOperationException($"Cannot use divide on {me.type.GetKind()}");
-				
-				// This should be unreachable
-				default: throw new InvalidOperationException("Unknown value type in arithmetic operation");
-			}
+		public void SetSubKind(TypeKind[] subKind) {
+			this.SubKind = subKind;
 		}
 
 		public override string ToString()
 		{
-			switch (type.GetKind()) {
-				case TypeKind.List:
-				case TypeKind.Tuple: {
-					string outstr = "";
+			string subStr = "";
 
-					List<Value> values = (List<Value>)value;
+			if (SubKind != null) {
+				for(int i = 0; i < SubKind.Length; i++) {
+					subStr += SubKind[i];
 
-					int index = 0;
-					foreach(Value value in values) {
-						outstr += value;
-
-						if (index++ < values.Count - 1) {
-							outstr += ", ";
-						}
+					if (i < SubKind.Length - 1) {
+						subStr += ", ";
 					}
-
-					return (type.GetKind() == TypeKind.Tuple) ? $"({outstr})" : $"[{outstr}]";
 				}
-
-				default:
-					return value.ToString();
 			}
+
+			if (Kind == TypeKind.List) {
+				return $"[{subStr}]";
+			}
+			else if (Kind == TypeKind.Tuple) {
+				return $"({subStr})";
+			} else {
+				return Kind.ToString();
+			}
+		}
+	}
+
+	abstract class Value {
+		public object Data { get; protected set; }
+		public Type Kind { get; protected set; }
+
+		public void SetSubKind(TypeKind[] subkind) {
+			this.Kind.SetSubKind(subkind);
+		}
+
+		public static Value EqualityEqual(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data == (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data == (float)me.Data);
+				case TypeKind.Bool:			return new BoolValue((bool)me.Data == (bool)me.Data);
+				case TypeKind.String:		return new BoolValue((string)me.Data == (string)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value EqualityNotEqual(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data != (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data != (float)me.Data);
+				case TypeKind.Bool:			return new BoolValue((bool)me.Data != (bool)me.Data);
+				case TypeKind.String:		return new BoolValue((string)me.Data != (string)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator-(Value me) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new IntValue(-(int)me.Data);
+				case TypeKind.Float:		return new FloatValue(-(float)me.Data);
+				case TypeKind.Bool:			return new BoolValue(!(bool)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator+(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data + (int)me.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data + (float)me.Data);
+				case TypeKind.String:		return new StringValue((string)me.Data + (string)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator-(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data - (int)me.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data - (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator*(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data * (int)me.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data * (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator/(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data / (int)me.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data / (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator>(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data > (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data > (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator<(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data < (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data < (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator>=(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data >= (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data >= (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static Value operator<=(Value me, Value other) {
+			switch(me.Kind.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data <= (int)me.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data <= (float)me.Data);
+			}
+
+			throw new InvalidOperationException("Unknown value type in arithmetic operation");
+		}
+
+		public static bool IsType(string typeName) {
+			switch(typeName) {
+				case "int":
+				case "string":
+				case "boolean":
+				case "float":
+					return true;
+			}
+
+			return false;
+		}
+
+		public static TypeKind TypeFromToken(TokenKind kind) {
+			switch(kind) {
+				case TokenKind.Int:			return TypeKind.Int;
+				case TokenKind.Float:		return TypeKind.Float;
+				case TokenKind.Boolean:		return TypeKind.Bool;
+				case TokenKind.String:		return TypeKind.String;
+			}
+			
+			return TypeKind.Untyped;
+		}
+
+		public static TypeKind TypeFromStr(string typeName) {
+			switch(typeName) {
+				case "int":			return TypeKind.Int;
+				case "float":		return TypeKind.Float;
+				case "boolean":		return TypeKind.Bool;
+				case "string":		return TypeKind.String;
+			}
+			
+			return TypeKind.Untyped;
+		}
+	}
+
+	sealed class IntValue : Value {
+		public IntValue(int value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.Int);			
+		}
+
+		public override string ToString()
+		{
+			return ((int)Data).ToString();
+		}
+	}
+
+	sealed class FloatValue : Value {
+		public FloatValue(float value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.Float);	
+		}
+
+		public override string ToString()
+		{
+			return ((float)Data).ToString();
+		}
+	}
+
+	sealed class BoolValue : Value {
+		public BoolValue(bool value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.Bool);			
+		}
+
+		public override string ToString()
+		{
+			return ((bool)Data).ToString();
+		}
+	}
+
+	sealed class StringValue : Value {
+		public StringValue(string value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.String);			
+		}
+
+		public override string ToString()
+		{
+			return (string)Data;
+		}
+	}
+
+	sealed class ListValue : Value {
+		public ListValue(List<Value> value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.List);			
+		}
+
+		public override string ToString()
+		{
+			string outStr = "";
+			List<Value> values = (List<Value>)Data;
+
+			int i = 0;
+			foreach(Value value in (List<Value>)Data) {
+				outStr += value;
+
+				if (i++ < values.Count - 1) {
+					outStr += ", ";
+				}
+			}
+
+			return $"[{outStr}]";
+		}
+	}
+
+	sealed class TupleValue : Value {
+		public TupleValue(List<Value> value) {
+			this.Data = value;
+			this.Kind = new Type(TypeKind.Tuple);			
+		}
+
+		public override string ToString()
+		{
+			string outStr = "";
+			List<Value> values = (List<Value>)Data;
+
+			int i = 0;
+			foreach(Value value in values) {
+				outStr += value;
+				
+				if (i++ < values.Count - 1) {
+					outStr += ", ";
+				}
+			}
+
+			return $"({outStr})";
 		}
 	}
 

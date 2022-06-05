@@ -12,7 +12,6 @@ namespace TinyLang {
 			Parser parser = new Parser(File.ReadAllText(args[0]));
 
 			try {
-				Builtins.InitTypes();
 				Builtins.InitBuiltins();
 
 				Application app = parser.Parse();
