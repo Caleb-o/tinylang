@@ -107,6 +107,14 @@ namespace TinyLang {
 			return null;
 		}
 
+		public void PushRecord(string identifier) {
+			callStack.stack.Add(new ActivationRecord(identifier, RecordType.Function, callStack.stack[^1].depth + 1));
+		}
+
+		public void PopRecord() {
+			callStack.stack.Remove(callStack.stack[^1]);
+		}
+
 		public Value Visit(Node node) {
 			switch(node) {
 				case Block: VisitBlock((Block)node); return null;
@@ -169,7 +177,7 @@ namespace TinyLang {
 		}
 
 		void VisitBlock(Block block) {
-			callStack.stack.Add(new ActivationRecord("anon_block", RecordType.Function, callStack.stack[^1].depth + 1));
+			PushRecord("anon");
 
 			foreach(Node node in block.statements) {
 				Visit(node);
@@ -186,6 +194,7 @@ namespace TinyLang {
 
 		void VisitIfStmt(IfStmt ifstmt) {
 			if (ifstmt.initStatement != null) {
+				PushRecord("if_init");
 				VisitVarDecl(ifstmt.initStatement);
 			}
 
@@ -194,15 +203,24 @@ namespace TinyLang {
 			} else if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
 			}
+
+			if (ifstmt.initStatement != null) {
+				PopRecord();
+			}
 		}
 
 		void VisitWhile(While whilestmt) {
 			if (whilestmt.initStatement != null) {
+				PushRecord("while_init");
 				VisitVarDecl(whilestmt.initStatement);
 			}
 
 			while ((bool)Visit(whilestmt.expr).Data) {
 				VisitBlock(whilestmt.body);
+			}
+
+			if (whilestmt.initStatement != null) {
+				PopRecord();
 			}
 		}
 

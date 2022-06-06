@@ -373,6 +373,9 @@ namespace TinyLang {
 
 		void VisitIfStatement(IfStmt ifstmt) {
 			if (ifstmt.initStatement != null) {
+				SymbolScope func_scope = new SymbolScope("if_init", scope.scopeLevel + 1, scope);
+				scope = func_scope;
+
 				VisitVariableDeclaration(ifstmt.initStatement);
 			}
 
@@ -390,10 +393,17 @@ namespace TinyLang {
 			if (ifstmt.falseBody != null) {
 				Visit(ifstmt.falseBody);
 			}
+
+			if (ifstmt.initStatement != null) {
+				ClimbScope();
+			}
 		}
 
 		void VisitWhile(While whilestmt) {
 			if (whilestmt.initStatement != null) {
+				SymbolScope func_scope = new SymbolScope("if_init", scope.scopeLevel + 1, scope);
+				scope = func_scope;
+				
 				VisitVariableDeclaration(whilestmt.initStatement);
 			}
 
@@ -407,6 +417,10 @@ namespace TinyLang {
 			}
 
 			Visit(whilestmt.body);
+
+			if (whilestmt.initStatement != null) {
+				ClimbScope();
+			}
 		}
 
 		void VisitDoWhile(DoWhile whilestmt) {
