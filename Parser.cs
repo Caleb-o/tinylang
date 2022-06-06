@@ -358,6 +358,38 @@ namespace TinyLang {
 			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
 		}
 
+		void StructDef(Block block) {
+			Consume(TokenKind.Struct);
+
+			Token identifier = currentToken;
+			Consume(TokenKind.Identifier);
+
+			Consume(TokenKind.OpenCurly);
+			Dictionary<string, StructVar> members = new Dictionary<string, StructVar>();
+
+			while (currentToken.Kind == TokenKind.Var) {
+				Consume(TokenKind.Var);
+
+				Token type_name = currentToken;
+				Consume(TokenKind.Identifier);
+
+				Token member_id = currentToken;
+				Consume(TokenKind.Identifier);
+
+				if (members.ContainsKey(member_id.Lexeme)) {
+					Error($"Struct defintion '{identifier.Lexeme}' already contains a field '{member_id.Lexeme}'");
+				}
+
+				members[member_id.Lexeme] = new StructVar(member_id, new Type(Value.TypeFromToken(type_name.Kind)));
+
+				Consume(TokenKind.SemiColon);
+			}
+
+			Consume(TokenKind.CloseCurly);
+
+			block.statements.Add(new StructDef(identifier, members));
+		}
+
 		IfStmt IfStatement(Block block) {
 			Consume(TokenKind.If);
 
@@ -510,6 +542,11 @@ namespace TinyLang {
 			// Functions
 			while (currentToken.Kind != TokenKind.End) {
 				switch(currentToken.Kind) {
+					case TokenKind.Struct: {
+						StructDef(app.block);
+						break;
+					}
+
 					case TokenKind.Function: {
 						FunctionDef(app.block);
 						break;

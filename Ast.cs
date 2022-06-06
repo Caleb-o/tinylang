@@ -225,6 +225,30 @@ namespace TinyLang {
 		public Escape() : base(null) {}
 	}
 
+	sealed class StructVar : Node {
+		public readonly Type type;
+
+		public StructVar(Token identifier, Type type) : base(identifier) {
+			this.type = type;
+		}
+	}
+
+	sealed class StructDef : Node {
+		public readonly Dictionary<string, StructVar> members;
+
+		public StructDef(Token identifier, Dictionary<string, StructVar> members) : base(identifier) {
+			this.members = members;
+		}
+	}
+
+	sealed class Instance : Node {
+		public readonly Dictionary<string, Node> values;
+
+		public Instance(Token identifier, Dictionary<string, Node> values) : base(identifier) {
+			this.values = values;
+		}
+	}
+
 	sealed class FunctionDef : Node {
 		public readonly List<Parameter> parameters;
 		public readonly Block block;

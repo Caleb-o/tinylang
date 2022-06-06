@@ -9,11 +9,11 @@ namespace TinyLang {
 
 		Plus, Minus, Star, Slash, At,
 
-		Let, Var, Identifier, Record, Function,
+		Let, Var, Identifier, Struct, Function,
 		Return, If, Else, While, Do, Auto,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
-		OpenSquare, CloseSquare,
+		OpenSquare, CloseSquare, New,
 
 		NotEqual, EqualEqual, Greater, Less, GreaterEqual, LessEqual,
 	}
@@ -41,7 +41,8 @@ namespace TinyLang {
 			{ "auto", TokenKind.Auto },
 			{ "return", TokenKind.Return },
 			{ "fn", TokenKind.Function },
-			{ "record", TokenKind.Record },
+			{ "new", TokenKind.New },
+			{ "struct", TokenKind.Struct },
 			{ "do", TokenKind.Do },
 			{ "while", TokenKind.While },
 			{ "if", TokenKind.If },
