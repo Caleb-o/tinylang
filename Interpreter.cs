@@ -1,7 +1,43 @@
 using System;
 using System.Text;
+using System.Collections.Generic;
+
 
 namespace TinyLang {
+	class ActivationRecord {
+		public readonly string identifier;
+		public readonly int depth;
+		public readonly Dictionary<string, VarSym> members;
+
+		public ActivationRecord(string identifier, int depth, Dictionary<string, VarSym> members) {
+			this.identifier = identifier;
+			this.depth = depth;
+			this.members = members;
+		}
+	}
+
+	class CallStack {
+		public List<ActivationRecord> stack = new List<ActivationRecord>();
+
+		public void Push(string identifier) {
+			stack.Add(new ActivationRecord(identifier, stack.Count, new Dictionary<string, VarSym>()));
+		}
+
+		public void Pop() {
+			stack.Remove(stack[^1]);
+		}
+
+		public VarSym Resolve(string identifier) {
+			for(int i = stack.Count - 1; i >= 0; i++) {
+				if (stack[i].members.ContainsKey(identifier)) {
+					return stack[i].members[identifier];
+				}
+			}
+
+			return null;
+		}
+	}
+
 	class Interpreter {
 		public void Run(Application app) {
 			Visit(app.block);

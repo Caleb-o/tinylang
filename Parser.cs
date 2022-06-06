@@ -30,6 +30,25 @@ namespace TinyLang {
 			}
 		}
 
+		FunctionDef FunctionDefinition() {
+			Consume(TokenKind.Function);
+
+			Consume(TokenKind.OpenParen);
+			List<Identifier> identifiers = new List<Identifier>();
+
+			while(current.Kind == TokenKind.Identifier) {
+				identifiers.Add(new Identifier(current));
+				Consume(TokenKind.Identifier);
+
+				ConsumeIfExists(TokenKind.Comma);
+			}
+			Consume(TokenKind.CloseParen);
+
+			Block inner = Body();
+
+			return new FunctionDef(null, identifiers, inner);
+		}
+
 		Node Factor(Block block) {
 			Token ftoken = current;
 			
@@ -42,6 +61,10 @@ namespace TinyLang {
 					return node;
 				}
 
+				case TokenKind.Identifier:
+					Consume(TokenKind.Identifier);
+					return new Identifier(ftoken);
+
 				case TokenKind.Int:
 				case TokenKind.Float:
 				case TokenKind.String:
@@ -49,9 +72,13 @@ namespace TinyLang {
 					Consume(current.Kind);
 					return new Literal(ftoken);
 				}
+
+				case TokenKind.Function: {
+					return FunctionDefinition();
+				}
 			}
 
-			Error($"Unknown token kind found in expression {ftoken.Kind}");
+			Error($"Unknown token kind found in expression '{ftoken.Lexeme}':{ftoken.Kind}");
 			return null;
 		}
 
@@ -95,26 +122,57 @@ namespace TinyLang {
 			block.statements.Add(new Print(exprs));
 		}
 
-		void Statement(Block block) {
-			while(current.Kind != TokenKind.End) {
-				switch(current.Kind) {
-					case TokenKind.Print: {
-						PrintStatement(block);
-						break;
-					}
+		void VariableDeclaration(Block block) {
+			Consume(TokenKind.Let);
 
-					default:
-						Error($"Unknown token kind found {current.Kind}");
-						return;
+			Token identifier = current;
+			Consume(TokenKind.Identifier);
+
+			Consume(TokenKind.Equals);
+
+			Node expr = Arithmetic(block);
+
+			block.statements.Add(new Variable(identifier, expr));
+		}
+
+		void Statement(Block block) {
+			switch(current.Kind) {
+				case TokenKind.Print: {
+					PrintStatement(block);
+					break;
 				}
 
-				Consume(TokenKind.SemiColon);
+				case TokenKind.Let: {
+					VariableDeclaration(block);
+					break;
+				}
+
+				default:
+					Error($"Unknown token kind found {current.Kind}");
+					return;
 			}
+
+			Consume(TokenKind.SemiColon);
+		}
+
+		void StatementList(Block block, TokenKind end = TokenKind.End) {
+			while(current.Kind != end) {
+				Statement(block);
+			}
+		}
+
+		Block Body() {
+			Consume(TokenKind.OpenCurly);
+			Block inner = new Block(new List<Node>());
+			StatementList(inner, TokenKind.CloseCurly);
+			Consume(TokenKind.CloseCurly);
+
+			return inner;
 		}
 
 		public Application Parse() {
 			Block programBlock = new Block(new List<Node>());
-			Statement(programBlock);
+			StatementList(programBlock);
 
 			return new Application(programBlock);
 		}
