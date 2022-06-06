@@ -185,10 +185,10 @@ namespace TinyLang {
 				case BinOp: {
 					BinOp binop = (BinOp)node;
 					// FIXME
-					Type left = FindType(binop.left);
-					Type right = ExpectType(binop.right, left);
+					Type left = ExpectType(binop.left, expects);
+					Type right = ExpectType(binop.right, expects);
 
-					if (!expects.Matches(left)) {
+					if (left != null) {
 						return left;
 					}
 
@@ -235,12 +235,13 @@ namespace TinyLang {
 					if (literal.kind.Kind == TypeKind.List) {
 						// Only having the list as an ID is an untyped list
 						// Which means it can be bound to anything
-						if (expects.SubKind.Length > 1) {
+						if (expects.SubKind.Length > 0) {
 							TypeKind listType = expects.SubKind[0];
+							Type expected = new Type(listType);
 
 							foreach(Node expr in literal.exprs) {
 								Type realType = FindType(expr);
-								if (!realType.Matches(new Type(listType))) {
+								if (!realType.Matches(expected)) {
 									return realType;
 								}
 							}
@@ -296,9 +297,8 @@ namespace TinyLang {
 
 			Type left = FindType(binop.left);
 
-			// The one exception
 			if (left.Kind == TypeKind.Tuple) {
-				return;
+				ErrorWith("Cannot use tuples in binary expressions", binop.left);
 			}
 
 			Type realType = ExpectType(binop.right, left);
@@ -522,7 +522,7 @@ namespace TinyLang {
 			foreach(Node node in builtin.arguments) {
 				Visit(node);
 
-				if (idx < builtin.native.parity) {
+				if (idx < builtin.native.required.Length) {
 					Type realType = ExpectType(node, builtin.native.required[idx]);
 
 					if (realType != null) {

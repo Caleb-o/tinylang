@@ -49,6 +49,10 @@ namespace TinyLang {
 				return true;
 			}
 
+			if (SubKind.Length != other.SubKind.Length) {
+				return false;
+			}
+
 			for(int i = 0; i < SubKind.Length; i++) {
 				if (SubKind[i] != other.SubKind[i]) {
 					return false;
@@ -101,6 +105,24 @@ namespace TinyLang {
 				case TypeKind.Float:		return new BoolValue((float)me.Data == (float)other.Data);
 				case TypeKind.Bool:			return new BoolValue((bool)me.Data == (bool)other.Data);
 				case TypeKind.String:		return new BoolValue((string)me.Data == (string)other.Data);
+
+				case TypeKind.List:
+				case TypeKind.Tuple: {
+					List<Value> meValues = (List<Value>)me.Data;
+					List<Value> otherValues = (List<Value>)other.Data;
+
+					if (meValues.Count != otherValues.Count) {
+						return new BoolValue(false);
+					}
+
+					for(int i = 0; i < meValues.Count; i++) {
+						if ((bool)Value.EqualityNotEqual(meValues[i], otherValues[i]).Data) {
+							return new BoolValue(false);
+						}
+					}
+					
+					return new BoolValue(true);
+				}
 			}
 
 			throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -112,6 +134,24 @@ namespace TinyLang {
 				case TypeKind.Float:		return new BoolValue((float)me.Data != (float)other.Data);
 				case TypeKind.Bool:			return new BoolValue((bool)me.Data != (bool)other.Data);
 				case TypeKind.String:		return new BoolValue((string)me.Data != (string)other.Data);
+
+				case TypeKind.List:
+				case TypeKind.Tuple: {
+					List<Value> meValues = (List<Value>)me.Data;
+					List<Value> otherValues = (List<Value>)other.Data;
+
+					if (meValues.Count == otherValues.Count) {
+						return new BoolValue(false);
+					}
+
+					for(int i = 0; i < meValues.Count; i++) {
+						if ((bool)Value.EqualityEqual(meValues[i], otherValues[i]).Data) {
+							return new BoolValue(false);
+						}
+					}
+					
+					return new BoolValue(true);
+				}
 			}
 
 			throw new InvalidOperationException("Unknown value type in arithmetic operation");
@@ -132,6 +172,18 @@ namespace TinyLang {
 				case TypeKind.Int:			return new IntValue((int)me.Data + (int)other.Data);
 				case TypeKind.Float:		return new FloatValue((float)me.Data + (float)other.Data);
 				case TypeKind.String:		return new StringValue((string)me.Data + (string)other.Data);
+
+				case TypeKind.List: {
+					List<Value> meValues = (List<Value>)me.Data;
+					List<Value> otherValues = (List<Value>)other.Data;
+
+					List<Value> combined = new List<Value>(meValues);
+					combined.AddRange(otherValues);
+
+					ListValue value = new ListValue(combined);
+					value.SetSubKind(new TypeKind[1] { me.Kind.SubKind[0] });
+					return value;
+				}
 			}
 
 			throw new InvalidOperationException("Unknown value type in arithmetic operation");
