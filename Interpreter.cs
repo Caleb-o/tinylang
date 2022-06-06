@@ -63,6 +63,11 @@ namespace TinyLang {
 				case Print: 			return VisitPrintStmt((Print)node);
 				case Literal:			return VisitLiteral((Literal)node);
 				case VariableDecl:		return VisitVariableDecl((VariableDecl)node);
+				case FunctionCall:		return VisitFunctionCall((FunctionCall)node);
+				case Identifier:		return VisitIdentifier((Identifier)node);
+
+				// NoOp
+				case FunctionDef: 		return null;
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -110,8 +115,34 @@ namespace TinyLang {
 		}
 
 		Value VisitVariableDecl(VariableDecl vardecl) {
-			callStack.Add(new VarSym(vardecl.token.Lexeme, vardecl.kind));
+			VarSym variable = new VarSym(vardecl.token.Lexeme, vardecl.kind);
+			variable.value = Visit(vardecl.expr);
+			callStack.Add(variable);
+
 			return null;
+		}
+
+		Value VisitFunctionCall(FunctionCall fncall) {
+			callStack.PushRecord(fncall.token.Lexeme);
+			
+			int idx = 0;
+			foreach(Argument arg in fncall.arguments) {
+				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, arg.kind);
+				variable.value = Visit(arg.expr);
+
+				callStack.Add(variable);
+				idx++;
+			}
+
+			Visit(fncall.def.block);
+			
+			callStack.PopRecord();
+			// FIXME: Allow returning value from calls
+			return null;
+		}
+
+		Value VisitIdentifier(Identifier identifier) {
+			return callStack.Resolve(identifier.token.Lexeme).value;
 		}
 	}	
 }

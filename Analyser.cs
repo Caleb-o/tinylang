@@ -25,6 +25,14 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class FunctionSym : Symbol {
+		public FunctionDef def;
+
+		public FunctionSym(string identifier, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
+			this.def = def;
+		}
+	}
+
 	sealed class SymbolTable {
 		public SymbolTable parent;
 		public readonly string identifier;
@@ -73,6 +81,7 @@ namespace TinyLang {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
 				case FunctionDef:		return TypeKind.Function;
 				case Literal:			return Value.TypeFromToken(((Literal)node).token);
+				case Argument:			return FindType(((Argument)node).expr);
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
@@ -84,6 +93,16 @@ namespace TinyLang {
 				case Block: 			VisitBlock((Block)node); break;
 				case BinaryOp: 			VisitBinaryOp((BinaryOp)node); break;
 				case VariableDecl:		VisitVariableDecl((VariableDecl)node); break;
+				case FunctionDef:		VisitFunctionDef((FunctionDef)node); break;
+				case FunctionCall:		VisitFunctionCall((FunctionCall)node); break;
+
+				// NoOp
+				case Print: break;
+				case Literal: break;
+
+				default:
+					Error($"Unhandled node in analysis {node}");
+					break;
 			}
 		}
 
@@ -103,9 +122,48 @@ namespace TinyLang {
 				Error($"'{vardecl.token.Lexeme}' has already been defined in the current scope");
 			}
 
-			Visit(vardecl.expr);
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
-			table.Insert(new VarSym(vardecl.token.Lexeme, FindType(vardecl.expr)));
+			TypeKind kind = FindType(vardecl.expr);
+
+			if (kind == TypeKind.Function) {
+				FunctionDef fndef = (FunctionDef)vardecl.expr;
+				fndef.identifier = vardecl.token.Lexeme;
+
+				table.Insert(new FunctionSym(vardecl.token.Lexeme, fndef));
+				Visit(vardecl.expr);
+			} else {
+				Visit(vardecl.expr);
+				table.Insert(new VarSym(vardecl.token.Lexeme, kind));
+			}
+		}
+
+		void VisitFunctionDef(FunctionDef fndef) {
+			Visit(fndef.block);
+			
+			foreach(Identifier id in fndef.parameters) {
+				table.Insert(new VarSym(id.token.Lexeme, TypeKind.Unknown));
+			}
+
+			table.Insert(new FunctionSym(fndef.identifier, fndef));
+		}
+
+		void VisitFunctionCall(FunctionCall fncall) {
+			FunctionSym fnsym = (FunctionSym)table.Lookup(fncall.token.Lexeme, false);
+
+			if (fnsym == null) {
+				Error($"Function '{fncall.token.Lexeme}' has not been defined in any scope");
+			}
+
+			fncall.def = fnsym.def;
+
+			if (fncall.arguments.Count != fnsym.def.parameters.Count) {
+				Error($"Function '{fncall.token.Lexeme}' expected {fnsym.def.parameters.Count} arguments but received {fncall.arguments.Count}");
+			}
+
+			foreach(Argument arg in fncall.arguments) {
+				Visit(arg.expr);
+				arg.kind = FindType(arg);
+			}
 		}
 	}
 }

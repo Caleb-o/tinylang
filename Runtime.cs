@@ -4,7 +4,9 @@ using System.Collections.Generic;
 namespace TinyLang {
 	enum TypeKind {
 		Int, Float, Bool, String, Function, Struct,
-		List, Dictionary, Error,
+		List, Dictionary,
+		
+		Unknown, Error,
 	}
 
 	abstract class Value {
@@ -59,5 +61,10 @@ namespace TinyLang {
 
 	sealed class FunctionValue : Value {
 		public FunctionValue(FunctionDef value) : base(TypeKind.Function, value) {}
+
+		public override string ToString()
+		{
+			return base.ToString();
+		}
 	}
 }

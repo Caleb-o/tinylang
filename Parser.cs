@@ -49,6 +49,19 @@ namespace TinyLang {
 			return new FunctionDef(null, identifiers, inner);
 		}
 
+		FunctionCall FnCall(Token identifier, Block block) {
+			Consume(TokenKind.OpenParen);
+			List<Argument> arguments = new List<Argument>();
+
+			while(current.Kind != TokenKind.CloseParen) {
+				arguments.Add(new Argument(Arithmetic(block)));
+				ConsumeIfExists(TokenKind.Comma);
+			}
+			Consume(TokenKind.CloseParen);
+
+			return new FunctionCall(identifier, arguments);
+		}
+
 		Node Factor(Block block) {
 			Token ftoken = current;
 			
@@ -61,9 +74,16 @@ namespace TinyLang {
 					return node;
 				}
 
-				case TokenKind.Identifier:
+				case TokenKind.Identifier: {
 					Consume(TokenKind.Identifier);
+
+					if (current.Kind == TokenKind.OpenParen) {
+						return FnCall(ftoken, block);
+					}
+
 					return new Identifier(ftoken);
+				}
+
 
 				case TokenKind.Int:
 				case TokenKind.Float:
@@ -144,6 +164,18 @@ namespace TinyLang {
 
 				case TokenKind.Let: {
 					VariableDeclaration(block);
+					break;
+				}
+
+				case TokenKind.Identifier: {
+					Token identifier = current;
+					Consume(TokenKind.Identifier);
+
+					if (current.Kind == TokenKind.OpenParen) {
+						block.statements.Add(FnCall(identifier, block));
+					} else {
+						Error($"Unknown token following identifier '{identifier.Lexeme}':{identifier.Kind}");
+					}
 					break;
 				}
 

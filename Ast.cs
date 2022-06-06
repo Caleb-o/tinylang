@@ -51,7 +51,17 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class Argument : Node {
+		public readonly Node expr;
+		public TypeKind kind;
+
+		public Argument(Node expr) : base(null) {
+			this.expr = expr;
+		}
+	}
+
 	sealed class FunctionDef : Node {
+		public string identifier;
 		public readonly List<Identifier> parameters;
 		public readonly Block block;
 
@@ -62,9 +72,10 @@ namespace TinyLang {
 	}
 
 	sealed class FunctionCall : Node {
-		public readonly List<Node> arguments;
+		public readonly List<Argument> arguments;
+		public FunctionDef def;
 
-		public FunctionCall(Token identifier, List<Node> arguments) : base(identifier) {
+		public FunctionCall(Token identifier, List<Argument> arguments) : base(identifier) {
 			this.arguments = arguments;
 		}
 	}
