@@ -541,8 +541,18 @@ namespace TinyLang {
 			Visit(decl.expr);
 
 			if (decl.type.Kind == TypeKind.Untyped) {
+				Type other = FindType(decl.expr);
+				
+				if (other.Kind == TypeKind.Untyped) {
+					ErrorWith($"Trying to assign untyped value to an auto declaration", decl);
+				}
+
+				if ((other.Kind == TypeKind.List || other.Kind == TypeKind.Tuple) && other.SubKind.Length == 0) {
+					ErrorWith($"Trying to assign untyped list or tuple to an auto declaration", decl);
+				}
+				
 				// Assign the type from the RHS
-				decl.type = FindType(decl.expr);
+				decl.type = other;
 			}
 
 			Type realType = ExpectType(decl.expr, decl.type);
