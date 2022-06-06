@@ -9,11 +9,11 @@ namespace TinyLang {
 
 		Plus, Minus, Star, Slash, At,
 
-		Let, Var, Identifier, Struct, Function,
-		Return, If, Else, While, Do, Auto,
+		Let, Identifier, Struct, Function,
+		Return, If, Else, While, Do,
 		Dot, Comma, Colon, SemiColon, Equals,
 		OpenParen, CloseParen, OpenCurly, CloseCurly,
-		OpenSquare, CloseSquare, New,
+		OpenSquare, CloseSquare, New, Print,
 
 		NotEqual, EqualEqual, Greater, Less, GreaterEqual, LessEqual,
 	}
@@ -36,11 +36,10 @@ namespace TinyLang {
 		int ip, line, column;
 
 		static Dictionary<string, TokenKind> KeyWords = new Dictionary<string, TokenKind>() {
-			{ "var", TokenKind.Var },
 			{ "let", TokenKind.Let },
-			{ "auto", TokenKind.Auto },
 			{ "return", TokenKind.Return },
-			{ "fn", TokenKind.Function },
+			{ "function", TokenKind.Function },
+			{ "print", TokenKind.Print },
 			{ "new", TokenKind.New },
 			{ "struct", TokenKind.Struct },
 			{ "do", TokenKind.Do },

@@ -3,560 +3,120 @@ using System.Collections.Generic;
 
 namespace TinyLang {
 	class Parser {
-		readonly Lexer lexer;
-		Token currentToken;
-		Application app;
+		Lexer lexer;
+		Token current;
 
 
 		public Parser(string source) {
-			this.app = new Application(new Block(new List<Node>()));
-			this.lexer = new Lexer(source);
-			currentToken = this.lexer.Next();
-		}
-
-		public Application Parse() {
-			Declaration();
-			return app;
+			lexer = new Lexer(source);
+			current = lexer.Next();
 		}
 
 		void Error(string message) {
-			throw new Exception($"{message} :: [{currentToken.Column}:{currentToken.Line}]");
+			throw new Exception($"Parser: {message}");
 		}
 
-		void Consume(TokenKind expects) {
-			if (currentToken.Kind == expects) {
-				currentToken = lexer.Next();
+		void Consume(TokenKind expected) {
+			if (current.Kind == expected) {
+				current = lexer.Next();
 			} else {
-				Error($"Expected token kind {expects} but received {currentToken.Kind}");
+				Error($"Expected token {expected} but received {current.Kind}");
 			}
 		}
 
-		void ConsumeIfExists(TokenKind expects) {
-			if (currentToken.Kind == expects) {
-				currentToken = lexer.Next();
+		void ConsumeIfExists(TokenKind expected) {
+			if (current.Kind == expected) {
+				current = lexer.Next();
 			}
-		}
-
-		List<Parameter> ParameterList(Block block) {
-			List<Parameter> parameters = new List<Parameter>();
-
-			Consume(TokenKind.OpenParen);
-
-			while(currentToken.Kind != TokenKind.CloseParen) {
-				List<Token> identifiers = new List<Token>();
-
-				while(currentToken.Kind == TokenKind.Identifier) {
-					identifiers.Add(currentToken);
-					Consume(TokenKind.Identifier);
-					ConsumeIfExists(TokenKind.Comma);
-				}
-
-				Consume(TokenKind.Colon);
-
-				// Parameters are immutable by default and require the var
-				// keyword to make them mutable
-				bool mutable = false;
-				if (currentToken.Kind == TokenKind.Var) {
-					Consume(TokenKind.Var);
-					mutable = true;
-				}
-
-				Type type = CollectType(block);
-
-				foreach(Token id in identifiers) {
-					parameters.Add(new Parameter(id, type, mutable));
-				}
-				ConsumeIfExists(TokenKind.Comma);
-			}
-
-			Consume(TokenKind.CloseParen);
-			return parameters;
-		}
-
-		Var Variable(Token token) {
-			return new Var(token);
-		}
-
-		ComplexLiteral ListLiteral(Block block) {
-			Consume(TokenKind.OpenSquare);
-			List<Node> exprs = new List<Node>();
-			
-			while(currentToken.Kind != TokenKind.CloseSquare) {
-				exprs.Add(Expr(block));
-				ConsumeIfExists(TokenKind.Comma);
-			}
-			Consume(TokenKind.CloseSquare);
-
-			return new ComplexLiteral(new Type(TypeKind.List), exprs);
-		}
-
-		ComplexLiteral TupleLiteral(Block block, Node firstExpr) {
-			List<Node> exprs = new List<Node>() { firstExpr };
-			
-			while(currentToken.Kind != TokenKind.CloseParen) {
-				exprs.Add(Expr(block));
-				ConsumeIfExists(TokenKind.Comma);
-			}
-			Consume(TokenKind.CloseParen);
-
-			return new ComplexLiteral(new Type(TypeKind.Tuple), exprs);
 		}
 
 		Node Factor(Block block) {
-			Token current = currentToken;
-
-			switch(currentToken.Kind) {
-				case TokenKind.Minus: {
-					Consume(TokenKind.Minus);
-					return new UnaryOp(current, Factor(block));
+			Token ftoken = current;
+			
+			switch(current.Kind) {
+				case TokenKind.OpenParen: {
+					Consume(TokenKind.OpenParen);
+					Node node = Arithmetic(block);
+					Consume(TokenKind.CloseParen);
+					
+					return node;
 				}
 
 				case TokenKind.Int:
 				case TokenKind.Float:
-				case TokenKind.Boolean:
-				case TokenKind.String: {
-					Consume(currentToken.Kind);
-					return new Literal(current);
-				}
-
-				case TokenKind.OpenSquare: {
-					return ListLiteral(block);
-				}
-
-				case TokenKind.OpenParen: {
-					Consume(TokenKind.OpenParen);
-					Node n = Expr(block);
-
-					if (currentToken.Kind == TokenKind.Comma) {
-						Consume(TokenKind.Comma);
-						return TupleLiteral(block, n);
-					}
-
-					Consume(TokenKind.CloseParen);
-					return n;
-				}
-
-				case TokenKind.Identifier: {
-					Token identifier = currentToken;
-					Consume(TokenKind.Identifier);
-
-					switch (currentToken.Kind) {
-						case TokenKind.OpenParen:
-							return FunctionCall(block, identifier);
-
-
-						case TokenKind.OpenSquare:
-							return IndexStmt(block, identifier);
-
-						default:
-							return Variable(identifier);
-					}
-				}
-
-				default: {
-					Error($"Unknown token in expression {currentToken.Kind}");
-					break;
+				case TokenKind.String:
+				case TokenKind.Boolean: {
+					Consume(current.Kind);
+					return new Literal(ftoken);
 				}
 			}
 
+			Error($"Unknown token kind found in expression {ftoken.Kind}");
 			return null;
 		}
 
 		Node Term(Block block) {
-			Node n = Factor(block);
+			Node node = Factor(block);
 
-			while(currentToken.Kind == TokenKind.Star || currentToken.Kind == TokenKind.Slash) {
-				Token op = currentToken;
-				Consume(currentToken.Kind);
-				n = new BinOp(op, n, Factor(block));
+			while(current.Kind == TokenKind.Star || current.Kind == TokenKind.Slash) {
+				Token op = current;
+				Consume(op.Kind);
+				node = new BinaryOp(op, node, Factor(block));
 			}
 
-			return n;
+			return node;
 		}
 
 		Node Arithmetic(Block block) {
-			Node n = Term(block);
+			Node node = Term(block);
 
-			while(currentToken.Kind == TokenKind.Plus || currentToken.Kind == TokenKind.Minus) {
-				Token op = currentToken;
-				Consume(currentToken.Kind);
-				n = new BinOp(op, n, Term(block));
+			while(current.Kind == TokenKind.Plus || current.Kind == TokenKind.Minus) {
+				Token op = current;
+				Consume(op.Kind);
+				node = new BinaryOp(op, node, Term(block));
 			}
 
-			return n;
+			return node;
 		}
 
-		Node Expr(Block block) {
-			Node n = Arithmetic(block);
-
-			while(currentToken.Kind == TokenKind.EqualEqual || currentToken.Kind == TokenKind.NotEqual ||
-				currentToken.Kind == TokenKind.Greater || currentToken.Kind == TokenKind.GreaterEqual ||
-				currentToken.Kind == TokenKind.Less || currentToken.Kind == TokenKind.LessEqual
-				) {
-				Token op = currentToken;
-				Consume(currentToken.Kind);
-				n = new ConditionalOp(op, n, Arithmetic(block));
-			}
-
-			return n;
-		}
-
-		List<Node> GetArguments(Block block, TokenKind closing) {
-			List<Node> arguments = new List<Node>();
-			while(currentToken.Kind != closing) {
-				arguments.Add(Expr(block));
-				ConsumeIfExists(TokenKind.Comma);
-			}
-			return arguments;
-		}
-
-		VarDecl VariableDeclaration(Block block, bool mutable) {
-			Type type = CollectType(block);
-
-			Token identifier = currentToken;
-			Consume(TokenKind.Identifier);
-
-			Consume(TokenKind.Equals);
-			Node expr = Expr(block);
-			Consume(TokenKind.SemiColon);
-
-			return new VarDecl(identifier.Lexeme, type, mutable, expr);
-		}
-
-		void VariableDeclarations(Block block, bool mutable) {
-			Type type = CollectType(block);
-
-			while (currentToken.Kind == TokenKind.Identifier) {
-				Token identifier = currentToken;
-				Consume(TokenKind.Identifier);
-
-				Consume(TokenKind.Equals);
-				Node expr = Expr(block);
-
-				block.statements.Add(new VarDecl(identifier.Lexeme, type, mutable, expr));
-				ConsumeIfExists(TokenKind.Comma);
-			}
-		}
-
-		void Assignment(Block block, Token identifier) {
-			Consume(TokenKind.Equals);
-			block.statements.Add(new Assignment(new Var(identifier), Expr(block)));
-		}
-
-		void IndexAssignment(Block block, Token identifier) {
-			Index index = IndexStmt(block, identifier);
-			Consume(TokenKind.Equals);
-			block.statements.Add(new Assignment(index, Expr(block)));
-		}
-
-		FunctionCall FunctionCall(Block block, Token identifier) {
+		void PrintStatement(Block block) {
+			Consume(TokenKind.Print);
 			Consume(TokenKind.OpenParen);
-			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
-			Consume(TokenKind.CloseParen);
 
-			return new FunctionCall(identifier, arguments);
-		}
-
-		void BuiltinFnCall(Block block) {
-			Consume(TokenKind.At);
-
-			Token identifier = currentToken;
-			Consume(TokenKind.Identifier);
-
-			Consume(TokenKind.OpenParen);
-			List<Node> arguments = GetArguments(block, TokenKind.CloseParen);
-			Consume(TokenKind.CloseParen);
-
-			block.statements.Add(new BuiltinFunctionCall(identifier.Lexeme, arguments, new Type(TypeKind.Untyped)));
-		}
-
-		void Escape(Block block) {
-			Consume(TokenKind.Return);
-			block.statements.Add(new Escape());
-		}
-
-		Block Body() {
-			Block block = new Block(new List<Node>());
-
-			Consume(TokenKind.OpenCurly);
-			StatementList(block, TokenKind.CloseCurly);
-			Consume(TokenKind.CloseCurly);
-
-			return block;
-		}
-
-		Type CollectType(Block block) {
-			if (currentToken.Kind == TokenKind.Auto) {
-				Consume(TokenKind.Auto);
-				return new Type(TypeKind.Untyped);
-			}
-			else if (currentToken.Kind == TokenKind.OpenSquare) {
-				Consume(TokenKind.OpenSquare);
-				Token return_identifier = currentToken;
-				Consume(TokenKind.Identifier);
-				Consume(TokenKind.CloseSquare);
-
-				return new Type(TypeKind.List, Value.TypeFromStr(return_identifier.Lexeme));
-			}
-			else if (currentToken.Kind == TokenKind.OpenParen) {
-				List<Token> identifiers = new List<Token>();
-				Consume(TokenKind.OpenParen);
-
-				while (currentToken.Kind == TokenKind.Identifier) {
-					identifiers.Add(currentToken);
-					Consume(TokenKind.Identifier);
-
-					ConsumeIfExists(TokenKind.Comma);
-				}
-
-				Consume(TokenKind.CloseParen);
-
-				List<TypeKind> typeIDs = new List<TypeKind>();
-
-				foreach(Token t in identifiers) {
-					TypeKind id = Value.TypeFromStr(t.Lexeme);
-					typeIDs.Add(id);
-				}
-
-				return new Type(TypeKind.Tuple, typeIDs.ToArray());
-			} else {
-				Token return_identifier = currentToken;
-				Consume(TokenKind.Identifier);
-
-				return new Type(Value.TypeFromStr(return_identifier.Lexeme));
-			}
-		}
-
-		void FunctionDef(Block block) {
-			Consume(TokenKind.Function);
-
-			Token identifier = currentToken;
-			Consume(TokenKind.Identifier);
-
-			List<Parameter> parameters = ParameterList(block);
-
-			Return return_type = null;
-			if (currentToken.Kind == TokenKind.Colon) {
-				Consume(TokenKind.Colon);
-				TokenKind lastNext = currentToken.Kind;
-
-				Type type = CollectType(block);
-
-				if (lastNext == TokenKind.OpenParen) {
-					return_type = new Return(type, null);
-				} else {
-					Node expr = null;
-					if (currentToken.Kind == TokenKind.OpenParen) {
-						Consume(TokenKind.OpenParen);
-						expr = Expr(block);
-						Consume(TokenKind.CloseParen);
-					}
-					return_type = new Return(type, expr);
-				}
-			}
-
-			block.statements.Add(new FunctionDef(identifier, parameters, return_type, Body()));
-		}
-
-		void StructDef(Block block) {
-			Consume(TokenKind.Struct);
-
-			Token identifier = currentToken;
-			Consume(TokenKind.Identifier);
-
-			Consume(TokenKind.OpenCurly);
-			Dictionary<string, StructVar> members = new Dictionary<string, StructVar>();
-
-			while (currentToken.Kind == TokenKind.Var) {
-				Consume(TokenKind.Var);
-
-				Token type_name = currentToken;
-				Consume(TokenKind.Identifier);
-
-				Token member_id = currentToken;
-				Consume(TokenKind.Identifier);
-
-				if (members.ContainsKey(member_id.Lexeme)) {
-					Error($"Struct defintion '{identifier.Lexeme}' already contains a field '{member_id.Lexeme}'");
-				}
-
-				members[member_id.Lexeme] = new StructVar(member_id, new Type(Value.TypeFromToken(type_name.Kind)));
-
-				Consume(TokenKind.SemiColon);
-			}
-
-			Consume(TokenKind.CloseCurly);
-
-			block.statements.Add(new StructDef(identifier, members));
-		}
-
-		IfStmt IfStatement(Block block) {
-			Consume(TokenKind.If);
-
-			VarDecl initStatement = null;
-
-			if (currentToken.Kind == TokenKind.Var || currentToken.Kind == TokenKind.Let) {
-				Consume(currentToken.Kind);
-				initStatement = VariableDeclaration(block, currentToken.Kind == TokenKind.Let);
-			}
-
-			Node expr = Expr(block);
-			Block true_body = Body();
-			Node false_body = null;
-
-			if (currentToken.Kind == TokenKind.Else) {
-				Consume(TokenKind.Else);
-
-				if (currentToken.Kind == TokenKind.If) {
-					false_body = IfStatement(block);
-				} else {
-					false_body = Body();
-				}
-			}
-
-			return new IfStmt(expr, initStatement, true_body, false_body);
-		}
-
-		void While(Block block) {
-			Consume(TokenKind.While);
-			VarDecl variable = null;
-
-			if (currentToken.Kind == TokenKind.Var) {
-				Consume(TokenKind.Var);
-				variable = VariableDeclaration(block, true);
-			}
-
-			block.statements.Add(new While(Expr(block), Body(), variable));
-		}
-
-		void DoWhile(Block block) {
-			Consume(TokenKind.Do);
-			Block body = Body();
-			Consume(TokenKind.While);
-			
-			block.statements.Add(new While(Expr(block), body, null));
-		}
-
-		Index IndexStmt(Block block, Token identifier) {
 			List<Node> exprs = new List<Node>();
-			
-			// while(currentToken.Kind == TokenKind.OpenSquare) {
-			// 	Consume(TokenKind.OpenSquare);
-			// 	exprs.Add(Expr(block));
-			// 	Consume(TokenKind.CloseSquare);
-			// }
-			
-			// FIXME: Allow the above to work throughout (Nested tuples)
-			Consume(TokenKind.OpenSquare);
-			exprs.Add(Expr(block));
-			Consume(TokenKind.CloseSquare);
 
-			return new Index(identifier, exprs);
-		}
-
-		void StatementList(Block block, TokenKind closing) {
-			while(currentToken.Kind != closing) {
-				Statement(block);
+			while(current.Kind != TokenKind.CloseParen) {
+				exprs.Add(Arithmetic(block));
+				ConsumeIfExists(TokenKind.Comma);
 			}
+
+			Consume(TokenKind.CloseParen);
+
+			block.statements.Add(new Print(exprs));
 		}
 
 		void Statement(Block block) {
-			switch(currentToken.Kind) {
-				case TokenKind.Var: {
-					Consume(TokenKind.Var);
-					VariableDeclarations(block, true);
-					break;
-				}
-
-				case TokenKind.Let: {
-					Consume(TokenKind.Let);
-					VariableDeclarations(block, false);
-					break;
-				}
-
-				case TokenKind.If: {
-					block.statements.Add(IfStatement(block));
-					return; // Avoid semicolon
-				}
-
-				case TokenKind.While: {
-					While(block);
-					return; // Avoid semicolon
-				}
-
-				case TokenKind.Do: {
-					DoWhile(block);
-					break;
-				}
-
-				case TokenKind.At: {
-					BuiltinFnCall(block);
-					break;
-				}
-
-				case TokenKind.Return: {
-					Escape(block);
-					break;
-				}
-
-				case TokenKind.Identifier: {
-					Token identifier = currentToken;
-					Consume(TokenKind.Identifier);
-
-					switch(currentToken.Kind) {
-						case TokenKind.OpenParen:
-							block.statements.Add(FunctionCall(block, identifier));
-							break;
-						
-						case TokenKind.OpenSquare:
-							IndexAssignment(block, identifier);
-							break;
-
-						// TODO: Support alternate assignment operators += -= *= /=
-						case TokenKind.Equals:
-							Assignment(block, identifier);
-							break;
-
-						default:
-							Error($"Unknown token following identifier: {currentToken.Kind}");
-							break;
-					}
-					break;
-				}
-
-				case TokenKind.Function: {
-					FunctionDef(block);
-					break;
-				}
-
-				default:
-					Error($"Unknown token in statement: {currentToken.Kind}");
-					break;
-			}
-
-			Consume(TokenKind.SemiColon);
-		}
-
-		void Declaration() {
-			// Record defs
-			// Functions
-			while (currentToken.Kind != TokenKind.End) {
-				switch(currentToken.Kind) {
-					case TokenKind.Struct: {
-						StructDef(app.block);
-						break;
-					}
-
-					case TokenKind.Function: {
-						FunctionDef(app.block);
+			while(current.Kind != TokenKind.End) {
+				switch(current.Kind) {
+					case TokenKind.Print: {
+						PrintStatement(block);
 						break;
 					}
 
 					default:
-						Statement(app.block);
-						break;
+						Error($"Unknown token kind found {current.Kind}");
+						return;
 				}
+
+				Consume(TokenKind.SemiColon);
 			}
+		}
+
+		public Application Parse() {
+			Block programBlock = new Block(new List<Node>());
+			Statement(programBlock);
+
+			return new Application(programBlock);
 		}
 	}
 }

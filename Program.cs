@@ -9,15 +9,9 @@ namespace TinyLang {
 				return;
 			}
 
-			Parser parser = new Parser(File.ReadAllText(args[0]));
-
 			try {
-				Builtins.InitBuiltins();
-
+				Parser parser = new Parser(File.ReadAllText(args[0]));
 				Application app = parser.Parse();
-				
-				Analyser analyser = new Analyser();
-				analyser.Run(app);
 
 				Interpreter interpreter = new Interpreter();
 				interpreter.Run(app);
