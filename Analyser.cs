@@ -522,7 +522,7 @@ namespace TinyLang {
 			foreach(Node node in builtin.arguments) {
 				Visit(node);
 
-				if (idx < builtin.native.required.Length) {
+				if (builtin.native.required != null && idx < builtin.native.required.Length) {
 					Type realType = ExpectType(node, builtin.native.required[idx]);
 
 					if (realType != null) {
