@@ -88,6 +88,56 @@ namespace TinyLang {
 			return TypeKind.Error;
 		}
 
+		TypeKind ExpectType(Node node, TypeKind expected) {
+			switch(node) {
+				case BinaryOp: {
+					TypeKind left = FindType(((BinaryOp)node).left);
+					TypeKind right = FindType(((BinaryOp)node).right);
+
+					if (left != expected) {
+						return left;
+					}
+
+					if (right != expected) {
+						return right;
+					}
+
+					return expected;
+				}
+
+				case FunctionDef: {
+					if (expected != TypeKind.Function) {
+						return TypeKind.Function;
+					}
+
+					return expected;
+				}
+
+				case Literal: {
+					TypeKind literal = Value.TypeFromToken(((Literal)node).token);
+
+					if (literal != expected) {
+						return literal;
+					}
+
+					return expected;
+				}
+
+				case Argument: {
+					TypeKind arg = FindType(((Argument)node).expr);
+					
+					if (expected != arg) {
+						return arg;
+					}
+
+					return expected;
+				}
+			}
+
+			Error($"Cannot expect type kind from node '{node}'");
+			return TypeKind.Error;
+		}
+
 		void Visit(Node node) {
 			switch(node) {
 				case Block: 			VisitBlock((Block)node); break;
@@ -95,9 +145,10 @@ namespace TinyLang {
 				case VariableDecl:		VisitVariableDecl((VariableDecl)node); break;
 				case FunctionDef:		VisitFunctionDef((FunctionDef)node); break;
 				case FunctionCall:		VisitFunctionCall((FunctionCall)node); break;
+				case Print: 			VisitPrint((Print)node); break;
+				case Identifier:		VisitIdentifier((Identifier)node); break;
 
 				// NoOp
-				case Print: break;
 				case Literal: break;
 
 				default:
@@ -115,6 +166,15 @@ namespace TinyLang {
 		void VisitBinaryOp(BinaryOp binaryOp) {
 			Visit(binaryOp.left);
 			Visit(binaryOp.right);
+
+			TypeKind left = FindType(binaryOp.left);
+			TypeKind right = ExpectType(binaryOp.right, left);
+
+			Console.WriteLine($"Binop {left} {right}");
+
+			if (right != left) {
+				Error($"Binary operation expected type {left} but received {right}");
+			}
 		}
 
 		void VisitVariableDecl(VariableDecl vardecl) {
@@ -163,6 +223,18 @@ namespace TinyLang {
 			foreach(Argument arg in fncall.arguments) {
 				Visit(arg.expr);
 				arg.kind = FindType(arg);
+			}
+		}
+
+		void VisitPrint(Print print) {
+			foreach(Node node in print.arguments) {
+				Visit(node);
+			}
+		}
+
+		void VisitIdentifier(Identifier identifier) {
+			if (!table.HasSymbol(identifier.token.Lexeme)) {
+				Error($"Identifier '{identifier.token.Lexeme}' does not exist in any scope");
 			}
 		}
 	}
