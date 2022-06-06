@@ -19,11 +19,15 @@ namespace TinyLang {
 	class CallStack {
 		public List<ActivationRecord> stack = new List<ActivationRecord>();
 
-		public void Push(string identifier) {
+		public void Add(VarSym variable) {
+			stack[^1].members[variable.identifier] = variable;
+		}
+
+		public void PushRecord(string identifier) {
 			stack.Add(new ActivationRecord(identifier, stack.Count, new Dictionary<string, VarSym>()));
 		}
 
-		public void Pop() {
+		public void PopRecord() {
 			stack.Remove(stack[^1]);
 		}
 
@@ -39,8 +43,13 @@ namespace TinyLang {
 	}
 
 	class Interpreter {
+		CallStack callStack = new CallStack();
+
+
 		public void Run(Application app) {
+			callStack.PushRecord("global");
 			Visit(app.block);
+			callStack.PopRecord();
 		}
 
 		void Error(string message) {
@@ -49,10 +58,11 @@ namespace TinyLang {
 		
 		Value Visit(Node node) {
 			switch(node) {
-				case Block:			return VisitBlock((Block)node);
-				case BinaryOp: 		return VisitBinaryOp((BinaryOp)node);
-				case Print: 		return VisitPrintStmt((Print)node);
-				case Literal:		return VisitLiteral((Literal)node);
+				case Block:				return VisitBlock((Block)node);
+				case BinaryOp: 			return VisitBinaryOp((BinaryOp)node);
+				case Print: 			return VisitPrintStmt((Print)node);
+				case Literal:			return VisitLiteral((Literal)node);
+				case VariableDecl:		return VisitVariableDecl((VariableDecl)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -96,6 +106,11 @@ namespace TinyLang {
 			}
 
 			Error($"Unknown liteal type {literal.token.Kind}");
+			return null;
+		}
+
+		Value VisitVariableDecl(VariableDecl vardecl) {
+			callStack.Add(new VarSym(vardecl.token.Lexeme, vardecl.kind));
 			return null;
 		}
 	}	

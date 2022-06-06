@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace TinyLang {
 	enum TypeKind {
 		Int, Float, Bool, String, Function, Struct,
-		List, Dictionary,
+		List, Dictionary, Error,
 	}
 
 	abstract class Value {
@@ -14,6 +14,17 @@ namespace TinyLang {
 		public Value(TypeKind kind, object data) {
 			this.Kind = kind;
 			this.Data = data;
+		}
+
+		public static TypeKind TypeFromToken(Token token) {
+			switch(token.Kind) {
+				case TokenKind.Int:				return TypeKind.Int;
+				case TokenKind.Float:			return TypeKind.Float;
+				case TokenKind.Boolean:			return TypeKind.Bool;
+				case TokenKind.String:			return TypeKind.String;
+			}
+
+			throw new InvalidOperationException($"Unknown type to fetch from token '{token.Kind}'");
 		}
 
 		public static Value operator+(Value me, Value other) {
@@ -31,18 +42,22 @@ namespace TinyLang {
 	}
 
 	sealed class IntValue : Value {
-		public IntValue(int value) : base(TypeKind.Int, (int)value) {}
+		public IntValue(int value) : base(TypeKind.Int, value) {}
 	}
 
 	sealed class FloatValue : Value {
-		public FloatValue(float value) : base(TypeKind.Float, (float)value) {}
+		public FloatValue(float value) : base(TypeKind.Float, value) {}
 	}
 
 	sealed class BoolValue : Value {
-		public BoolValue(bool value) : base(TypeKind.Bool, (bool)value) {}
+		public BoolValue(bool value) : base(TypeKind.Bool, value) {}
 	}
 
 	sealed class StringValue : Value {
-		public StringValue(string value) : base(TypeKind.String, (string)value) {}
+		public StringValue(string value) : base(TypeKind.String, value) {}
+	}
+
+	sealed class FunctionValue : Value {
+		public FunctionValue(FunctionDef value) : base(TypeKind.Function, value) {}
 	}
 }

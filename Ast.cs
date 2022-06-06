@@ -9,11 +9,11 @@ namespace TinyLang {
 		}
 	}
 
-	sealed class Variable : Node {
+	sealed class VariableDecl : Node {
 		public readonly Node expr;
 		public TypeKind kind; // Resolved in Analysis
 
-		public Variable(Token identifier, Node expr) : base(identifier) {
+		public VariableDecl(Token identifier, Node expr) : base(identifier) {
 			this.expr = expr;
 		}
 	}

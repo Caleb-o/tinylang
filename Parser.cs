@@ -132,7 +132,7 @@ namespace TinyLang {
 
 			Node expr = Arithmetic(block);
 
-			block.statements.Add(new Variable(identifier, expr));
+			block.statements.Add(new VariableDecl(identifier, expr));
 		}
 
 		void Statement(Block block) {

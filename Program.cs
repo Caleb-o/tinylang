@@ -13,6 +13,9 @@ namespace TinyLang {
 				Parser parser = new Parser(File.ReadAllText(args[0]));
 				Application app = parser.Parse();
 
+				Analyser analyser = new Analyser();
+				analyser.Analyse(app);
+
 				Interpreter interpreter = new Interpreter();
 				interpreter.Run(app);
 			} catch(Exception e) {
