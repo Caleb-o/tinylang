@@ -21,7 +21,7 @@ namespace TinyLang {
 
 			int idx = 0;
 			foreach(VarSym variable in members.Values) {
-				sb.Append($"  [{idx}] '{variable.identifier}':{variable.kind} = {variable.value}\n");
+				sb.Append($"  [{idx}] '{variable.identifier}' {variable.value} => {variable.kind}\n");
 				idx++;
 			}
 
@@ -55,10 +55,11 @@ namespace TinyLang {
 		}
 
 		public void Print() {
+			Console.WriteLine("--- CallStack ---");
 			for(int i = stack.Count - 1; i >= 0; i--) {
 				ActivationRecord record = stack[i];
 
-				Console.WriteLine($"[{i}] '{record.identifier}':\n{record}");
+				Console.WriteLine($"[{i}] '{record.identifier}'\n{record}");
 			}
 		}
 	}
@@ -68,9 +69,7 @@ namespace TinyLang {
 
 
 		public void Run(Application app) {
-			callStack.PushRecord("global");
 			Visit(app.block);
-			callStack.PopRecord();
 		}
 
 		void Error(string message) {
@@ -188,7 +187,15 @@ namespace TinyLang {
 			
 				// Check for required args
 				if (fncall.arguments.Count != fncall.def.parameters.Count) {
-					Error($"Function variable '{fncall.token.Lexeme}' expected {fncall.def.parameters.Count} arguments but received {fncall.arguments.Count}");
+					Error($"Function variable '{fncall.token.Lexeme}' expected {fncall.def.parameters.Count} argument(s) but received {fncall.arguments.Count}");
+				}
+
+				for(int i = 0; i < fncall.arguments.Count; i++) {
+					TypeKind param = fncall.def.parameters[i].kind;
+
+					if (param != TypeKind.Unknown && fncall.arguments[i].kind != param) {
+						Error($"Argument '{fncall.def.parameters[i].token.Lexeme}' in function '{fncall.def.identifier}' expected type {param} but received {fncall.arguments[i].kind}");
+					}
 				}
 			}
 
