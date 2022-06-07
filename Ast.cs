@@ -22,7 +22,6 @@ namespace TinyLang {
 
 	sealed class VariableAssignment : Node {
 		public readonly Node expr;
-		public TinyType kind; // Resolved in Analysis
 
 		public VariableAssignment(Token identifier, Node expr) : base(identifier) {
 			this.expr = expr;
