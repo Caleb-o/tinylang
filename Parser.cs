@@ -60,6 +60,7 @@ namespace TinyLang {
 		}
 
 		FunctionDef FunctionDefinition() {
+			Token fntoken = current;
 			Consume(TokenKind.Function);
 
 			Consume(TokenKind.OpenParen);
@@ -81,7 +82,7 @@ namespace TinyLang {
 			}
 
 			Consume(TokenKind.CloseParen);
-			return new FunctionDef(null, identifiers, CollectType(), Body());
+			return new FunctionDef(fntoken, identifiers, CollectType(), Body());
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
@@ -95,6 +96,32 @@ namespace TinyLang {
 			Consume(TokenKind.CloseParen);
 
 			return new FunctionCall(identifier, arguments);
+		}
+
+		StructDef StructDefinition() {
+			Token structtoken = current;
+			Consume(TokenKind.Struct);
+
+			Dictionary<string, TinyType> members = new Dictionary<string, TinyType>();
+
+			Consume(TokenKind.OpenCurly);
+			while(current.Kind != TokenKind.CloseCurly) {
+				Token identifier = current;
+				Consume(TokenKind.Identifier);
+
+				if (members.ContainsKey(identifier.Lexeme)) {
+					Error($"Struct definition already contains a member '{identifier.Lexeme}'", identifier);
+				}
+
+				TinyType kind = CollectType();
+
+				members[identifier.Lexeme] = kind;
+
+				ConsumeIfExists(TokenKind.Comma);
+			}
+			Consume(TokenKind.CloseCurly);
+
+			return new StructDef(structtoken, members);
 		}
 
 		ListLiteral ListLiteral(Block block) {
@@ -136,7 +163,6 @@ namespace TinyLang {
 					return new Identifier(ftoken);
 				}
 
-
 				case TokenKind.Int:
 				case TokenKind.Float:
 				case TokenKind.String:
@@ -147,6 +173,10 @@ namespace TinyLang {
 
 				case TokenKind.Function: {
 					return FunctionDefinition();
+				}
+
+				case TokenKind.Struct: {
+					return StructDefinition();
 				}
 			}
 

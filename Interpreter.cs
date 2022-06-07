@@ -110,6 +110,7 @@ namespace TinyLang {
 				case FunctionCall:			return VisitFunctionCall((FunctionCall)node);
 				case Identifier:			return VisitIdentifier((Identifier)node);
 				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
+				case StructDef: 			return VisitStructDef((StructDef)node);
 				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
 				case IfStmt:				return VisitIfStatement((IfStmt)node);
 				case WhileStmt:				return VisitWhileStatement((WhileStmt)node);
@@ -266,11 +267,19 @@ namespace TinyLang {
 		}
 
 		Value VisitFunctionDef(FunctionDef fndef) {
-			VarSym variable = new VarSym(fndef.identifier, false, fndef);
+			VarSym variable = new VarSym(fndef.identifier, fndef);
 			variable.validated = true;
 			callStack.Add(variable);
 
 			return new FunctionValue(fndef);
+		}
+
+		Value VisitStructDef(StructDef sdef) {
+			VarSym variable = new VarSym(sdef.identifier, sdef);
+			variable.validated = true;
+			callStack.Add(variable);
+
+			return new StructValue(sdef);
 		}
 
 		Value VisitConditionalOp(ConditionalOp cond) {

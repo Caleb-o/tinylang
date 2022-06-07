@@ -19,8 +19,9 @@ namespace TinyLang {
 		public VarSym references;
 
 
-		public VarSym(string identifier, bool mutable, FunctionDef def) : base(identifier) {
-			this.mutable = mutable;
+		// Function Def
+		public VarSym(string identifier, FunctionDef def) : base(identifier) {
+			this.mutable = false;
 
 			List<TinyType> types = new List<TinyType>();
 			
@@ -30,6 +31,14 @@ namespace TinyLang {
 
 			this.kind = new TinyFunction(def.identifier, types, def.returns);
 			this.value = new FunctionValue(def);
+		}
+
+		// Struct Def
+		public VarSym(string identifier, StructDef def) : base(identifier) {
+			this.mutable = false;
+
+			this.kind = new TinyStruct(def);
+			this.value = new StructValue(def);
 		}
 
 		public VarSym(string identifier, bool mutable, TinyType kind) : base(identifier) {
@@ -95,6 +104,7 @@ namespace TinyLang {
 			switch(node) {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
 				case FunctionDef:		return new TinyFunction();
+				case StructDef:			return new TinyStruct();
 				case FunctionCall: {
 					VarSym def = (VarSym)table.Lookup(((FunctionCall)node).token.Lexeme, false);
 
@@ -152,6 +162,14 @@ namespace TinyLang {
 				case FunctionDef: {
 					if (expected is not TinyFunction) {
 						return new TinyFunction();
+					}
+
+					return expected;
+				}
+
+				case StructDef: {
+					if (expected is not TinyStruct) {
+						return new TinyStruct();
 					}
 
 					return expected;
@@ -264,6 +282,7 @@ namespace TinyLang {
 				case VariableDecl:			VisitVariableDecl((VariableDecl)node); break;
 				case VariableAssignment:	VisitVariableAssign((VariableAssignment)node); break;
 				case FunctionDef:			VisitFunctionDef((FunctionDef)node); break;
+				case StructDef:				VisitStructDef((StructDef)node); break;
 				case FunctionCall:			VisitFunctionCall((FunctionCall)node); break;
 				case Print: 				VisitPrint((Print)node); break;
 				case Identifier:			VisitIdentifier((Identifier)node); break;
@@ -315,20 +334,36 @@ namespace TinyLang {
 			if (!TinyType.Matches(real, kind)) {
 				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
 			}
+			
+			Visit(expr);
 
-			if (kind is TinyFunction) {
-				if (mutable) {
-					Error($"Function '{identifier}' cannot be mutable, use let instead.");
+			switch(kind) {
+				case TinyFunction: {
+					if (mutable) {
+						Error($"Function definition '{identifier}' cannot be mutable, use let instead.");
+					}
+
+					FunctionDef fndef = (FunctionDef)expr;
+					fndef.identifier = identifier;
+
+					table.Insert(new VarSym(identifier, fndef));
+					break;
 				}
 
-				FunctionDef fndef = (FunctionDef)expr;
-				fndef.identifier = identifier;
+				case TinyStruct: {
+					if (mutable) {
+						Error($"Struct definition '{identifier}' cannot be mutable, use let instead.");
+					}
 
-				Visit(expr);
-				table.Insert(new VarSym(identifier, mutable, fndef));
-			} else {
-				Visit(expr);
-				table.Insert(new VarSym(identifier, mutable, kind));
+					StructDef def = (StructDef)expr;
+					def.identifier = identifier;
+					break;
+				}
+
+				default: {
+					table.Insert(new VarSym(identifier, mutable, kind));
+					break;
+				}
 			}
 		}
 
@@ -375,7 +410,7 @@ namespace TinyLang {
 			result.validated = true;
 			table.Insert(result);
 			
-			VarSym variable = new VarSym(fndef.identifier, false, fndef);
+			VarSym variable = new VarSym(fndef.identifier, fndef);
 			variable.value = new FunctionValue(fndef);
 			variable.validated = true;
 
@@ -383,6 +418,10 @@ namespace TinyLang {
 			Visit(fndef.block);
 
 			table = table.parent;
+		}
+
+		void VisitStructDef(StructDef sdef) {
+
 		}
 
 		void VisitFunctionCall(FunctionCall fncall) {

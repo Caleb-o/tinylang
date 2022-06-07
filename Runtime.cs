@@ -194,4 +194,24 @@ namespace TinyLang {
 			return $"{def.identifier}({sb.ToString()})";
 		}
 	}
+
+	sealed class StructValue : Value {
+		public StructValue(StructDef value) : base(new TinyStruct(value), value) {}
+
+		public override string ToString()
+		{
+			FunctionDef def = (FunctionDef)Data;
+
+			StringBuilder sb = new StringBuilder();
+			for(int i = 0; i < def.parameters.Count; i++) {
+				sb.Append(def.parameters[i].token.Lexeme);
+
+				if (i < def.parameters.Count - 1) {
+					sb.Append(", ");
+				}
+			}
+
+			return $"{def.identifier}({sb.ToString()})";
+		}
+	}
 }

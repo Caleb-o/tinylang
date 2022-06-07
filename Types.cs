@@ -46,49 +46,49 @@ namespace TinyLang {
 		}
 	}
 
-	class TinyAny : TinyType {
+	sealed class TinyAny : TinyType {
 		public override string ToString()
 		{
 			return "any";
 		}
 	}
 
-	class TinyUnit : TinyType {
+	sealed class TinyUnit : TinyType {
 		public override string ToString()
 		{
 			return "unit";
 		}
 	}
 	
-	class TinyInt : TinyType {
+	sealed class TinyInt : TinyType {
 		public override string ToString()
 		{
 			return "int";
 		}
 	}
 
-	class TinyFloat : TinyType {
+	sealed class TinyFloat : TinyType {
 		public override string ToString()
 		{
 			return "float";
 		}
 	}
 	
-	class TinyBool : TinyType {
+	sealed class TinyBool : TinyType {
 		public override string ToString()
 		{
 			return "bool";
 		}
 	}
 	
-	class TinyString : TinyType {
+	sealed class TinyString : TinyType {
 		public override string ToString()
 		{
 			return "string";
 		}
 	}
 
-	class TinyFunction : TinyType {
+	sealed class TinyFunction : TinyType {
 		public readonly string identifier;
 		public readonly List<TinyType> parameters;
 		public readonly TinyType returns;
@@ -103,7 +103,7 @@ namespace TinyLang {
 		}
 	}
 	
-	class TinyList : TinyType {
+	sealed class TinyList : TinyType {
 		public readonly TinyType inner;
 
 		public TinyList() {}
@@ -115,6 +115,19 @@ namespace TinyLang {
 		public override string ToString()
 		{
 			return $"[{inner}]";
+		}
+	}
+
+	sealed class TinyStruct : TinyType {
+		// Name of the struct
+		public readonly string identifier;
+		public readonly Dictionary<string, TinyType> members;
+
+		public TinyStruct() {}
+
+		public TinyStruct(StructDef def) {
+			this.identifier = def.identifier;
+			this.members = def.members;
 		}
 	}
 }

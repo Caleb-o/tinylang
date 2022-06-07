@@ -108,7 +108,7 @@ namespace TinyLang {
 		public readonly Block block;
 		public readonly TinyType returns;
 
-		public FunctionDef(Token identifier, List<Parameter> parameters, TinyType returns, Block block) : base(identifier) {
+		public FunctionDef(Token token, List<Parameter> parameters, TinyType returns, Block block) : base(token) {
 			this.parameters = parameters;
 			this.returns = returns;
 			this.block = block;
@@ -121,6 +121,15 @@ namespace TinyLang {
 
 		public FunctionCall(Token identifier, List<Argument> arguments) : base(identifier) {
 			this.arguments = arguments;
+		}
+	}
+
+	sealed class StructDef : Node {
+		public string identifier;
+		public readonly Dictionary<string, TinyType> members;
+
+		public StructDef(Token token, Dictionary<string, TinyType> members) : base(token) {
+			this.members = members;
 		}
 	}
 
