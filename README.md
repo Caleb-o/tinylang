@@ -15,7 +15,6 @@ A small interpreted language to try and learn more about language design and dev
 * Traits/Interfaces - Add "generic" functionality to structs eg. Hashable requiring a hash function
 	* Pass-by-trait values
 * Builtin Data structures (with literals)
-	* List - [1, 2, 3]
 	* Dictionary - {"foo": 123, "bar": 456}
 * Ranges - 0..100, 0..=100
 * Imports (Lazy?) - Import other scripts lazily, so they only get included once a call to the import is made
