@@ -92,9 +92,11 @@ namespace TinyLang {
 		public string identifier;
 		public readonly List<Parameter> parameters;
 		public readonly Block block;
+		public readonly TypeKind returns;
 
-		public FunctionDef(Token identifier, List<Parameter> parameters, Block block) : base(identifier) {
+		public FunctionDef(Token identifier, List<Parameter> parameters, TypeKind returns, Block block) : base(identifier) {
 			this.parameters = parameters;
+			this.returns = returns;
 			this.block = block;
 		}
 	}

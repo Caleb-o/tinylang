@@ -58,9 +58,11 @@ namespace TinyLang {
 			}
 			Consume(TokenKind.CloseParen);
 
+			TypeKind returns = CollectType();
+
 			Block inner = Body();
 
-			return new FunctionDef(null, identifiers, inner);
+			return new FunctionDef(null, identifiers, returns, inner);
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
