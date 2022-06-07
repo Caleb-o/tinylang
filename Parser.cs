@@ -34,6 +34,7 @@ namespace TinyLang {
 			}
 		}
 
+		// FIXME: Allow user types to be specified
 		TinyType CollectType() {
 			if (current.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
