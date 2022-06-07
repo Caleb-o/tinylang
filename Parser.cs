@@ -336,17 +336,17 @@ namespace TinyLang {
 
 				case TokenKind.If: {
 					block.statements.Add(IfStatement(block));
-					break;
+					return;
 				}
 
 				case TokenKind.While: {
 					WhileStatement(block);
-					break;
+					return;
 				}
 
 				case TokenKind.Do: {
 					DoWhileStatement(block);
-					break;
+					return;
 				}
 
 				default:
