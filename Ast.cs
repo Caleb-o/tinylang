@@ -11,9 +11,20 @@ namespace TinyLang {
 
 	sealed class VariableDecl : Node {
 		public readonly Node expr;
+		public readonly bool mutable;
 		public TypeKind kind; // Resolved in Analysis
 
-		public VariableDecl(Token identifier, Node expr) : base(identifier) {
+		public VariableDecl(Token identifier, bool mutable, Node expr) : base(identifier) {
+			this.mutable = mutable;
+			this.expr = expr;
+		}
+	}
+
+	sealed class VariableAssignment : Node {
+		public readonly Node expr;
+		public TypeKind kind; // Resolved in Analysis
+
+		public VariableAssignment(Token identifier, Node expr) : base(identifier) {
 			this.expr = expr;
 		}
 	}

@@ -18,16 +18,19 @@ namespace TinyLang {
 	
 	sealed class VarSym : Symbol {
 		public readonly TypeKind kind;
+		public readonly bool mutable;
 		public Value value;
 		// If the type must be handled at run-time
 		public bool validated;
 
-		public VarSym(string identifier, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
-			this.value = new FunctionValue(def);
+		public VarSym(string identifier, bool mutable, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
+			this.mutable = mutable;
 			this.kind = TypeKind.Function;
+			this.value = new FunctionValue(def);
 		}
 
-		public VarSym(string identifier, TypeKind kind, RecordType type = RecordType.Function) : base(identifier, type) {
+		public VarSym(string identifier, bool mutable, TypeKind kind, RecordType type = RecordType.Function) : base(identifier, type) {
+			this.mutable = mutable;
 			this.kind = kind;
 		}
 	}
@@ -141,13 +144,14 @@ namespace TinyLang {
 
 		void Visit(Node node) {
 			switch(node) {
-				case Block: 			VisitBlock((Block)node); break;
-				case BinaryOp: 			VisitBinaryOp((BinaryOp)node); break;
-				case VariableDecl:		VisitVariableDecl((VariableDecl)node); break;
-				case FunctionDef:		VisitFunctionDef((FunctionDef)node); break;
-				case FunctionCall:		VisitFunctionCall((FunctionCall)node); break;
-				case Print: 			VisitPrint((Print)node); break;
-				case Identifier:		VisitIdentifier((Identifier)node); break;
+				case Block: 				VisitBlock((Block)node); break;
+				case BinaryOp: 				VisitBinaryOp((BinaryOp)node); break;
+				case VariableDecl:			VisitVariableDecl((VariableDecl)node); break;
+				case VariableAssignment:	VisitVariableAssign((VariableAssignment)node); break;
+				case FunctionDef:			VisitFunctionDef((FunctionDef)node); break;
+				case FunctionCall:			VisitFunctionCall((FunctionCall)node); break;
+				case Print: 				VisitPrint((Print)node); break;
+				case Identifier:			VisitIdentifier((Identifier)node); break;
 
 				// NoOp
 				case Literal: break;
@@ -176,33 +180,55 @@ namespace TinyLang {
 			}
 		}
 
+		void Assign(string identifier, TypeKind kind, bool mutable, Node expr) {
+			// FIXME: Once the left-most type is found, compare that against the rest of the expression
+			if (kind == TypeKind.Function) {
+				if (mutable) {
+					Error($"Function '{identifier}' cannot be mutable, use let instead.");
+				}
+
+				FunctionDef fndef = (FunctionDef)expr;
+				fndef.identifier = identifier;
+
+				Visit(expr);
+				table.Insert(new VarSym(identifier, mutable, fndef));
+			} else {
+				Visit(expr);
+				table.Insert(new VarSym(identifier, mutable, kind));
+			}
+		}
+
 		void VisitVariableDecl(VariableDecl vardecl) {
 			if (table.HasSymbol(vardecl.token.Lexeme)) {
 				Error($"'{vardecl.token.Lexeme}' has already been defined in the current scope");
 			}
 
-			// FIXME: Once the left-most type is found, compare that against the rest of the expression
 			TypeKind kind = FindType(vardecl.expr);
 			vardecl.kind = kind;
 
-			if (kind == TypeKind.Function) {
-				FunctionDef fndef = (FunctionDef)vardecl.expr;
-				fndef.identifier = vardecl.token.Lexeme;
+			Assign(vardecl.token.Lexeme, kind, vardecl.mutable, vardecl.expr);
+		}
 
-				Visit(vardecl.expr);
-				table.Insert(new VarSym(vardecl.token.Lexeme, fndef));
-			} else {
-				Visit(vardecl.expr);
-				table.Insert(new VarSym(vardecl.token.Lexeme, kind));
+		void VisitVariableAssign(VariableAssignment assign) {
+			VarSym variable = (VarSym)table.Lookup(assign.token.Lexeme, false);
+
+			if (variable == null) {
+				Error($"'{assign.token.Lexeme}' has not been defined in the current scope");
 			}
+
+			if (!variable.mutable) {
+				Error($"'{assign.token.Lexeme}' is immutable and cannot be reassigned");
+			}
+
+			Assign(variable.identifier, variable.kind, variable.mutable, assign.expr);
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
 			foreach(Identifier id in fndef.parameters) {
-				table.Insert(new VarSym(id.token.Lexeme, TypeKind.Unknown));
+				table.Insert(new VarSym(id.token.Lexeme, false, TypeKind.Unknown));
 			}
 			
-			VarSym variable = new VarSym(fndef.identifier, fndef);
+			VarSym variable = new VarSym(fndef.identifier, false, fndef);
 			variable.validated = true;
 			variable.value = new FunctionValue(fndef);
 

@@ -62,14 +62,15 @@ namespace TinyLang {
 		
 		Value Visit(Node node) {
 			switch(node) {
-				case Block:				return VisitBlock((Block)node);
-				case BinaryOp: 			return VisitBinaryOp((BinaryOp)node);
-				case Print: 			return VisitPrintStmt((Print)node);
-				case Literal:			return VisitLiteral((Literal)node);
-				case VariableDecl:		return VisitVariableDecl((VariableDecl)node);
-				case FunctionCall:		return VisitFunctionCall((FunctionCall)node);
-				case Identifier:		return VisitIdentifier((Identifier)node);
-				case FunctionDef: 		return VisitFunctionDef((FunctionDef)node);
+				case Block:					return VisitBlock((Block)node);
+				case BinaryOp: 				return VisitBinaryOp((BinaryOp)node);
+				case Print: 				return VisitPrintStmt((Print)node);
+				case Literal:				return VisitLiteral((Literal)node);
+				case VariableDecl:			return VisitVariableDecl((VariableDecl)node);
+				case VariableAssignment:	return VisitVariableAssign((VariableAssignment)node);
+				case FunctionCall:			return VisitFunctionCall((FunctionCall)node);
+				case Identifier:			return VisitIdentifier((Identifier)node);
+				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -117,10 +118,17 @@ namespace TinyLang {
 		}
 
 		Value VisitVariableDecl(VariableDecl vardecl) {
-			VarSym variable = new VarSym(vardecl.token.Lexeme, vardecl.kind);
+			VarSym variable = new VarSym(vardecl.token.Lexeme, vardecl.mutable, vardecl.kind);
 			variable.value = Visit(vardecl.expr);
 			variable.validated = true;
 			callStack.Add(variable);
+
+			return new UnitValue();
+		}
+
+		Value VisitVariableAssign(VariableAssignment assign) {
+			VarSym variable = callStack.Resolve(assign.token.Lexeme);
+			variable.value = Visit(assign.expr);
 
 			return new UnitValue();
 		}
@@ -146,7 +154,7 @@ namespace TinyLang {
 			
 			int idx = 0;
 			foreach(Argument arg in fncall.arguments) {
-				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, arg.kind);
+				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, false, arg.kind);
 				variable.validated = true;
 				variable.value = Visit(arg.expr);
 
@@ -166,7 +174,7 @@ namespace TinyLang {
 		}
 
 		Value VisitFunctionDef(FunctionDef fndef) {
-			VarSym variable = new VarSym(fndef.identifier, fndef);
+			VarSym variable = new VarSym(fndef.identifier, false, fndef);
 			variable.validated = true;
 			callStack.Add(variable);
 

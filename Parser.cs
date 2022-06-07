@@ -49,7 +49,7 @@ namespace TinyLang {
 			return new FunctionDef(null, identifiers, inner);
 		}
 
-		FunctionCall FnCall(Token identifier, Block block) {
+		FunctionCall FnCall(Block block, Token identifier) {
 			Consume(TokenKind.OpenParen);
 			List<Argument> arguments = new List<Argument>();
 
@@ -78,7 +78,7 @@ namespace TinyLang {
 					Consume(TokenKind.Identifier);
 
 					if (current.Kind == TokenKind.OpenParen) {
-						return FnCall(ftoken, block);
+						return FnCall(block, ftoken);
 					}
 
 					return new Identifier(ftoken);
@@ -142,9 +142,7 @@ namespace TinyLang {
 			block.statements.Add(new Print(exprs));
 		}
 
-		void VariableDeclaration(Block block) {
-			Consume(TokenKind.Let);
-
+		void VariableDeclaration(Block block, bool mutable) {
 			Token identifier = current;
 			Consume(TokenKind.Identifier);
 
@@ -152,7 +150,12 @@ namespace TinyLang {
 
 			Node expr = Arithmetic(block);
 
-			block.statements.Add(new VariableDecl(identifier, expr));
+			block.statements.Add(new VariableDecl(identifier, mutable, expr));
+		}
+
+		void VariableAssign(Block block, Token identifier) {
+			Consume(TokenKind.Equals);
+			block.statements.Add(new VariableAssignment(identifier, Arithmetic(block)));
 		}
 
 		void Statement(Block block) {
@@ -163,7 +166,14 @@ namespace TinyLang {
 				}
 
 				case TokenKind.Let: {
-					VariableDeclaration(block);
+					Consume(TokenKind.Let);
+					VariableDeclaration(block, false);
+					break;
+				}
+
+				case TokenKind.Var: {
+					Consume(TokenKind.Var);
+					VariableDeclaration(block, true);
 					break;
 				}
 
@@ -172,7 +182,9 @@ namespace TinyLang {
 					Consume(TokenKind.Identifier);
 
 					if (current.Kind == TokenKind.OpenParen) {
-						block.statements.Add(FnCall(identifier, block));
+						block.statements.Add(FnCall(block, identifier));
+					} else if (current.Kind == TokenKind.Equals) {
+						VariableAssign(block, identifier);
 					} else {
 						Error($"Unknown token following identifier '{identifier.Lexeme}':{identifier.Kind}");
 					}
