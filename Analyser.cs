@@ -227,8 +227,10 @@ namespace TinyLang {
 				}
 
 				case ListLiteral: {
-					if (!TinyType.Matches(expected, FindType(node))) {
-						return new TinyList();
+					TinyType listType = FindType(node);
+
+					if (!TinyType.Matches(expected, listType)) {
+						return listType;
 					}
 
 					ListLiteral literal = (ListLiteral)node;

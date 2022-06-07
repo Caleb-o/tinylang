@@ -220,7 +220,7 @@ namespace TinyLang {
 				for(int i = 0; i < fncall.arguments.Count; i++) {
 					TinyType param = fncall.def.parameters[i].kind;
 
-					if (param is not TinyAny && fncall.arguments[i].kind.GetType() != param.GetType()) {
+					if (param is not TinyAny && !TinyType.Matches(fncall.arguments[i].kind, param)) {
 						Error($"Argument '{fncall.def.parameters[i].token.Lexeme}' in function '{fncall.def.identifier}' expected type {param} but received {fncall.arguments[i].kind}");
 					}
 				}
@@ -236,9 +236,9 @@ namespace TinyLang {
 			foreach(Argument arg in fncall.arguments) {
 				Value value = Visit(arg.expr);
 
-				if (arg.kind is not TinyAny && arg.kind.GetType() != value.Kind.GetType()) {
-					Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
-				}
+				// if (arg.kind is not TinyAny && !TinyType.Matches(arg.kind, value.Kind)) {
+				// 	Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
+				// }
 
 				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, false, arg.kind);
 				variable.validated = true;
