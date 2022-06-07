@@ -86,6 +86,7 @@ namespace TinyLang {
 				case FunctionDef:		return TypeKind.Function;
 				case Literal:			return Value.TypeFromToken(((Literal)node).token);
 				case Argument:			return FindType(((Argument)node).expr);
+				case ConditionalOp:		return TypeKind.Bool;
 
 				case Identifier:		return ((VarSym)table.Lookup(((Identifier)node).token.Lexeme, false)).kind;
 			}
@@ -148,6 +149,24 @@ namespace TinyLang {
 
 					return expected;
 				}
+
+				case ConditionalOp: {
+					ConditionalOp cond = (ConditionalOp)node;
+					TypeKind left = FindType(cond.left);
+					TypeKind right = FindType(cond.right);
+
+					// Left and Right should equal
+					if (left != right) {
+						return right;
+					}
+
+					// Expected should be a Bool
+					if (expected != TypeKind.Bool) {
+						return expected;
+					}
+
+					return TypeKind.Bool;
+				}
 			}
 
 			Error($"Cannot expect type kind from node '{node}'");
@@ -164,6 +183,8 @@ namespace TinyLang {
 				case FunctionCall:			VisitFunctionCall((FunctionCall)node); break;
 				case Print: 				VisitPrint((Print)node); break;
 				case Identifier:			VisitIdentifier((Identifier)node); break;
+				case IfStmt:				VisitIfStatement((IfStmt)node); break;
+				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 
 				// NoOp
 				case Literal: break;
@@ -194,6 +215,12 @@ namespace TinyLang {
 
 		void Assign(string identifier, TypeKind kind, bool mutable, Node expr) {
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
+			TypeKind real = ExpectType(expr, kind);
+
+			if (real != kind) {
+				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
+			}
+
 			if (kind == TypeKind.Function) {
 				if (mutable) {
 					Error($"Function '{identifier}' cannot be mutable, use let instead.");
@@ -274,6 +301,27 @@ namespace TinyLang {
 		void VisitIdentifier(Identifier identifier) {
 			if (!table.HasSymbol(identifier.token.Lexeme)) {
 				Error($"Identifier '{identifier.token.Lexeme}' does not exist in any scope");
+			}
+		}
+
+		void VisitIfStatement(IfStmt stmt) {
+			if (stmt.initStatement != null) {
+				Visit(stmt.initStatement);
+			}
+
+			Visit(stmt.expr);
+			Visit(stmt.trueBody);
+
+			if (stmt.falseBody != null) {
+				Visit(stmt.falseBody);
+			}
+		}
+
+		void VisitConditionalOp(ConditionalOp cond) {
+			TypeKind kind = ExpectType(cond, TypeKind.Bool);
+
+			if (kind != TypeKind.Bool) {
+				Error($"Conditional expression expected type {TypeKind.Bool} but received {kind}");
 			}
 		}
 	}

@@ -38,6 +38,15 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class ConditionalOp : Node {
+		public readonly Node left, right;
+
+		public ConditionalOp(Token op, Node left, Node right) : base(op) {
+			this.left = left;
+			this.right = right;
+		}
+	}
+
 	sealed class UnaryOp : Node {
 		public readonly Node right;
 
@@ -96,6 +105,20 @@ namespace TinyLang {
 
 		public FunctionCall(Token identifier, List<Argument> arguments) : base(identifier) {
 			this.arguments = arguments;
+		}
+	}
+
+	sealed class IfStmt : Node {
+		public readonly Node expr;
+		public readonly VariableDecl initStatement;
+		public readonly Block trueBody;
+		public readonly Node falseBody;
+
+		public IfStmt(Node expr, VariableDecl initStmt, Block trueBody, Node falseBody) : base(null) {
+			this.expr = expr;
+			this.initStatement = initStmt;
+			this.trueBody = trueBody;
+			this.falseBody = falseBody;
 		}
 	}
 

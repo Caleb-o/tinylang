@@ -23,7 +23,7 @@ namespace TinyLang {
 			switch(token.Kind) {
 				case TokenKind.Int:				return TypeKind.Int;
 				case TokenKind.Float:			return TypeKind.Float;
-				case TokenKind.Boolean:			return TypeKind.Bool;
+				case TokenKind.Bool:			return TypeKind.Bool;
 				case TokenKind.String:			return TypeKind.String;
 			}
 
@@ -34,12 +34,34 @@ namespace TinyLang {
 			switch(token.Lexeme) {
 				case "int":				return TypeKind.Int;
 				case "float":			return TypeKind.Float;
-				case "boolean":			return TypeKind.Bool;
+				case "bool":			return TypeKind.Bool;
 				case "string":			return TypeKind.String;
 				case "func":			return TypeKind.Function;
 			}
 
 			throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}'");
+		}
+
+		public static Value EqualityEqual(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data == (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data == (float)other.Data);
+				case TypeKind.Bool:			return new BoolValue((bool)me.Data == (bool)other.Data);
+				case TypeKind.String:		return new BoolValue((string)me.Data == (string)other.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value== {me.Kind}");
+		}
+
+		public static Value EqualityNotEqual(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data != (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data != (float)other.Data);
+				case TypeKind.Bool:			return new BoolValue((bool)me.Data != (bool)other.Data);
+				case TypeKind.String:		return new BoolValue((string)me.Data != (string)other.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value!= {me.Kind}");
 		}
 
 		public static Value operator+(Value me, Value other) {

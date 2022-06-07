@@ -40,7 +40,7 @@ A small interpreted language to try and learn more about language design and dev
 ## Data Types
 * int
 * float
-* boolean
+* Bool
 * string
 * void (to signify no return)
 

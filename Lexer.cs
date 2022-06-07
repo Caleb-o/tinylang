@@ -5,7 +5,7 @@ namespace TinyLang {
 	enum TokenKind {
 		End, Error,
 
-		String, Int, Float, Boolean,
+		String, Int, Float, Bool,
 
 		Plus, Minus, Star, Slash, At,
 
@@ -47,8 +47,8 @@ namespace TinyLang {
 			{ "while", TokenKind.While },
 			{ "if", TokenKind.If },
 			{ "else", TokenKind.Else },
-			{ "true", TokenKind.Boolean },
-			{ "false", TokenKind.Boolean },
+			{ "true", TokenKind.Bool },
+			{ "false", TokenKind.Bool },
 		};
 
 		static Dictionary<char, TokenKind> Singles = new Dictionary<char, TokenKind>() {

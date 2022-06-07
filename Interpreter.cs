@@ -71,6 +71,8 @@ namespace TinyLang {
 				case FunctionCall:			return VisitFunctionCall((FunctionCall)node);
 				case Identifier:			return VisitIdentifier((Identifier)node);
 				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
+				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
+				case IfStmt:				return VisitIfStatement((IfStmt)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -102,9 +104,13 @@ namespace TinyLang {
 		}
 
 		Value VisitBlock(Block block) {
+			callStack.PushRecord("block");
+
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+			
+			callStack.PopRecord();
 			return new UnitValue();
 		}
 
@@ -112,7 +118,7 @@ namespace TinyLang {
 			switch(literal.token.Kind) {
 				case TokenKind.Int:			return new IntValue(int.Parse(literal.token.Lexeme));
 				case TokenKind.Float:		return new FloatValue(float.Parse(literal.token.Lexeme));
-				case TokenKind.Boolean:		return new BoolValue(bool.Parse(literal.token.Lexeme));
+				case TokenKind.Bool:		return new BoolValue(bool.Parse(literal.token.Lexeme));
 				case TokenKind.String:		return new StringValue(literal.token.Lexeme);
 			}
 
@@ -200,6 +206,37 @@ namespace TinyLang {
 			callStack.Add(variable);
 
 			return new FunctionValue(fndef);
+		}
+
+		Value VisitConditionalOp(ConditionalOp cond) {
+			Value left = Visit(cond.left);
+			Value right = Visit(cond.right);
+
+			switch(cond.token.Kind) {
+				case TokenKind.EqualEqual:		return Value.EqualityEqual(left, right);
+				case TokenKind.NotEqual:		return Value.EqualityNotEqual(left, right);
+			}
+
+			throw new InvalidOperationException($"Invalid conditional operation '{cond.token.Kind}'");
+		}
+
+		Value VisitIfStatement(IfStmt stmt) {
+			if (stmt.initStatement != null) {
+				callStack.PushRecord("if_init");
+				Visit(stmt.initStatement);
+			}
+
+			if ((bool)Visit(stmt.expr).Data) {
+				Visit(stmt.trueBody);
+			} else if (stmt.falseBody != null) {
+				Visit(stmt.falseBody);
+			}
+
+			if (stmt.initStatement != null) {
+				callStack.PopRecord();
+			}
+
+			return new UnitValue();
 		}
 	}	
 }
