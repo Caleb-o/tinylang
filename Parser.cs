@@ -185,6 +185,13 @@ namespace TinyLang {
 			return vardecl;
 		}
 
+		void VariableDeclarations(Block block, bool mutable) {
+			while(current.Kind == TokenKind.Identifier) {
+				block.statements.Add(VariableDeclaration(block, mutable));
+				ConsumeIfExists(TokenKind.Comma);
+			}
+		}
+
 		void VariableAssign(Block block, Token identifier) {
 			Consume(TokenKind.Equals);
 			block.statements.Add(new VariableAssignment(identifier, Expr(block)));
@@ -226,13 +233,13 @@ namespace TinyLang {
 
 				case TokenKind.Let: {
 					Consume(TokenKind.Let);
-					block.statements.Add(VariableDeclaration(block, false));
+					VariableDeclarations(block, false);
 					break;
 				}
 
 				case TokenKind.Var: {
 					Consume(TokenKind.Var);
-					block.statements.Add(VariableDeclaration(block, true));
+					VariableDeclarations(block, true);
 					break;
 				}
 
