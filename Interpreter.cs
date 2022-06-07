@@ -210,6 +210,10 @@ namespace TinyLang {
 			}
 
 			callStack.PushRecord(fncall.token.Lexeme);
+
+			VarSym result = new VarSym("result", true, new TinyUnit());
+			result.value = new UnitValue();
+			callStack.Add(result);
 			
 			int idx = 0;
 			foreach(Argument arg in fncall.arguments) {
@@ -232,10 +236,10 @@ namespace TinyLang {
 			}
 
 			Visit(fncall.def.block);
-			
+
 			callStack.PopRecord();
 			// FIXME: Allow returning value from calls
-			return new UnitValue();
+			return result.value;
 		}
 
 		Value VisitIdentifier(Identifier identifier) {

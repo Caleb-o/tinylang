@@ -248,6 +248,10 @@ namespace TinyLang {
 		void VisitBlock(Block block) {
 			SymbolTable blockTable = new SymbolTable("block", table);
 			table = blockTable;
+			
+			VarSym result = new VarSym("result", true, new TinyUnit());
+			result.value = new UnitValue();
+			table.Insert(result);
 
 			foreach(Node node in block.statements) {
 				Visit(node);
