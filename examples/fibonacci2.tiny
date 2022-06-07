@@ -1,9 +1,9 @@
 # Fibonacci using variable swaps instead of recursion
-let fib = function(nth: int) {
+let fib = function(nth: int): int {
 	var a = 0, b = 1, c = 0;
 
 	if (nth == 0) {
-		print(0);
+		result = nth;
 		return;
 	}
 
@@ -14,8 +14,8 @@ let fib = function(nth: int) {
 		a = b;
 		b = c;
 	}
-	
-	print(b);
+
+	result = b;
 };
 
-fib(32); # 2178309
+print(fib(32)); # 2178309

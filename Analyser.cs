@@ -96,6 +96,15 @@ namespace TinyLang {
 			switch(node) {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
 				case FunctionDef:		return new TinyFunction();
+				case FunctionCall: {
+					VarSym def = (VarSym)table.Lookup(((FunctionCall)node).token.Lexeme, false);
+
+					while (def.references != null) {
+						def = def.references;
+					}
+
+					return ((FunctionDef)def.value.Data).returns;
+				}
 				case Literal:			return TinyType.TypeFromToken(((Literal)node).token);
 				case Argument:			return FindType(((Argument)node).expr);
 				case ConditionalOp:		return new TinyBool();
@@ -139,6 +148,22 @@ namespace TinyLang {
 				case FunctionDef: {
 					if (expected is not TinyFunction) {
 						return new TinyFunction();
+					}
+
+					return expected;
+				}
+
+				case FunctionCall: {
+					VarSym def = (VarSym)table.Lookup(((FunctionCall)node).token.Lexeme, false);
+
+					while (def.references != null) {
+						def = def.references;
+					}
+
+					TinyType ret = ((FunctionDef)def.value.Data).returns;
+
+					if (!TinyType.Matches(expected, ret)) {
+						return ret;
 					}
 
 					return expected;
@@ -336,6 +361,7 @@ namespace TinyLang {
 			// Add implicit return value
 			VarSym result = new VarSym("result", true, fndef.returns);
 			result.value = new UnitValue();
+			result.validated = true;
 			table.Insert(result);
 			
 			VarSym variable = new VarSym(fndef.identifier, false, fndef);
