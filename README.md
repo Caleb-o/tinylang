@@ -11,13 +11,12 @@ A small interpreted language to try and learn more about language design and dev
 ## TODO
 
 ### Features
-* Enums - Either C-like or Rust-like
-* Traits/Interfaces - Add "generic" functionality to structs eg. Hashable requiring a hash function
-	* Pass-by-trait values
 * Builtin Data structures (with literals)
 	* Dictionary - {"foo": 123, "bar": 456}
-* Ranges - 0..100, 0..=100
-* Imports (Lazy?) - Import other scripts lazily, so they only get included once a call to the import is made
+* Imports - Imports a file in raw form (no wrapping in a namespace)
+* Namespaces - Define your own namespaces to contain code
+	* The main program may automatically use a Program namespace
+* Inject functions, structs and namespaces from C# code (for native libraries)
 
 ### Fixes / Modifications
 * Nothing of interest right now :^)
@@ -28,6 +27,7 @@ A small interpreted language to try and learn more about language design and dev
 
 ## Inspirations
 * Rust
+* Zig
 * Pascal
 * Python
 
