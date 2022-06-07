@@ -178,8 +178,7 @@ namespace TinyLang {
 
 			Consume(TokenKind.Equals);
 
-			Node expr = Expr(block);
-			VariableDecl vardecl = new VariableDecl(identifier, mutable, expr);
+			VariableDecl vardecl = new VariableDecl(identifier, mutable, Expr(block));
 			vardecl.kind = kind;
 
 			return vardecl;
@@ -203,8 +202,11 @@ namespace TinyLang {
 			VariableDecl vardecl = null;
 
 			if (current.Kind == TokenKind.Var || current.Kind == TokenKind.Let) {
+				Token varType = current;
 				Consume(current.Kind);
-				vardecl = VariableDeclaration(block, current.Kind == TokenKind.Let);
+
+				vardecl = VariableDeclaration(block, varType.Kind == TokenKind.Var);
+				Consume(TokenKind.SemiColon);
 			}
 
 			Node expr = Expr(block);
@@ -219,9 +221,24 @@ namespace TinyLang {
 				} else {
 					falseBody = Body();
 				}
-			}
+			}	
 
 			return new IfStmt(expr, vardecl, trueBody, falseBody);
+		}
+
+		void WhileStatement(Block block) {
+			Consume(TokenKind.While);
+			
+			VariableDecl vardecl = null;
+
+			if (current.Kind == TokenKind.Var || current.Kind == TokenKind.Let) {
+				Token varType = current;
+				Consume(current.Kind);
+				vardecl = VariableDeclaration(block, varType.Kind == TokenKind.Var);
+				Consume(TokenKind.SemiColon);
+			}
+
+			block.statements.Add(new WhileStmt(Expr(block), vardecl, Body()));
 		}
 
 		void Statement(Block block) {
@@ -259,6 +276,11 @@ namespace TinyLang {
 
 				case TokenKind.If: {
 					block.statements.Add(IfStatement(block));
+					break;
+				}
+
+				case TokenKind.While: {
+					WhileStatement(block);
 					break;
 				}
 

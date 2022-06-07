@@ -14,6 +14,19 @@ namespace TinyLang {
 			this.depth = depth;
 			this.members = members;
 		}
+
+		public override string ToString()
+		{
+			StringBuilder sb = new StringBuilder();
+
+			int idx = 0;
+			foreach(VarSym variable in members.Values) {
+				sb.Append($"  [{idx}] '{variable.identifier}':{variable.kind} = {variable.value}\n");
+				idx++;
+			}
+
+			return sb.ToString();
+		}
 	}
 
 	class CallStack {
@@ -40,6 +53,14 @@ namespace TinyLang {
 
 			return null;
 		}
+
+		public void Print() {
+			for(int i = stack.Count - 1; i >= 0; i--) {
+				ActivationRecord record = stack[i];
+
+				Console.WriteLine($"[{i}] '{record.identifier}':\n{record}");
+			}
+		}
 	}
 
 	class Interpreter {
@@ -53,10 +74,12 @@ namespace TinyLang {
 		}
 
 		void Error(string message) {
+			callStack.Print();
 			throw new Exception($"Runtime: {message}");
 		}
 
 		void Error(string message, Token token) {
+			callStack.Print();
 			throw new Exception($"Runtime: {message} ['{token.Lexeme}' {token.Line}:{token.Column}]");
 		}
 		
@@ -73,6 +96,7 @@ namespace TinyLang {
 				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
 				case IfStmt:				return VisitIfStatement((IfStmt)node);
+				case WhileStmt:				return VisitIWhileStatement((WhileStmt)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -230,6 +254,23 @@ namespace TinyLang {
 				Visit(stmt.trueBody);
 			} else if (stmt.falseBody != null) {
 				Visit(stmt.falseBody);
+			}
+
+			if (stmt.initStatement != null) {
+				callStack.PopRecord();
+			}
+
+			return new UnitValue();
+		}
+
+		Value VisitIWhileStatement(WhileStmt stmt) {
+			if (stmt.initStatement != null) {
+				callStack.PushRecord("while_init");
+				Visit(stmt.initStatement);
+			}
+
+			while ((bool)Visit(stmt.expr).Data) {
+				Visit(stmt.body);
 			}
 
 			if (stmt.initStatement != null) {

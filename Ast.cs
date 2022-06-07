@@ -122,6 +122,18 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class WhileStmt : Node {
+		public readonly Node expr;
+		public readonly VariableDecl initStatement;
+		public readonly Block body;
+
+		public WhileStmt(Node expr, VariableDecl initStmt, Block body) : base(null) {
+			this.expr = expr;
+			this.initStatement = initStmt;
+			this.body = body;
+		}
+	}
+
 	sealed class Print : Node {
 		public readonly List<Node> arguments;
 

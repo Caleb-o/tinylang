@@ -60,7 +60,7 @@ namespace TinyLang {
 				return symbols[identifier];
 			}
 
-			if (local) {
+			if (local || parent == null) {
 				return null;
 			}
 
@@ -80,6 +80,10 @@ namespace TinyLang {
 			throw new Exception($"Analyser: {message}");
 		}
 
+		void Error(string message, Token token) {
+			throw new Exception($"Analyser: {message} '{token.Lexeme}' [{token.Line}:{token.Column}]");
+		}
+
 		TypeKind FindType(Node node) {
 			switch(node) {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
@@ -88,7 +92,15 @@ namespace TinyLang {
 				case Argument:			return FindType(((Argument)node).expr);
 				case ConditionalOp:		return TypeKind.Bool;
 
-				case Identifier:		return ((VarSym)table.Lookup(((Identifier)node).token.Lexeme, false)).kind;
+				case Identifier: {
+					VarSym variable = (VarSym)table.Lookup(((Identifier)node).token.Lexeme, false);
+
+					if (variable == null) {
+						Error($"Variable '{((Identifier)node).token.Lexeme}' does not exist in any scope");
+					}
+
+					return variable.kind;
+				}
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
@@ -184,6 +196,7 @@ namespace TinyLang {
 				case Print: 				VisitPrint((Print)node); break;
 				case Identifier:			VisitIdentifier((Identifier)node); break;
 				case IfStmt:				VisitIfStatement((IfStmt)node); break;
+				case WhileStmt:				VisitWhileStatement((WhileStmt)node); break;
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 
 				// NoOp
@@ -196,9 +209,14 @@ namespace TinyLang {
 		}
 
 		void VisitBlock(Block block) {
+			SymbolTable blockTable = new SymbolTable("block", table);
+			table = blockTable;
+
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
+
+			table = table.parent;
 		}
 
 		void VisitBinaryOp(BinaryOp binaryOp) {
@@ -267,6 +285,9 @@ namespace TinyLang {
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
+			SymbolTable blockTable = new SymbolTable(fndef.identifier, table);
+			table = blockTable;
+
 			foreach(Parameter param in fndef.parameters) {
 				table.Insert(new VarSym(param.token.Lexeme, false, param.kind));
 			}
@@ -277,6 +298,8 @@ namespace TinyLang {
 
 			table.Insert(variable);
 			Visit(fndef.block);
+
+			table = table.parent;
 		}
 
 		void VisitFunctionCall(FunctionCall fncall) {
@@ -299,13 +322,16 @@ namespace TinyLang {
 		}
 
 		void VisitIdentifier(Identifier identifier) {
-			if (!table.HasSymbol(identifier.token.Lexeme)) {
-				Error($"Identifier '{identifier.token.Lexeme}' does not exist in any scope");
+			if (table.Lookup(identifier.token.Lexeme, false) == null) {
+				Error($"Identifier '{identifier.token.Lexeme}' does not exist in any scope", identifier.token);
 			}
 		}
 
 		void VisitIfStatement(IfStmt stmt) {
 			if (stmt.initStatement != null) {
+				SymbolTable if_table = new SymbolTable("if_init", table);
+				table = if_table;
+
 				Visit(stmt.initStatement);
 			}
 
@@ -315,9 +341,32 @@ namespace TinyLang {
 			if (stmt.falseBody != null) {
 				Visit(stmt.falseBody);
 			}
+
+			if (stmt.initStatement != null) {
+				table = table.parent;
+			}
+		}
+
+		void VisitWhileStatement(WhileStmt stmt) {
+			if (stmt.initStatement != null) {
+				SymbolTable while_table = new SymbolTable("while_init", table);
+				table = while_table;
+
+				Visit(stmt.initStatement);
+			}
+
+			Visit(stmt.expr);
+			Visit(stmt.body);
+
+			if (stmt.initStatement != null) {
+				table = table.parent;
+			}
 		}
 
 		void VisitConditionalOp(ConditionalOp cond) {
+			Visit(cond.left);
+			Visit(cond.right);
+
 			TypeKind kind = ExpectType(cond, TypeKind.Bool);
 
 			if (kind != TypeKind.Bool) {
