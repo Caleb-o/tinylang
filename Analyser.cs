@@ -443,7 +443,7 @@ namespace TinyLang {
 			table = blockTable;
 
 			foreach(Parameter param in fndef.parameters) {
-				table.Insert(new VarSym(param.token.Lexeme, false, param.kind));
+				table.Insert(new VarSym(param.token.Lexeme, param.mutable, param.kind));
 			}
 
 			// Add implicit return value

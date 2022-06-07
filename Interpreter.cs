@@ -196,6 +196,11 @@ namespace TinyLang {
 
 		Value VisitVariableAssign(VariableAssignment assign) {
 			VarSym variable = callStack.Resolve(assign.token.Lexeme);
+
+			while(variable.references != null) {
+				variable = variable.references;
+			}
+
 			variable.value = Visit(assign.expr);
 
 			return new UnitValue();
@@ -248,7 +253,9 @@ namespace TinyLang {
 				// 	Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
 				// }
 
-				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, false, arg.kind);
+				Parameter param = fncall.def.parameters[idx];
+
+				VarSym variable = new VarSym(param.token.Lexeme, param.mutable, arg.kind);
 				variable.validated = true;
 				variable.value = value;
 

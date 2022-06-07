@@ -73,9 +73,11 @@ namespace TinyLang {
 	}
 
 	sealed class Parameter : Node {
+		public readonly bool mutable;
 		public readonly TinyType kind;
 
-		public Parameter(Token token, TinyType kind) : base(token) {
+		public Parameter(Token token, bool mutable, TinyType kind) : base(token) {
+			this.mutable = mutable;
 			this.kind = kind;
 		}
 	}

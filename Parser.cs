@@ -67,7 +67,14 @@ namespace TinyLang {
 			List<Parameter> identifiers = new List<Parameter>();
 			List<string> values = new List<string>();
 
-			while(current.Kind == TokenKind.Identifier) {
+			while(current.Kind == TokenKind.Identifier || current.Kind == TokenKind.Var) {
+				bool mutable = false;
+
+				if (current.Kind == TokenKind.Var) {
+					Consume(TokenKind.Var);
+					mutable = true;
+				}
+
 				Token identifier = current;
 				Consume(TokenKind.Identifier);
 
@@ -77,7 +84,7 @@ namespace TinyLang {
 
 				values.Add(identifier.Lexeme);
 
-				identifiers.Add(new Parameter(identifier, CollectType()));
+				identifiers.Add(new Parameter(identifier, mutable, CollectType()));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 
