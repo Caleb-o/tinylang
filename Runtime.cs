@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace TinyLang {
 	enum TypeKind {
-		Int, Float, Bool, String, Function, Struct,
-		List, Dictionary,
+		Int, Float, Bool, String, Unit,
+		Function, Struct, List, Dictionary,
 		
 		Unknown, Error,
 	}
@@ -41,6 +41,10 @@ namespace TinyLang {
 		{
 			return Data.ToString();
 		}
+	}
+
+	sealed class UnitValue : Value {
+		public UnitValue() : base(TypeKind.Unit, (byte)0) {}
 	}
 
 	sealed class IntValue : Value {

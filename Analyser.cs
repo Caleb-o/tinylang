@@ -19,17 +19,16 @@ namespace TinyLang {
 	sealed class VarSym : Symbol {
 		public readonly TypeKind kind;
 		public Value value;
+		// If the type must be handled at run-time
+		public bool validated;
+
+		public VarSym(string identifier, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
+			this.value = new FunctionValue(def);
+			this.kind = TypeKind.Function;
+		}
 
 		public VarSym(string identifier, TypeKind kind, RecordType type = RecordType.Function) : base(identifier, type) {
 			this.kind = kind;
-		}
-	}
-
-	sealed class FunctionSym : Symbol {
-		public FunctionDef def;
-
-		public FunctionSym(string identifier, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
-			this.def = def;
 		}
 	}
 
@@ -82,6 +81,8 @@ namespace TinyLang {
 				case FunctionDef:		return TypeKind.Function;
 				case Literal:			return Value.TypeFromToken(((Literal)node).token);
 				case Argument:			return FindType(((Argument)node).expr);
+
+				case Identifier:		return ((VarSym)table.Lookup(((Identifier)node).token.Lexeme, false)).kind;
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
@@ -170,8 +171,6 @@ namespace TinyLang {
 			TypeKind left = FindType(binaryOp.left);
 			TypeKind right = ExpectType(binaryOp.right, left);
 
-			Console.WriteLine($"Binop {left} {right}");
-
 			if (right != left) {
 				Error($"Binary operation expected type {left} but received {right}");
 			}
@@ -184,13 +183,14 @@ namespace TinyLang {
 
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
 			TypeKind kind = FindType(vardecl.expr);
+			vardecl.kind = kind;
 
 			if (kind == TypeKind.Function) {
 				FunctionDef fndef = (FunctionDef)vardecl.expr;
 				fndef.identifier = vardecl.token.Lexeme;
 
-				table.Insert(new FunctionSym(vardecl.token.Lexeme, fndef));
 				Visit(vardecl.expr);
+				table.Insert(new VarSym(vardecl.token.Lexeme, fndef));
 			} else {
 				Visit(vardecl.expr);
 				table.Insert(new VarSym(vardecl.token.Lexeme, kind));
@@ -198,31 +198,39 @@ namespace TinyLang {
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
-			Visit(fndef.block);
-			
 			foreach(Identifier id in fndef.parameters) {
 				table.Insert(new VarSym(id.token.Lexeme, TypeKind.Unknown));
 			}
+			
+			VarSym variable = new VarSym(fndef.identifier, fndef);
+			variable.validated = true;
+			variable.value = new FunctionValue(fndef);
 
-			table.Insert(new FunctionSym(fndef.identifier, fndef));
+			table.Insert(variable);
+			Visit(fndef.block);
 		}
 
 		void VisitFunctionCall(FunctionCall fncall) {
-			FunctionSym fnsym = (FunctionSym)table.Lookup(fncall.token.Lexeme, false);
+			VarSym fnsym = (VarSym)table.Lookup(fncall.token.Lexeme, false);
 
 			if (fnsym == null) {
 				Error($"Function '{fncall.token.Lexeme}' has not been defined in any scope");
 			}
 
-			fncall.def = fnsym.def;
+			if (fnsym.kind == TypeKind.Function && !fnsym.validated) {
+				FunctionDef def = (FunctionDef)fnsym.value.Data;
+				fncall.def = def;
 
-			if (fncall.arguments.Count != fnsym.def.parameters.Count) {
-				Error($"Function '{fncall.token.Lexeme}' expected {fnsym.def.parameters.Count} arguments but received {fncall.arguments.Count}");
+				fnsym.validated = true;
+
+				if (fncall.arguments.Count != def.parameters.Count) {
+					Error($"Function '{fncall.token.Lexeme}' expected {def.parameters.Count} arguments but received {fncall.arguments.Count}");
+				}
 			}
 
 			foreach(Argument arg in fncall.arguments) {
+				arg.kind = FindType(arg.expr);
 				Visit(arg.expr);
-				arg.kind = FindType(arg);
 			}
 		}
 

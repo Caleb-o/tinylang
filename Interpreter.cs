@@ -31,8 +31,8 @@ namespace TinyLang {
 			stack.Remove(stack[^1]);
 		}
 
-		public VarSym Resolve(string identifier) {
-			for(int i = stack.Count - 1; i >= 0; i++) {
+		public VarSym Resolve(string identifier, TypeKind kind = TypeKind.Unknown) {
+			for(int i = stack.Count - 1; i >= 0; i--) {
 				if (stack[i].members.ContainsKey(identifier)) {
 					return stack[i].members[identifier];
 				}
@@ -55,6 +55,10 @@ namespace TinyLang {
 		void Error(string message) {
 			throw new Exception($"Runtime: {message}");
 		}
+
+		void Error(string message, Token token) {
+			throw new Exception($"Runtime: {message} ['{token.Lexeme}' {token.Line}:{token.Column}]");
+		}
 		
 		Value Visit(Node node) {
 			switch(node) {
@@ -65,9 +69,7 @@ namespace TinyLang {
 				case VariableDecl:		return VisitVariableDecl((VariableDecl)node);
 				case FunctionCall:		return VisitFunctionCall((FunctionCall)node);
 				case Identifier:		return VisitIdentifier((Identifier)node);
-
-				// NoOp
-				case FunctionDef: 		return null;
+				case FunctionDef: 		return VisitFunctionDef((FunctionDef)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -83,7 +85,7 @@ namespace TinyLang {
 
 			Console.WriteLine(sb.ToString());
 
-			return null;
+			return new UnitValue();
 		}
 		
 		Value VisitBinaryOp(BinaryOp binaryOp) {
@@ -99,7 +101,7 @@ namespace TinyLang {
 			foreach(Node node in block.statements) {
 				Visit(node);
 			}
-			return null;
+			return new UnitValue();
 		}
 
 		Value VisitLiteral(Literal literal) {
@@ -110,24 +112,42 @@ namespace TinyLang {
 				case TokenKind.String:		return new StringValue(literal.token.Lexeme);
 			}
 
-			Error($"Unknown liteal type {literal.token.Kind}");
+			Error($"Unknown literal type {literal.token.Kind}");
 			return null;
 		}
 
 		Value VisitVariableDecl(VariableDecl vardecl) {
 			VarSym variable = new VarSym(vardecl.token.Lexeme, vardecl.kind);
 			variable.value = Visit(vardecl.expr);
+			variable.validated = true;
 			callStack.Add(variable);
 
-			return null;
+			return new UnitValue();
 		}
 
 		Value VisitFunctionCall(FunctionCall fncall) {
+			VarSym fnsym = (VarSym)callStack.Resolve(fncall.token.Lexeme);
+			
+			if (fnsym == null || fnsym.kind != TypeKind.Function) {
+				Error($"Function '{fncall.token.Lexeme}' does not exist in any scope", fncall.token);
+			}
+
+			if (fnsym.validated) {
+				fncall.def = (FunctionDef)fnsym.value.Data;
+			
+				// Check for required args
+				if (fncall.arguments.Count != fncall.def.parameters.Count) {
+					Error($"Function variable '{fncall.token.Lexeme}' expected {fncall.def.parameters.Count} arguments but received {fncall.arguments.Count}");
+				}
+			}
+
+
 			callStack.PushRecord(fncall.token.Lexeme);
 			
 			int idx = 0;
 			foreach(Argument arg in fncall.arguments) {
 				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, arg.kind);
+				variable.validated = true;
 				variable.value = Visit(arg.expr);
 
 				callStack.Add(variable);
@@ -138,11 +158,19 @@ namespace TinyLang {
 			
 			callStack.PopRecord();
 			// FIXME: Allow returning value from calls
-			return null;
+			return new UnitValue();
 		}
 
 		Value VisitIdentifier(Identifier identifier) {
 			return callStack.Resolve(identifier.token.Lexeme).value;
+		}
+
+		Value VisitFunctionDef(FunctionDef fndef) {
+			VarSym variable = new VarSym(fndef.identifier, fndef);
+			variable.validated = true;
+			callStack.Add(variable);
+
+			return new FunctionValue(fndef);
 		}
 	}	
 }
