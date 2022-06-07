@@ -92,6 +92,9 @@ namespace TinyLang {
 		Value VisitBinaryOp(BinaryOp binaryOp) {
 			switch(binaryOp.token.Kind) {
 				case TokenKind.Plus:		return Visit(binaryOp.left) + Visit(binaryOp.right);
+				case TokenKind.Minus:		return Visit(binaryOp.left) - Visit(binaryOp.right);
+				case TokenKind.Star:		return Visit(binaryOp.left) * Visit(binaryOp.right);
+				case TokenKind.Slash:		return Visit(binaryOp.left) / Visit(binaryOp.right);
 			}
 
 			Error($"Unhandled operator in binary operation {binaryOp.token.Kind}");
@@ -135,6 +138,15 @@ namespace TinyLang {
 
 		Value VisitFunctionCall(FunctionCall fncall) {
 			VarSym fnsym = (VarSym)callStack.Resolve(fncall.token.Lexeme);
+
+			// Follow the reference chain
+			if (fnsym != null && fnsym.references != null) {
+				fnsym = fnsym.references;
+
+				while (fnsym.references != null) {
+					fnsym = fnsym.references;
+				}
+			}
 			
 			if (fnsym == null || fnsym.kind != TypeKind.Function) {
 				Error($"Function '{fncall.token.Lexeme}' does not exist in any scope", fncall.token);
@@ -157,6 +169,10 @@ namespace TinyLang {
 				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, false, arg.kind);
 				variable.validated = true;
 				variable.value = Visit(arg.expr);
+
+				if (arg.expr is Identifier) {
+					variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);
+				}
 
 				callStack.Add(variable);
 				idx++;

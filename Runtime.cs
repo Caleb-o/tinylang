@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 
 namespace TinyLang {
@@ -31,10 +32,39 @@ namespace TinyLang {
 
 		public static Value operator+(Value me, Value other) {
 			switch(me.Kind) {
-				case TypeKind.Int:		return new IntValue((int)me.Data + (int)other.Data);
+				case TypeKind.Int:			return new IntValue((int)me.Data + (int)other.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data + (float)other.Data);
+				case TypeKind.String:		return new StringValue((string)me.Data + (string)other.Data);
 			}
 
 			throw new InvalidOperationException($"Invalid operation in Value+ {me.Kind}");
+		}
+
+		public static Value operator-(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data - (int)other.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data - (float)other.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value- {me.Kind}");
+		}
+
+		public static Value operator*(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data * (int)other.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data * (float)other.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value* {me.Kind}");
+		}
+
+		public static Value operator/(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new IntValue((int)me.Data / (int)other.Data);
+				case TypeKind.Float:		return new FloatValue((float)me.Data / (float)other.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value/ {me.Kind}");
 		}
 
 		public override string ToString()
@@ -68,7 +98,18 @@ namespace TinyLang {
 
 		public override string ToString()
 		{
-			return base.ToString();
+			FunctionDef def = (FunctionDef)Data;
+
+			StringBuilder sb = new StringBuilder();
+			for(int i = 0; i < def.parameters.Count; i++) {
+				sb.Append(def.parameters[i].token.Lexeme);
+
+				if (i < def.parameters.Count - 1) {
+					sb.Append(", ");
+				}
+			}
+
+			return $"{def.identifier}({sb.ToString()})";
 		}
 	}
 }

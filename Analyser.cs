@@ -22,6 +22,8 @@ namespace TinyLang {
 		public Value value;
 		// If the type must be handled at run-time
 		public bool validated;
+		public VarSym references;
+
 
 		public VarSym(string identifier, bool mutable, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
 			this.mutable = mutable;
@@ -132,6 +134,16 @@ namespace TinyLang {
 					
 					if (expected != arg) {
 						return arg;
+					}
+
+					return expected;
+				}
+
+				case Identifier: {
+					TypeKind identifier = FindType(node);
+
+					if (expected != identifier) {
+						return identifier;
 					}
 
 					return expected;
