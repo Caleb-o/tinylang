@@ -240,6 +240,11 @@ namespace TinyLang {
 			switch(cond.token.Kind) {
 				case TokenKind.EqualEqual:		return Value.EqualityEqual(left, right);
 				case TokenKind.NotEqual:		return Value.EqualityNotEqual(left, right);
+
+				case TokenKind.Less:			return left < right;
+				case TokenKind.LessEqual:		return left <= right;
+				case TokenKind.Greater:			return left > right;
+				case TokenKind.GreaterEqual:	return left >= right;
 			}
 
 			throw new InvalidOperationException($"Invalid conditional operation '{cond.token.Kind}'");

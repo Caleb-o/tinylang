@@ -101,6 +101,46 @@ namespace TinyLang {
 			throw new InvalidOperationException($"Invalid operation in Value/ {me.Kind}");
 		}
 
+		public static Value operator>(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data > (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data > (float)other.Data);
+				case TypeKind.String:		return new BoolValue(((string)me.Data).Length > ((string)other.Data).Length);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value> {me.Kind}");
+		}
+
+		public static Value operator<(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data < (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data < (float)other.Data);
+				case TypeKind.String:		return new BoolValue(((string)me.Data).Length < ((string)other.Data).Length);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value> {me.Kind}");
+		}
+
+		public static Value operator>=(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data >= (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data >= (float)other.Data);
+				case TypeKind.String:		return new BoolValue(((string)me.Data).Length >= ((string)other.Data).Length);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value> {me.Kind}");
+		}
+
+		public static Value operator<=(Value me, Value other) {
+			switch(me.Kind) {
+				case TypeKind.Int:			return new BoolValue((int)me.Data <= (int)other.Data);
+				case TypeKind.Float:		return new BoolValue((float)me.Data <= (float)other.Data);
+				case TypeKind.String:		return new BoolValue(((string)me.Data).Length <= ((string)other.Data).Length);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in Value> {me.Kind}");
+		}
+
 		public override string ToString()
 		{
 			return Data.ToString();
