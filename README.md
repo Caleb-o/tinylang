@@ -11,12 +11,15 @@ A small interpreted language to try and learn more about language design and dev
 ## TODO
 
 ### Features
-* Builtin Data structures (with literals)
-	* Dictionary - {"foo": 123, "bar": 456}
+* Member access/assignment for lists and struct instances
+	* list[0] / list[0] = 10
+	* instance.field / instance.field = 10
 * Imports - Imports a file in raw form (no wrapping in a namespace)
 * Namespaces - Define your own namespaces to contain code
 	* The main program may automatically use a Program namespace
 * Inject functions, structs and namespaces from C# code (for native libraries)
+* Builtin Data structures (with literals)
+	* Dictionary - {"foo": 123, "bar": 456}
 
 ### Fixes / Modifications
 * Nothing of interest right now :^)
