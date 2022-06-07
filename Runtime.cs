@@ -40,6 +40,17 @@ namespace TinyLang {
 			throw new InvalidOperationException($"Invalid operation in Value!= {me.Kind}");
 		}
 
+		// Negate
+		public static Value operator-(Value me) {
+			switch(me.Kind) {
+				case TinyInt:			return new IntValue(-(int)me.Data);
+				case TinyFloat:			return new FloatValue(-(float)me.Data);
+				case TinyBool:			return new BoolValue(!(bool)me.Data);
+			}
+
+			throw new InvalidOperationException($"Invalid operation in -Value {me.Kind}");
+		}
+
 		public static Value operator+(Value me, Value other) {
 			switch(me.Kind) {
 				case TinyInt:			return new IntValue((int)me.Data + (int)other.Data);

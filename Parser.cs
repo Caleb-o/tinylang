@@ -170,6 +170,11 @@ namespace TinyLang {
 			Token ftoken = current;
 			
 			switch(current.Kind) {
+				case TokenKind.Minus: {
+					Consume(TokenKind.Minus);
+					return new UnaryOp(ftoken, Expr(block));
+				}
+
 				case TokenKind.OpenParen: {
 					Consume(TokenKind.OpenParen);
 					Node node = Expr(block);

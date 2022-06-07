@@ -103,6 +103,7 @@ namespace TinyLang {
 			switch(node) {
 				case Block:					return VisitBlock((Block)node);
 				case BinaryOp: 				return VisitBinaryOp((BinaryOp)node);
+				case UnaryOp: 				return VisitUnaryOp((UnaryOp)node);
 				case Print: 				return VisitPrintStmt((Print)node);
 				case Literal:				return VisitLiteral((Literal)node);
 				case ListLiteral:			return VisitListLiteral((ListLiteral)node);
@@ -146,6 +147,10 @@ namespace TinyLang {
 
 			Error($"Unhandled operator in binary operation {binaryOp.token.Kind}");
 			return null;
+		}
+
+		Value VisitUnaryOp(UnaryOp unary) {
+			return -Visit(unary.right);
 		}
 
 		Value VisitBlock(Block block) {

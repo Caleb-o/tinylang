@@ -1,38 +1,42 @@
-# This is the same as "say_hello(name: string, age: int): void"
-fn say_hello(name: string, age: int) {
-	var int x = 10 + age;
-	var int y = x * x;
+# This is function implicitly returns a unit, which is a 0-type 
+let say_hello = function(name: string, age: int) {
+	# Types will be inferred and then bound to the type
+	# X will now be an integer
+	var x = 10 + age;
+	var y = x * x;
 
-	# Nesting a function works
-	fn say_hello_again() {
-		@println("Hello again, ", name);
+	# Nesting a function is possible
+	let say_hello_again = function() {
+		print("Hello again, ", name);
 	};
 
-	@println("Hello, ", name);
+	print("Hello , ", name);
 	say_hello_again();
-}
+};
 
-fn bar(foo: boolean) {
-	var boolean x = -foo;
-	@println(x, " ", foo, " ", -true, " ", -false);
-}
+let bar = function(foo: bool) {
+	var x = -foo;
+	print(x, " ", foo, " ", -true, " ", -false);
+};
 
-fn baz() {
-	@println(-100, " ", 100);
-}
+let baz = function() {
+	print(-100, " ", 100);
+};
 
-var string n = "Caleb";
-say_hello(n, 22);
+var name = "Bob";
+say_hello(name, 32);
 
-n = "woah";
+name = "Dave";
 
 # Immutability
-var int foo = 10;
-foo = 20;
+let foo = 10;
+# This would error, since we cannot redefine a let binding
+# foo = 20;
 
 bar(true);
 baz();
 
-@println("Hello!", " Foo ", 123, " ", n);
+print("Hello!", " Foo ", 123, " ", name);
 
-var float a = -2.3;
+var a = -2.3;
+print(a);

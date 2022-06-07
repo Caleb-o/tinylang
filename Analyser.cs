@@ -103,6 +103,7 @@ namespace TinyLang {
 		TinyType FindType(Node node) {
 			switch(node) {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
+				case UnaryOp:			return FindType(((UnaryOp)node).right);
 				case FunctionDef:		return new TinyFunction();
 				case StructDef:			return new TinyStruct();
 				
@@ -156,6 +157,16 @@ namespace TinyLang {
 					if (!TinyType.Matches(left, expected)) {
 						return left;
 					}
+
+					if (!TinyType.Matches(right, expected)) {
+						return right;
+					}
+
+					return expected;
+				}
+
+				case UnaryOp: {
+					TinyType right = FindType(((UnaryOp)node).right);
 
 					if (!TinyType.Matches(right, expected)) {
 						return right;
@@ -299,6 +310,7 @@ namespace TinyLang {
 			switch(node) {
 				case Block: 				VisitBlock((Block)node); break;
 				case BinaryOp: 				VisitBinaryOp((BinaryOp)node); break;
+				case UnaryOp: 				VisitUnaryOp((UnaryOp)node); break;
 				case VariableDecl:			VisitVariableDecl((VariableDecl)node); break;
 				case VariableAssignment:	VisitVariableAssign((VariableAssignment)node); break;
 				case FunctionDef:			VisitFunctionDef((FunctionDef)node); break;
@@ -346,6 +358,10 @@ namespace TinyLang {
 			if (!TinyType.Matches(right, left)) {
 				Error($"Binary operation expected type {left} but received {right}");
 			}
+		}
+
+		void VisitUnaryOp(UnaryOp uanry) {
+			Visit(uanry.right);
 		}
 
 		void Assign(string identifier, TinyType kind, bool mutable, Node expr) {
