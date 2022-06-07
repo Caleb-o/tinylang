@@ -79,13 +79,9 @@ namespace TinyLang {
 				identifiers.Add(new Parameter(identifier, CollectType()));
 				ConsumeIfExists(TokenKind.Comma);
 			}
+
 			Consume(TokenKind.CloseParen);
-
-			TinyType returns = CollectType();
-
-			Block inner = Body();
-
-			return new FunctionDef(null, identifiers, returns, inner);
+			return new FunctionDef(null, identifiers, CollectType(), Body());
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
@@ -347,6 +343,13 @@ namespace TinyLang {
 				case TokenKind.Do: {
 					DoWhileStatement(block);
 					return;
+				}
+
+				case TokenKind.Return: {
+					Token token = current;
+					Consume(TokenKind.Return);
+					block.statements.Add(new Return(token));
+					break;
 				}
 
 				default:

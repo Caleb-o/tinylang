@@ -77,6 +77,7 @@ namespace TinyLang {
 
 	sealed class Analyser {
 		SymbolTable table = new SymbolTable("global", null);
+		Block currentBlock = null;
 
 
 		public void Analyse(Application application) {
@@ -235,6 +236,7 @@ namespace TinyLang {
 				case DoWhileStmt:			VisitDoWhileStatement((DoWhileStmt)node); break;
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 				case ListLiteral:			VisitListLiteral((ListLiteral)node); break;
+				case Return:				VisitReturn((Return)node); break;
 
 				// NoOp
 				case Literal: break;
@@ -248,10 +250,8 @@ namespace TinyLang {
 		void VisitBlock(Block block) {
 			SymbolTable blockTable = new SymbolTable("block", table);
 			table = blockTable;
-			
-			VarSym result = new VarSym("result", true, new TinyUnit());
-			result.value = new UnitValue();
-			table.Insert(result);
+
+			currentBlock = block;
 
 			foreach(Node node in block.statements) {
 				Visit(node);
@@ -332,6 +332,11 @@ namespace TinyLang {
 			foreach(Parameter param in fndef.parameters) {
 				table.Insert(new VarSym(param.token.Lexeme, false, param.kind));
 			}
+
+			// Add implicit return value
+			VarSym result = new VarSym("result", true, fndef.returns);
+			result.value = new UnitValue();
+			table.Insert(result);
 			
 			VarSym variable = new VarSym(fndef.identifier, false, fndef);
 			variable.value = new FunctionValue(fndef);
@@ -449,6 +454,14 @@ namespace TinyLang {
 			foreach(Node expr in literal.exprs) {
 				Visit(expr);
 			}
+		}
+
+		void VisitReturn(Return ret) {
+			if (currentBlock.returnstmt != null) {
+				Error("Blocks can only contain a single return statement", ret.token);
+			}
+
+			currentBlock.returnstmt = ret;
 		}
 	}
 }

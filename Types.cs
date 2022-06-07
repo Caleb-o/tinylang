@@ -27,6 +27,10 @@ namespace TinyLang {
 		}
 
 		public static bool Matches(TinyType x, TinyType y) {
+			if (x is TinyAny || y is TinyAny) {
+				return true;
+			}
+
 			switch(x) {
 				case TinyList: {
 					if (x.GetType() != y.GetType()) {

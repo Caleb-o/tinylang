@@ -80,8 +80,13 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class Return : Node {
+		public Return(Token token) : base(token) {}
+	}
+
 	sealed class Block : Node {
 		public readonly List<Node> statements;
+		public Return returnstmt;
 
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;

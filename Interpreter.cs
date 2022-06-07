@@ -98,6 +98,7 @@ namespace TinyLang {
 				case IfStmt:				return VisitIfStatement((IfStmt)node);
 				case WhileStmt:				return VisitWhileStatement((WhileStmt)node);
 				case DoWhileStmt:			return VisitDoWhileStatement((DoWhileStmt)node);
+				case Return:				return VisitReturn((Return)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -211,7 +212,7 @@ namespace TinyLang {
 
 			callStack.PushRecord(fncall.token.Lexeme);
 
-			VarSym result = new VarSym("result", true, new TinyUnit());
+			VarSym result = new VarSym("result", true, fncall.def.returns);
 			result.value = new UnitValue();
 			callStack.Add(result);
 			
@@ -235,7 +236,9 @@ namespace TinyLang {
 				idx++;
 			}
 
-			Visit(fncall.def.block);
+			try {
+				Visit(fncall.def.block);
+			} catch (ReturnException) {}
 
 			callStack.PopRecord();
 			// FIXME: Allow returning value from calls
@@ -324,6 +327,10 @@ namespace TinyLang {
 			}
 
 			return new UnitValue();
+		}
+
+		Value VisitReturn(Return ret) {
+			throw new ReturnException();
 		}
 	}	
 }

@@ -4,6 +4,11 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace TinyLang {
+	sealed class ReturnException : Exception
+	{
+		public ReturnException() {}
+	}
+
 	abstract class Value {
 		public readonly TinyType Kind;
 		public readonly object Data;
