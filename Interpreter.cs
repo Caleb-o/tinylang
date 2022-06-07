@@ -96,7 +96,8 @@ namespace TinyLang {
 				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
 				case IfStmt:				return VisitIfStatement((IfStmt)node);
-				case WhileStmt:				return VisitIWhileStatement((WhileStmt)node);
+				case WhileStmt:				return VisitWhileStatement((WhileStmt)node);
+				case DoWhileStmt:			return VisitDoWhileStatement((DoWhileStmt)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -263,11 +264,30 @@ namespace TinyLang {
 			return new UnitValue();
 		}
 
-		Value VisitIWhileStatement(WhileStmt stmt) {
+		Value VisitWhileStatement(WhileStmt stmt) {
 			if (stmt.initStatement != null) {
 				callStack.PushRecord("while_init");
 				Visit(stmt.initStatement);
 			}
+
+			while ((bool)Visit(stmt.expr).Data) {
+				Visit(stmt.body);
+			}
+
+			if (stmt.initStatement != null) {
+				callStack.PopRecord();
+			}
+
+			return new UnitValue();
+		}
+
+		Value VisitDoWhileStatement(DoWhileStmt stmt) {
+			if (stmt.initStatement != null) {
+				callStack.PushRecord("dowhile_init");
+				Visit(stmt.initStatement);
+			}
+
+			Visit(stmt.body);
 
 			while ((bool)Visit(stmt.expr).Data) {
 				Visit(stmt.body);

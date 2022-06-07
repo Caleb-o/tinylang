@@ -197,6 +197,7 @@ namespace TinyLang {
 				case Identifier:			VisitIdentifier((Identifier)node); break;
 				case IfStmt:				VisitIfStatement((IfStmt)node); break;
 				case WhileStmt:				VisitWhileStatement((WhileStmt)node); break;
+				case DoWhileStmt:			VisitDoWhileStatement((DoWhileStmt)node); break;
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 
 				// NoOp
@@ -348,6 +349,22 @@ namespace TinyLang {
 		}
 
 		void VisitWhileStatement(WhileStmt stmt) {
+			if (stmt.initStatement != null) {
+				SymbolTable while_table = new SymbolTable("while_init", table);
+				table = while_table;
+
+				Visit(stmt.initStatement);
+			}
+
+			Visit(stmt.expr);
+			Visit(stmt.body);
+
+			if (stmt.initStatement != null) {
+				table = table.parent;
+			}
+		}
+
+		void VisitDoWhileStatement(DoWhileStmt stmt) {
 			if (stmt.initStatement != null) {
 				SymbolTable while_table = new SymbolTable("while_init", table);
 				table = while_table;

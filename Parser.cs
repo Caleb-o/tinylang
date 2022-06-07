@@ -241,6 +241,24 @@ namespace TinyLang {
 			block.statements.Add(new WhileStmt(Expr(block), vardecl, Body()));
 		}
 
+		void DoWhileStatement(Block block) {
+			Consume(TokenKind.Do);
+			
+			VariableDecl vardecl = null;
+
+			if (current.Kind == TokenKind.Var || current.Kind == TokenKind.Let) {
+				Token varType = current;
+				Consume(current.Kind);
+				vardecl = VariableDeclaration(block, varType.Kind == TokenKind.Var);
+			}
+
+			Block body = Body();
+			Consume(TokenKind.While);
+			Node expr = Expr(block);
+
+			block.statements.Add(new DoWhileStmt(expr, vardecl, body));
+		}
+
 		void Statement(Block block) {
 			switch(current.Kind) {
 				case TokenKind.Print: {
@@ -281,6 +299,11 @@ namespace TinyLang {
 
 				case TokenKind.While: {
 					WhileStatement(block);
+					break;
+				}
+
+				case TokenKind.Do: {
+					DoWhileStatement(block);
 					break;
 				}
 
