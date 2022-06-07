@@ -7,15 +7,10 @@ A small interpreted language to try and learn more about language design and dev
 * [DataTypes](#data-types)
 * [Examples](#examples)
 * [Sample Scripts](#sample-scripts)
-* [Builtins](#builtin-functions)
-
-## Other
-* [Caveats](./CAVEATS.md)
 
 ## TODO
 
 ### Features
-* Structures - User types
 * Enums - Either C-like or Rust-like
 * Traits/Interfaces - Add "generic" functionality to structs eg. Hashable requiring a hash function
 	* Pass-by-trait values
@@ -81,6 +76,8 @@ let return_integer = function(): int {
 	# Notice there is no return statement here, as an implicit
 	# 'result' variable is made with the type int
 	# and will be returned on function exit
+	# The default value will be the default of a primitive,
+	# otherwise it's a unit
 };
 
 simple(); # Hello!
@@ -94,9 +91,9 @@ print(foo, " ", 1234); # 0 1234
 # Functions can be defined and called within each other
 # They are scope based, so they can only be called from
 # its current scope
-fn foo() {
-	fn bar() {
-		fn baz() {
+let foo = function() {
+	let bar = function() {
+		let baz = function() {
 
 		};
 
@@ -111,29 +108,29 @@ foo();
 
 ### Control Flow
 ```julia
-let int a = 10;
+let a = 10;
 
 # If statements
 if a > 20 {
-	@println("A > 20");
+	print("A > 20");
 } else if (a <= 10) {
-	@println("a <= 10);
+	print("a <= 10);
 } else {
-	@println("other");
+	print("other");
 }
 
 # Looping with while loop
-var int i = 0;
+var i = 0;
 
 while i < 10 {
 	i = i + 1;
-	@println(i);
+	print(i);
 }
 
 # -- Declare a variable within the while statement
-while var int j = 0; j < 10 {
+while var j = 0; j < 10 {
 	j = j + 1;
-	@println(j);
+	print(j);
 }
 
 # -- Do While loop
@@ -144,54 +141,36 @@ do {
 } while i < 2;
 ```
 
-### Referencing Variables
-```julia
-# By default, function parameters are immutable, so they cannot
-# be mutated. If they are marked with var, they then become mutable
-# Only mutable variables can be passed in, as it wouldn't make sense
-# to mutate a literal
-
-# Note: This also works with nested functions
-fn increment_reference(my_ref: var int) {
-	# my_ref = my_var
-	my_ref = my_ref + 1;
-}
-
-var int my_var = 0;
-increment_reference(my_var); # 1
-increment_reference(my_var); # 2
-increment_reference(my_var); # 3
-
-@println(my_var); # 3
-```
-
 ## Sample Scripts
 
 ### [Fibonacci](./examples/fibonacci.tiny) (Recursive)
 ```julia
 # Recursive function to get the Nth value of the fibonacci sequence
-fn fibonacci(n: int): int {
+let fib = function(n: int): int {
 	if n > 1 {
-		result = fibonacci(n - 1) + fibonacci(n - 2);
+		result = fib(n - 1) + fib(n - 2);
 	} else {
 		result = n;
 	}
-}
+};
 
-@println(fibonacci(24)); # 46368
+print(fib(24)); # 46368
 ```
 
 ### [Fibonacci](./examples/fibonacci2.tiny) (Variable Swaps)
 ```julia
-fn fibonacci(n: int): int {
-	var int a = 0, b = 1, c = 0;
+# This approach improves on performance dramatically. We can get a higher
+# Nth value of the sequence, in a fraction of the time.
+# This has to do with the performance of recursion
+let fib = function(nth: int): int {
+	var a = 0, b = 1, c = 0;
 
-	if (n == 0) {
-		result = n;
+	if (nth == 0) {
+		result = nth;
 		return;
 	}
 
-	while var int i = 2; i <= n {
+	while var i = 2; i <= nth {
 		i = i + 1;
 
 		c = a + b;
@@ -200,11 +179,7 @@ fn fibonacci(n: int): int {
 	}
 
 	result = b;
-}
+};
 
-@println(fibonacci(24)); # 46368
+print(fib(32)); # 2178309
 ```
-
-## Builtin Functions
-* println(...) : Variadic function to print values to the console
-* printobj(...) : Variadic function to print more information about values
