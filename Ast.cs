@@ -126,9 +126,20 @@ namespace TinyLang {
 
 	sealed class StructDef : Node {
 		public string identifier;
-		public readonly Dictionary<string, TinyType> members;
+		public readonly Dictionary<string, TinyType> fields;
 
-		public StructDef(Token token, Dictionary<string, TinyType> members) : base(token) {
+		public StructDef(Token token, Dictionary<string, TinyType> fields) : base(token) {
+			this.fields = fields;
+		}
+	}
+
+	sealed class StructInstance : Node {
+		public string identifier;
+		public StructDef def;
+		public readonly Dictionary<string, Node> members;
+
+		public StructInstance(Token token, Dictionary<string, Node> members) : base(token) {
+			this.identifier = token.Lexeme;
 			this.members = members;
 		}
 	}

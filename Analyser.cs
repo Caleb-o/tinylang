@@ -38,7 +38,7 @@ namespace TinyLang {
 			this.mutable = false;
 
 			this.kind = new TinyStruct(def);
-			this.value = new StructValue(def);
+			this.value = new StructValue(def, new List<Value>());
 		}
 
 		public VarSym(string identifier, bool mutable, TinyType kind) : base(identifier) {
@@ -105,6 +105,11 @@ namespace TinyLang {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
 				case FunctionDef:		return new TinyFunction();
 				case StructDef:			return new TinyStruct();
+				
+				case StructInstance: {
+					return new TinyStruct(((StructInstance)node).identifier);
+				}
+
 				case FunctionCall: {
 					VarSym def = (VarSym)table.Lookup(((FunctionCall)node).token.Lexeme, false);
 
@@ -170,6 +175,21 @@ namespace TinyLang {
 				case StructDef: {
 					if (expected is not TinyStruct) {
 						return new TinyStruct();
+					}
+
+					return expected;
+				}
+
+				case StructInstance: {
+					StructInstance instance = (StructInstance)node;
+					TinyStruct kind = new TinyStruct(instance.identifier);
+					
+					if (expected is not TinyStruct) {
+						return kind;
+					}
+
+					if (!TinyType.Matches(expected, kind)) {
+						return kind;
 					}
 
 					return expected;
@@ -282,7 +302,6 @@ namespace TinyLang {
 				case VariableDecl:			VisitVariableDecl((VariableDecl)node); break;
 				case VariableAssignment:	VisitVariableAssign((VariableAssignment)node); break;
 				case FunctionDef:			VisitFunctionDef((FunctionDef)node); break;
-				case StructDef:				VisitStructDef((StructDef)node); break;
 				case FunctionCall:			VisitFunctionCall((FunctionCall)node); break;
 				case Print: 				VisitPrint((Print)node); break;
 				case Identifier:			VisitIdentifier((Identifier)node); break;
@@ -292,9 +311,11 @@ namespace TinyLang {
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 				case ListLiteral:			VisitListLiteral((ListLiteral)node); break;
 				case Return:				VisitReturn((Return)node); break;
+				case StructInstance:		VisitStructInstance((StructInstance)node); break;
 
 				// NoOp
 				case Literal: break;
+				case StructDef: break;
 
 				default:
 					Error($"Unhandled node in analysis {node}");
@@ -335,10 +356,8 @@ namespace TinyLang {
 				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
 			}
 			
-			Visit(expr);
-
-			switch(kind) {
-				case TinyFunction: {
+			switch(expr) {
+				case FunctionDef: {
 					if (mutable) {
 						Error($"Function definition '{identifier}' cannot be mutable, use let instead.");
 					}
@@ -346,21 +365,27 @@ namespace TinyLang {
 					FunctionDef fndef = (FunctionDef)expr;
 					fndef.identifier = identifier;
 
+					// Must be done here
+					Visit(expr);
 					table.Insert(new VarSym(identifier, fndef));
 					break;
 				}
 
-				case TinyStruct: {
+				case StructDef: {
 					if (mutable) {
 						Error($"Struct definition '{identifier}' cannot be mutable, use let instead.");
 					}
 
 					StructDef def = (StructDef)expr;
 					def.identifier = identifier;
+
+					Visit(expr);
+					table.Insert(new VarSym(identifier, def));
 					break;
 				}
 
 				default: {
+					Visit(expr);
 					table.Insert(new VarSym(identifier, mutable, kind));
 					break;
 				}
@@ -420,15 +445,15 @@ namespace TinyLang {
 			table = table.parent;
 		}
 
-		void VisitStructDef(StructDef sdef) {
-
-		}
-
 		void VisitFunctionCall(FunctionCall fncall) {
 			VarSym fnsym = (VarSym)table.Lookup(fncall.token.Lexeme, false);
 
 			if (fnsym == null) {
 				Error($"Function '{fncall.token.Lexeme}' has not been defined in any scope");
+			}
+
+			if (fnsym.kind is not TinyFunction) {
+				Error($"Identifier '{fncall.token.Lexeme}' is not of type function", fncall.token);
 			}
 
 			foreach(Argument arg in fncall.arguments) {
@@ -538,6 +563,40 @@ namespace TinyLang {
 			}
 
 			currentBlock.returnstmt = ret;
+		}
+
+		void VisitStructInstance(StructInstance instance) {
+			VarSym def = (VarSym)table.Lookup(instance.identifier, false);
+			
+			if (def == null) {
+				Error($"Struct type '{instance.identifier}' does not exist in any scope", instance.token);
+			}
+
+			if (def.kind is not TinyStruct) {
+				Error($"Identifier '{instance.identifier}' is not of type struct", instance.token);
+			}
+
+			TinyStruct sdef = (TinyStruct)def.kind;
+			instance.def = sdef.def;
+
+			if (sdef.fields.Count != instance.members.Count) {
+				Error($"Struct initialiser expected {sdef.fields.Count} arguments but received {instance.members.Count}", instance.token);
+			}
+
+			foreach(var (id, expr) in instance.members) {
+				if (!sdef.fields.ContainsKey(id)) {
+					Error($"Struct type {instance.identifier} does not contain a field {id}", instance.token);
+				}
+
+				Visit(expr);
+
+				TinyType expected = sdef.fields[id];
+				TinyType kind = FindType(expr);
+
+				if (!TinyType.Matches(expected, kind)) {
+					Error($"Struct field {id} expected type {expected} but received {kind}", instance.token);
+				}
+			}
 		}
 	}
 }

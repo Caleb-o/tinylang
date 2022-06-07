@@ -121,13 +121,24 @@ namespace TinyLang {
 	sealed class TinyStruct : TinyType {
 		// Name of the struct
 		public readonly string identifier;
-		public readonly Dictionary<string, TinyType> members;
+		public StructDef def;
+		public readonly Dictionary<string, TinyType> fields;
 
 		public TinyStruct() {}
 
+		public TinyStruct(string identifier) {
+			this.identifier = identifier;
+		}
+
 		public TinyStruct(StructDef def) {
+			this.def = def;
 			this.identifier = def.identifier;
-			this.members = def.members;
+			this.fields = def.fields;
+		}
+
+		public override string ToString()
+		{
+			return identifier;
 		}
 	}
 }

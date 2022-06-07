@@ -124,6 +124,35 @@ namespace TinyLang {
 			return new StructDef(structtoken, members);
 		}
 
+		StructInstance StructInstance(Block block) {
+			Consume(TokenKind.New);
+
+			Token identifier = current;
+			Consume(TokenKind.Identifier);
+
+			Consume(TokenKind.OpenCurly);
+			Dictionary<string, Node> members = new Dictionary<string, Node>();
+
+			while(current.Kind == TokenKind.Identifier) {
+				Token fieldName = current;
+				Consume(TokenKind.Identifier);
+
+				if (members.ContainsKey(fieldName.Lexeme)) {
+					Error($"Struct initialiser already contains the field id '{fieldName.Lexeme}'", fieldName);
+				}
+
+				Consume(TokenKind.Colon);
+				Node expr = Expr(block);
+
+				members[fieldName.Lexeme] = expr;
+				ConsumeIfExists(TokenKind.Comma);
+			}
+
+			Consume(TokenKind.CloseCurly);
+
+			return new StructInstance(identifier, members);
+		}
+
 		ListLiteral ListLiteral(Block block) {
 			Consume(TokenKind.OpenSquare);
 			List<Node> exprs = new List<Node>();
@@ -177,6 +206,10 @@ namespace TinyLang {
 
 				case TokenKind.Struct: {
 					return StructDefinition();
+				}
+
+				case TokenKind.New: {
+					return StructInstance(block);
 				}
 			}
 

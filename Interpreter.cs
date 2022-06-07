@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 
@@ -111,6 +112,7 @@ namespace TinyLang {
 				case Identifier:			return VisitIdentifier((Identifier)node);
 				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 				case StructDef: 			return VisitStructDef((StructDef)node);
+				case StructInstance:		return VisitStructInstance((StructInstance)node);
 				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
 				case IfStmt:				return VisitIfStatement((IfStmt)node);
 				case WhileStmt:				return VisitWhileStatement((WhileStmt)node);
@@ -279,7 +281,17 @@ namespace TinyLang {
 			variable.validated = true;
 			callStack.Add(variable);
 
-			return new StructValue(sdef);
+			return new UnitValue();
+		}
+
+		Value VisitStructInstance(StructInstance instance) {
+			List<Value> values = new List<Value>();
+
+			foreach(Node node in instance.members.Values) {
+				values.Add(Visit(node));
+			}
+
+			return new StructValue(instance.def, values);
 		}
 
 		Value VisitConditionalOp(ConditionalOp cond) {

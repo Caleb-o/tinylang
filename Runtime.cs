@@ -196,22 +196,27 @@ namespace TinyLang {
 	}
 
 	sealed class StructValue : Value {
-		public StructValue(StructDef value) : base(new TinyStruct(value), value) {}
+		public StructValue(StructDef def, List<Value> values) : base(new TinyStruct(def), values) {}
 
 		public override string ToString()
 		{
-			FunctionDef def = (FunctionDef)Data;
+			StructDef def = ((TinyStruct)Kind).def;
+			int idx = 0;
 
-			StringBuilder sb = new StringBuilder();
-			for(int i = 0; i < def.parameters.Count; i++) {
-				sb.Append(def.parameters[i].token.Lexeme);
+			StringBuilder sb = new StringBuilder(def.identifier);
+			sb.Append(" { ");
 
-				if (i < def.parameters.Count - 1) {
+			foreach(var ((id, kind), val) in def.fields.Zip((List<Value>)Data)) {
+				sb.Append($"{id}:{kind} = {val}");
+
+				if (idx < def.fields.Count - 1) {
 					sb.Append(", ");
 				}
+				idx++;
 			}
 
-			return $"{def.identifier}({sb.ToString()})";
+			sb.Append(" }");
+			return sb.ToString();
 		}
 	}
 }
