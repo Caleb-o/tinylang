@@ -259,12 +259,15 @@ namespace TinyLang {
 				variable.validated = true;
 				variable.value = value;
 
+				// FIXME: Move more analysis to the analyser
 				if (arg.expr is Identifier) {
 					variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);
 					
 					if (param.mutable && !variable.references.mutable) {
 						Error($"Trying to pass immutable argument '{variable.references.identifier}' to a mutable parameter '{param.token.Lexeme}'");
 					}
+				} else if (param.mutable) {
+					Error($"Mutable parameter '{param.token.Lexeme}' must receive an identifier, but received '{value}'", fncall.token);
 				}
 
 
