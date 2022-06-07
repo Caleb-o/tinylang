@@ -40,55 +40,53 @@ A small interpreted language to try and learn more about language design and dev
 ## Data Types
 * int
 * float
-* Bool
+* bool
 * string
-* void (to signify no return)
+* unit (to signify no return)
+* list
+* struct
 
 ## Examples
 
 ### Hello, World!
 ```julia
-# This is a builtin function, which are called by prefixing 
-# a function call with an @. They are defined in the VM.
-@println("Hello, World!");
+# This is a keyword masked as a function, so it looks more natural. It accepts any amount of arguments.
+print("Hello, World!");
 ```
 
 ### Variables and Mutability
 ```julia
-# A mutable variable
-var int foo = 10;
+# A mutable variable (type is inferred)
+var foo = 10;
 foo = foo - 20;
 
 # An immutable variable
-let int bar = foo * foo;
+let bar = foo * foo;
 
 # Error: Cannot mutate an immutable variable
 # bar = 20;
+
+# Using a type annotation
+var baz: int = 22;
 ```
 
 ### Functions
 ```julia
-fn simple() {
-	# void is the assumed return type when the return type is omitted
-	@println("Hello!");
-}
+let simple = function() {
+	# unit is the assumed return type when the return type is omitted
+	print("Hello!");
+};
 
-fn return_integer(): int {
+let return_integer = function(): int {
 	# Notice there is no return statement here, as an implicit
 	# 'result' variable is made with the type int
 	# and will be returned on function exit
-}
-
-fn return_default_integer(): int(1234) {
-	# Functions can define a default return value
-	# It is a niche feature, but feels right to have
-}
+};
 
 simple(); # Hello!
-let int foo = return_integer();
-let int bar = return_default_integer();
+let foo = return_integer();
 
-@println(foo, " ", bar); # 0 1234
+print(foo, " ", 1234); # 0 1234
 ```
 
 ### Nested Functions

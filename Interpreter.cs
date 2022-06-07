@@ -237,7 +237,7 @@ namespace TinyLang {
 			callStack.PushRecord(fncall.token.Lexeme);
 
 			VarSym result = new VarSym("result", true, fncall.def.returns);
-			result.value = new UnitValue();
+			result.value = Value.DefaultFrom(fncall.def.returns);
 			callStack.Add(result);
 			
 			int idx = 0;

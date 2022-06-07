@@ -18,6 +18,18 @@ namespace TinyLang {
 			this.Data = data;
 		}
 
+		public static Value DefaultFrom(TinyType kind) {
+			switch(kind) {
+				case TinyInt:			return new IntValue(0);
+				case TinyFloat:			return new FloatValue(0.0f);
+				case TinyBool:			return new BoolValue(false);
+				case TinyString:		return new StringValue("");
+				
+				default:
+					return new UnitValue();
+			}
+		}
+
 		public static Value EqualityEqual(Value me, Value other) {
 			switch(me.Kind) {
 				case TinyInt:			return new BoolValue((int)me.Data == (int)other.Data);
