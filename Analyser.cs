@@ -17,7 +17,7 @@ namespace TinyLang {
 	}
 	
 	sealed class VarSym : Symbol {
-		public readonly TypeKind kind;
+		public readonly TinyType kind;
 		public readonly bool mutable;
 		public Value value;
 		// If the type must be handled at run-time
@@ -27,11 +27,18 @@ namespace TinyLang {
 
 		public VarSym(string identifier, bool mutable, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
 			this.mutable = mutable;
-			this.kind = TypeKind.Function;
+
+			List<TinyType> types = new List<TinyType>();
+			
+			foreach(Parameter param in def.parameters) {
+				types.Add(param.kind);
+			}
+
+			this.kind = new TinyFunction(def.identifier, types, def.returns);
 			this.value = new FunctionValue(def);
 		}
 
-		public VarSym(string identifier, bool mutable, TypeKind kind, RecordType type = RecordType.Function) : base(identifier, type) {
+		public VarSym(string identifier, bool mutable, TinyType kind, RecordType type = RecordType.Function) : base(identifier, type) {
 			this.mutable = mutable;
 			this.kind = kind;
 		}
@@ -84,13 +91,13 @@ namespace TinyLang {
 			throw new Exception($"Analyser: {message} '{token.Lexeme}' [{token.Line}:{token.Column}]");
 		}
 
-		TypeKind FindType(Node node) {
+		TinyType FindType(Node node) {
 			switch(node) {
 				case BinaryOp:			return FindType(((BinaryOp)node).left);
-				case FunctionDef:		return TypeKind.Function;
-				case Literal:			return Value.TypeFromToken(((Literal)node).token);
+				case FunctionDef:		return new TinyFunction();
+				case Literal:			return TinyType.TypeFromToken(((Literal)node).token);
 				case Argument:			return FindType(((Argument)node).expr);
-				case ConditionalOp:		return TypeKind.Bool;
+				case ConditionalOp:		return new TinyBool();
 
 				case Identifier: {
 					VarSym variable = (VarSym)table.Lookup(((Identifier)node).token.Lexeme, false);
@@ -104,20 +111,20 @@ namespace TinyLang {
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
-			return TypeKind.Error;
+			return null;
 		}
 
-		TypeKind ExpectType(Node node, TypeKind expected) {
+		TinyType ExpectType(Node node, TinyType expected) {
 			switch(node) {
 				case BinaryOp: {
-					TypeKind left = FindType(((BinaryOp)node).left);
-					TypeKind right = FindType(((BinaryOp)node).right);
+					TinyType left = FindType(((BinaryOp)node).left);
+					TinyType right = FindType(((BinaryOp)node).right);
 
-					if (left != expected) {
+					if (left.GetType() != expected.GetType()) {
 						return left;
 					}
 
-					if (right != expected) {
+					if (right.GetType() != expected.GetType()) {
 						return right;
 					}
 
@@ -125,17 +132,17 @@ namespace TinyLang {
 				}
 
 				case FunctionDef: {
-					if (expected != TypeKind.Function) {
-						return TypeKind.Function;
+					if (expected is not TinyFunction) {
+						return new TinyFunction();
 					}
 
 					return expected;
 				}
 
 				case Literal: {
-					TypeKind literal = Value.TypeFromToken(((Literal)node).token);
+					TinyType literal = TinyType.TypeFromToken(((Literal)node).token);
 
-					if (literal != expected) {
+					if (literal.GetType() != expected.GetType()) {
 						return literal;
 					}
 
@@ -143,9 +150,9 @@ namespace TinyLang {
 				}
 
 				case Argument: {
-					TypeKind arg = FindType(((Argument)node).expr);
+					TinyType arg = FindType(((Argument)node).expr);
 					
-					if (expected != arg) {
+					if (expected.GetType() != arg.GetType()) {
 						return arg;
 					}
 
@@ -153,9 +160,9 @@ namespace TinyLang {
 				}
 
 				case Identifier: {
-					TypeKind identifier = FindType(node);
+					TinyType identifier = FindType(node);
 
-					if (expected != identifier) {
+					if (expected.GetType() != identifier.GetType()) {
 						return identifier;
 					}
 
@@ -164,25 +171,25 @@ namespace TinyLang {
 
 				case ConditionalOp: {
 					ConditionalOp cond = (ConditionalOp)node;
-					TypeKind left = FindType(cond.left);
-					TypeKind right = FindType(cond.right);
+					TinyType left = FindType(cond.left);
+					TinyType right = FindType(cond.right);
 
 					// Left and Right should equal
-					if (left != right) {
+					if (left.GetType() != right.GetType()) {
 						return right;
 					}
 
 					// Expected should be a Bool
-					if (expected != TypeKind.Bool) {
+					if (expected is not TinyBool) {
 						return expected;
 					}
 
-					return TypeKind.Bool;
+					return new TinyBool();
 				}
 			}
 
 			Error($"Cannot expect type kind from node '{node}'");
-			return TypeKind.Error;
+			return null;
 		}
 
 		void Visit(Node node) {
@@ -224,23 +231,23 @@ namespace TinyLang {
 			Visit(binaryOp.left);
 			Visit(binaryOp.right);
 
-			TypeKind left = FindType(binaryOp.left);
-			TypeKind right = ExpectType(binaryOp.right, left);
+			TinyType left = FindType(binaryOp.left);
+			TinyType right = ExpectType(binaryOp.right, left);
 
-			if (right != left) {
+			if (right.GetType() != left.GetType()) {
 				Error($"Binary operation expected type {left} but received {right}");
 			}
 		}
 
-		void Assign(string identifier, TypeKind kind, bool mutable, Node expr) {
+		void Assign(string identifier, TinyType kind, bool mutable, Node expr) {
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
-			TypeKind real = ExpectType(expr, kind);
+			TinyType real = ExpectType(expr, kind);
 
-			if (real != kind) {
+			if (real.GetType() != kind.GetType()) {
 				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
 			}
 
-			if (kind == TypeKind.Function) {
+			if (kind is TinyFunction) {
 				if (mutable) {
 					Error($"Function '{identifier}' cannot be mutable, use let instead.");
 				}
@@ -261,9 +268,9 @@ namespace TinyLang {
 				Error($"'{vardecl.token.Lexeme}' has already been defined in the current scope");
 			}
 
-			TypeKind kind = FindType(vardecl.expr);
+			TinyType kind = FindType(vardecl.expr);
 			
-			if (vardecl.kind != TypeKind.Unknown && vardecl.kind != kind) {
+			if (vardecl.kind is not TinyAny && vardecl.kind != kind) {
 				Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
 			}
 			vardecl.kind = kind;
@@ -384,10 +391,10 @@ namespace TinyLang {
 			Visit(cond.left);
 			Visit(cond.right);
 
-			TypeKind kind = ExpectType(cond, TypeKind.Bool);
+			TinyType kind = ExpectType(cond, new TinyBool());
 
-			if (kind != TypeKind.Bool) {
-				Error($"Conditional expression expected type {TypeKind.Bool} but received {kind}");
+			if (kind is not TinyBool) {
+				Error($"Conditional expression expected type {new TinyBool()} but received {kind}");
 			}
 		}
 	}

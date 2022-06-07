@@ -16,6 +16,10 @@ namespace TinyLang {
 			throw new Exception($"Parser: {message}");
 		}
 
+		void Error(string message, Token token) {
+			throw new Exception($"Parser: {message} ['{token.Lexeme}' {token.Line}:{token.Column}]");
+		}
+
 		void Consume(TokenKind expected) {
 			if (current.Kind == expected) {
 				current = lexer.Next();
@@ -30,17 +34,17 @@ namespace TinyLang {
 			}
 		}
 
-		TypeKind CollectType() {
+		TinyType CollectType() {
 			if (current.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 
 				Token type_id = current;
 				Consume(TokenKind.Identifier);
 
-				return Value.TypeFromLexeme(type_id);
+				return TinyType.TypeFromLexeme(type_id);
 			}
 
-			return TypeKind.Unknown;
+			return new TinyAny();
 		}
 
 		FunctionDef FunctionDefinition() {
@@ -48,17 +52,24 @@ namespace TinyLang {
 
 			Consume(TokenKind.OpenParen);
 			List<Parameter> identifiers = new List<Parameter>();
+			List<string> values = new List<string>();
 
 			while(current.Kind == TokenKind.Identifier) {
 				Token identifier = current;
 				Consume(TokenKind.Identifier);
+
+				if (values.Contains(identifier.Lexeme)) {
+					Error($"Function already contains parameter '{identifier.Lexeme}'", identifier);
+				}
+
+				values.Add(identifier.Lexeme);
 
 				identifiers.Add(new Parameter(identifier, CollectType()));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 			Consume(TokenKind.CloseParen);
 
-			TypeKind returns = CollectType();
+			TinyType returns = CollectType();
 
 			Block inner = Body();
 
@@ -176,7 +187,7 @@ namespace TinyLang {
 			Token identifier = current;
 			Consume(TokenKind.Identifier);
 
-			TypeKind kind = CollectType();
+			TinyType kind = CollectType();
 
 			Consume(TokenKind.Equals);
 

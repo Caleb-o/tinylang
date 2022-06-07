@@ -44,7 +44,7 @@ namespace TinyLang {
 			stack.Remove(stack[^1]);
 		}
 
-		public VarSym Resolve(string identifier, TypeKind kind = TypeKind.Unknown) {
+		public VarSym Resolve(string identifier) {
 			for(int i = stack.Count - 1; i >= 0; i--) {
 				if (stack[i].members.ContainsKey(identifier)) {
 					return stack[i].members[identifier];
@@ -178,7 +178,7 @@ namespace TinyLang {
 				}
 			}
 			
-			if (fnsym == null || fnsym.kind != TypeKind.Function) {
+			if (fnsym == null || fnsym.kind is not TinyFunction) {
 				Error($"Function '{fncall.token.Lexeme}' does not exist in any scope", fncall.token);
 			}
 
@@ -191,9 +191,9 @@ namespace TinyLang {
 				}
 
 				for(int i = 0; i < fncall.arguments.Count; i++) {
-					TypeKind param = fncall.def.parameters[i].kind;
+					TinyType param = fncall.def.parameters[i].kind;
 
-					if (param != TypeKind.Unknown && fncall.arguments[i].kind != param) {
+					if (param is not TinyAny && fncall.arguments[i].kind.GetType() != param.GetType()) {
 						Error($"Argument '{fncall.def.parameters[i].token.Lexeme}' in function '{fncall.def.identifier}' expected type {param} but received {fncall.arguments[i].kind}");
 					}
 				}
@@ -205,7 +205,7 @@ namespace TinyLang {
 			foreach(Argument arg in fncall.arguments) {
 				Value value = Visit(arg.expr);
 
-				if (arg.kind != TypeKind.Unknown && arg.kind != value.Kind) {
+				if (arg.kind is not TinyAny && arg.kind.GetType() != value.Kind.GetType()) {
 					Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
 				}
 

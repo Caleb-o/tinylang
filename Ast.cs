@@ -12,7 +12,7 @@ namespace TinyLang {
 	sealed class VariableDecl : Node {
 		public readonly Node expr;
 		public readonly bool mutable;
-		public TypeKind kind; // Resolved in Analysis
+		public TinyType kind; // Resolved in Analysis
 
 		public VariableDecl(Token identifier, bool mutable, Node expr) : base(identifier) {
 			this.mutable = mutable;
@@ -22,7 +22,7 @@ namespace TinyLang {
 
 	sealed class VariableAssignment : Node {
 		public readonly Node expr;
-		public TypeKind kind; // Resolved in Analysis
+		public TinyType kind; // Resolved in Analysis
 
 		public VariableAssignment(Token identifier, Node expr) : base(identifier) {
 			this.expr = expr;
@@ -64,9 +64,9 @@ namespace TinyLang {
 	}
 
 	sealed class Parameter : Node {
-		public readonly TypeKind kind;
+		public readonly TinyType kind;
 
-		public Parameter(Token token, TypeKind kind) : base(token) {
+		public Parameter(Token token, TinyType kind) : base(token) {
 			this.kind = kind;
 		}
 	}
@@ -81,7 +81,7 @@ namespace TinyLang {
 
 	sealed class Argument : Node {
 		public readonly Node expr;
-		public TypeKind kind;
+		public TinyType kind;
 
 		public Argument(Node expr) : base(null) {
 			this.expr = expr;
@@ -92,9 +92,9 @@ namespace TinyLang {
 		public string identifier;
 		public readonly List<Parameter> parameters;
 		public readonly Block block;
-		public readonly TypeKind returns;
+		public readonly TinyType returns;
 
-		public FunctionDef(Token identifier, List<Parameter> parameters, TypeKind returns, Block block) : base(identifier) {
+		public FunctionDef(Token identifier, List<Parameter> parameters, TinyType returns, Block block) : base(identifier) {
 			this.parameters = parameters;
 			this.returns = returns;
 			this.block = block;
