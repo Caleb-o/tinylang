@@ -116,7 +116,7 @@ let a = 10;
 if a > 20 {
 	print("A > 20");
 } else if (a <= 10) {
-	print("a <= 10);
+	print("a <= 10");
 } else {
 	print("other");
 }
