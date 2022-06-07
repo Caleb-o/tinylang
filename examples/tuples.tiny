@@ -1,6 +1,0 @@
-fn swap_int(x, y: int): (int, int) {
-	result = (y, x);
-}
-
-let (int, int) swapped = swap_int(10, 20);
-@println(swapped);

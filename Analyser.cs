@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace TinyLang {
@@ -599,9 +600,13 @@ namespace TinyLang {
 				Error($"Struct initialiser expected {sdef.fields.Count} arguments but received {instance.members.Count}", instance.token);
 			}
 
-			foreach(var (id, expr) in instance.members) {
+			foreach(var ((id, expr), field) in instance.members.Zip(sdef.fields.Keys)) {
 				if (!sdef.fields.ContainsKey(id)) {
 					Error($"Struct type {instance.identifier} does not contain a field {id}", instance.token);
+				}
+
+				if (id != field) {
+					Error($"Struct {instance.identifier} initialiser expected field {field} but received {id}");
 				}
 
 				Visit(expr);

@@ -24,7 +24,7 @@ namespace TinyLang {
 			if (current.Kind == expected) {
 				current = lexer.Next();
 			} else {
-				Error($"Expected token {expected} but received {current.Kind}");
+				Error($"Expected token {expected} but received {current.Kind}", current);
 			}
 		}
 

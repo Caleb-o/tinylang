@@ -1,14 +1,18 @@
+# Note: All variables will bind to their type
+# eg. var a = 10; a is now an integer and can 
+# only be reassigned with other integers
+
 # Mutable string value
-var string hello = "Hello, World!";
-@println(hello);
+var hello = "Hello, World!";
+print(hello);
 
 hello = "Hello, Me!";
-@println(hello);
+print(hello);
 
 # Immutable integer value
-let int age = 22;
-@println("I am ", age, " years old!");
+let age = 22;
+print("I am ", age, " years old!");
 
 # Declare multiple variables at once
-let int a = 10, b = 20;
-@println(a, " ", b);
+let a = 10, b = 20;
+print(a, " ", b);
