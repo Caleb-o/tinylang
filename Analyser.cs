@@ -141,6 +141,9 @@ namespace TinyLang {
 				}
 
 				case ListLiteral: {
+					if (((ListLiteral)node).exprs.Count == 0) {
+						return new TinyUnit();
+					}
 					return new TinyList(FindType(((ListLiteral)node).exprs[0]));
 				}
 			}
@@ -284,6 +287,10 @@ namespace TinyLang {
 					}
 
 					ListLiteral literal = (ListLiteral)node;
+
+					if (literal.exprs.Count == 0) {
+						return new TinyUnit();
+					}
 
 					TinyType inner = FindType(literal.exprs[0]);
 					TinyType exInner = ((TinyList)expected).inner;
@@ -557,7 +564,7 @@ namespace TinyLang {
 		void VisitListLiteral(ListLiteral literal) {
 			if (literal.exprs.Count == 0) {
 				// Fixme: Allow empty lists
-				Error("List literal cannot be empty");
+				Error("List literal cannot be empty", literal.token);
 			}
 
 			TinyType kind = FindType(literal);

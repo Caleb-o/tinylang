@@ -24,7 +24,7 @@ namespace TinyLang {
 				}
 			} catch(Exception e) {
 				Console.WriteLine($"Error: {e.Message}");
-				// Console.WriteLine($"Trace: {e.StackTrace}");
+				Console.WriteLine($"Trace: {e.StackTrace}");
 			}
 		}
 	}

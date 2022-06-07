@@ -63,7 +63,7 @@ namespace TinyLang {
 		public readonly List<Node> exprs;
 		public TinyType kind;
 
-		public ListLiteral(List<Node> exprs) : base(null) {
+		public ListLiteral(Token token, List<Node> exprs) : base(token) {
 			this.exprs = exprs;
 		}
 	}

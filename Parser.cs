@@ -161,6 +161,7 @@ namespace TinyLang {
 		}
 
 		ListLiteral ListLiteral(Block block) {
+			Token token = current;
 			Consume(TokenKind.OpenSquare);
 			List<Node> exprs = new List<Node>();
 
@@ -170,7 +171,7 @@ namespace TinyLang {
 			}
 
 			Consume(TokenKind.CloseSquare);
-			return new ListLiteral(exprs);
+			return new ListLiteral(token, exprs);
 		}
 
 		Node Factor(Block block) {
