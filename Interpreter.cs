@@ -161,14 +161,19 @@ namespace TinyLang {
 				}
 			}
 
-
 			callStack.PushRecord(fncall.token.Lexeme);
 			
 			int idx = 0;
 			foreach(Argument arg in fncall.arguments) {
+				Value value = Visit(arg.expr);
+
+				if (arg.kind != TypeKind.Unknown && arg.kind != value.Kind) {
+					Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
+				}
+
 				VarSym variable = new VarSym(fncall.def.parameters[idx].token.Lexeme, false, arg.kind);
 				variable.validated = true;
-				variable.value = Visit(arg.expr);
+				variable.value = value;
 
 				if (arg.expr is Identifier) {
 					variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);

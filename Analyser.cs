@@ -216,6 +216,10 @@ namespace TinyLang {
 			}
 
 			TypeKind kind = FindType(vardecl.expr);
+			
+			if (vardecl.kind != TypeKind.Unknown && vardecl.kind != kind) {
+				Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
+			}
 			vardecl.kind = kind;
 
 			Assign(vardecl.token.Lexeme, kind, vardecl.mutable, vardecl.expr);
@@ -236,13 +240,13 @@ namespace TinyLang {
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
-			foreach(Identifier id in fndef.parameters) {
-				table.Insert(new VarSym(id.token.Lexeme, false, TypeKind.Unknown));
+			foreach(Parameter param in fndef.parameters) {
+				table.Insert(new VarSym(param.token.Lexeme, false, param.kind));
 			}
 			
 			VarSym variable = new VarSym(fndef.identifier, false, fndef);
-			variable.validated = true;
 			variable.value = new FunctionValue(fndef);
+			variable.validated = true;
 
 			table.Insert(variable);
 			Visit(fndef.block);
@@ -253,17 +257,6 @@ namespace TinyLang {
 
 			if (fnsym == null) {
 				Error($"Function '{fncall.token.Lexeme}' has not been defined in any scope");
-			}
-
-			if (fnsym.kind == TypeKind.Function && !fnsym.validated) {
-				FunctionDef def = (FunctionDef)fnsym.value.Data;
-				fncall.def = def;
-
-				fnsym.validated = true;
-
-				if (fncall.arguments.Count != def.parameters.Count) {
-					Error($"Function '{fncall.token.Lexeme}' expected {def.parameters.Count} arguments but received {fncall.arguments.Count}");
-				}
 			}
 
 			foreach(Argument arg in fncall.arguments) {

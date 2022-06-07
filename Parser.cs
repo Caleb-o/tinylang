@@ -30,16 +30,30 @@ namespace TinyLang {
 			}
 		}
 
+		TypeKind CollectType() {
+			if (current.Kind == TokenKind.Colon) {
+				Consume(TokenKind.Colon);
+
+				Token type_id = current;
+				Consume(TokenKind.Identifier);
+
+				return Value.TypeFromLexeme(type_id);
+			}
+
+			return TypeKind.Unknown;
+		}
+
 		FunctionDef FunctionDefinition() {
 			Consume(TokenKind.Function);
 
 			Consume(TokenKind.OpenParen);
-			List<Identifier> identifiers = new List<Identifier>();
+			List<Parameter> identifiers = new List<Parameter>();
 
 			while(current.Kind == TokenKind.Identifier) {
-				identifiers.Add(new Identifier(current));
+				Token identifier = current;
 				Consume(TokenKind.Identifier);
 
+				identifiers.Add(new Parameter(identifier, CollectType()));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 			Consume(TokenKind.CloseParen);
@@ -146,11 +160,15 @@ namespace TinyLang {
 			Token identifier = current;
 			Consume(TokenKind.Identifier);
 
+			TypeKind kind = CollectType();
+
 			Consume(TokenKind.Equals);
 
 			Node expr = Arithmetic(block);
+			VariableDecl vardecl = new VariableDecl(identifier, mutable, expr);
+			vardecl.kind = kind;
 
-			block.statements.Add(new VariableDecl(identifier, mutable, expr));
+			block.statements.Add(vardecl);
 		}
 
 		void VariableAssign(Block block, Token identifier) {

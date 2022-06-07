@@ -27,7 +27,19 @@ namespace TinyLang {
 				case TokenKind.String:			return TypeKind.String;
 			}
 
-			throw new InvalidOperationException($"Unknown type to fetch from token '{token.Kind}'");
+			throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}':{token.Kind}");
+		}
+
+		public static TypeKind TypeFromLexeme(Token token) {
+			switch(token.Lexeme) {
+				case "int":				return TypeKind.Int;
+				case "float":			return TypeKind.Float;
+				case "boolean":			return TypeKind.Bool;
+				case "string":			return TypeKind.String;
+				case "func":			return TypeKind.Function;
+			}
+
+			throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}'");
 		}
 
 		public static Value operator+(Value me, Value other) {

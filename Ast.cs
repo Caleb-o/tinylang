@@ -54,6 +54,14 @@ namespace TinyLang {
 		public Identifier(Token token) : base(token) {}
 	}
 
+	sealed class Parameter : Node {
+		public readonly TypeKind kind;
+
+		public Parameter(Token token, TypeKind kind) : base(token) {
+			this.kind = kind;
+		}
+	}
+
 	sealed class Block : Node {
 		public readonly List<Node> statements;
 
@@ -73,10 +81,10 @@ namespace TinyLang {
 
 	sealed class FunctionDef : Node {
 		public string identifier;
-		public readonly List<Identifier> parameters;
+		public readonly List<Parameter> parameters;
 		public readonly Block block;
 
-		public FunctionDef(Token identifier, List<Identifier> parameters, Block block) : base(identifier) {
+		public FunctionDef(Token identifier, List<Parameter> parameters, Block block) : base(identifier) {
 			this.parameters = parameters;
 			this.block = block;
 		}
