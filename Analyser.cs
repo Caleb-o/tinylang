@@ -142,7 +142,7 @@ namespace TinyLang {
 
 				case ListLiteral: {
 					if (((ListLiteral)node).exprs.Count == 0) {
-						return new TinyUnit();
+						return new TinyAny();
 					}
 					return new TinyList(FindType(((ListLiteral)node).exprs[0]));
 				}
@@ -289,7 +289,7 @@ namespace TinyLang {
 					ListLiteral literal = (ListLiteral)node;
 
 					if (literal.exprs.Count == 0) {
-						return new TinyUnit();
+						return new TinyAny();
 					}
 
 					TinyType inner = FindType(literal.exprs[0]);
@@ -408,6 +408,28 @@ namespace TinyLang {
 					break;
 				}
 
+				case ListLiteral: {
+					ListLiteral literal = (ListLiteral)expr;
+					TinyType listKind = FindType(literal);
+					bool isany = real is TinyAny;
+
+					if (kind is TinyAny) {
+						if (isany) {
+							Error($"Cannot assign empty list to untyped variable", literal.token);
+						}
+
+						table.Insert(new VarSym(identifier, mutable, listKind));
+					} else {
+						if (isany) {
+							literal.kind = kind;
+						}
+
+						Visit(literal);
+						table.Insert(new VarSym(identifier, mutable, kind));
+					}
+					break;
+				}
+
 				default: {
 					Visit(expr);
 					table.Insert(new VarSym(identifier, mutable, kind));
@@ -422,13 +444,16 @@ namespace TinyLang {
 			}
 
 			TinyType kind = FindType(vardecl.expr);
-			
-			if (vardecl.kind is not TinyAny && !TinyType.Matches(vardecl.kind, kind)) {
-				Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
-			}
-			vardecl.kind = kind;
 
-			Assign(vardecl.token.Lexeme, kind, vardecl.mutable, vardecl.expr);
+			if (vardecl.kind is not TinyAny) {
+				if (!TinyType.Matches(vardecl.kind, kind)) {
+					Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
+				}
+			} else {
+				vardecl.kind = kind;
+			}
+
+			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr);
 		}
 
 		void VisitVariableAssign(VariableAssignment assign) {
@@ -562,11 +587,6 @@ namespace TinyLang {
 		}
 
 		void VisitListLiteral(ListLiteral literal) {
-			if (literal.exprs.Count == 0) {
-				// Fixme: Allow empty lists
-				Error("List literal cannot be empty", literal.token);
-			}
-
 			TinyType kind = FindType(literal);
 			TinyType real = ExpectType(literal, kind);
 
