@@ -17,7 +17,11 @@ namespace TinyLang {
 				analyser.Analyse(app);
 
 				Interpreter interpreter = new Interpreter();
-				interpreter.Run(app);
+				Value result = interpreter.Run(app);
+
+				if (result is not UnitValue) {
+					Console.WriteLine(result);
+				}
 			} catch(Exception e) {
 				Console.WriteLine($"Error: {e.Message}");
 				Console.WriteLine($"Trace: {e.StackTrace}");

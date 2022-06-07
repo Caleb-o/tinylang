@@ -68,8 +68,24 @@ namespace TinyLang {
 		CallStack callStack = new CallStack();
 
 
-		public void Run(Application app) {
-			Visit(app.block);
+		public Value Run(Application app) {
+			Value result = new UnitValue();
+
+			callStack.PushRecord("global");
+
+			VarSym resultvar = new VarSym("result", true, new TinyAny());
+			resultvar.value = new UnitValue();
+			callStack.Add(resultvar);
+
+			try {
+				result = Visit(app.block);
+			} catch (ReturnException) {}
+
+			result = resultvar.value;
+
+			callStack.PopRecord();
+
+			return result;
 		}
 
 		void Error(string message) {

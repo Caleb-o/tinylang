@@ -2,17 +2,11 @@ using System;
 using System.Collections.Generic;
 
 namespace TinyLang {
-	enum RecordType {
-		Application, Function,
-	}
-	
 	abstract class Symbol {
 		public readonly string identifier;
-		public readonly RecordType type;
 
-		public Symbol(string identifier, RecordType type) {
+		public Symbol(string identifier) {
 			this.identifier = identifier;
-			this.type = type;
 		}
 	}
 	
@@ -25,7 +19,7 @@ namespace TinyLang {
 		public VarSym references;
 
 
-		public VarSym(string identifier, bool mutable, FunctionDef def, RecordType type = RecordType.Function) : base(identifier, type) {
+		public VarSym(string identifier, bool mutable, FunctionDef def) : base(identifier) {
 			this.mutable = mutable;
 
 			List<TinyType> types = new List<TinyType>();
@@ -38,7 +32,7 @@ namespace TinyLang {
 			this.value = new FunctionValue(def);
 		}
 
-		public VarSym(string identifier, bool mutable, TinyType kind, RecordType type = RecordType.Function) : base(identifier, type) {
+		public VarSym(string identifier, bool mutable, TinyType kind) : base(identifier) {
 			this.mutable = mutable;
 			this.kind = kind;
 		}
@@ -81,6 +75,11 @@ namespace TinyLang {
 
 
 		public void Analyse(Application application) {
+			VarSym result = new VarSym("result", true, new TinyAny());
+			result.value = new UnitValue();
+			result.validated = true;
+			table.Insert(result);
+
 			Visit(application.block);
 		}
 
