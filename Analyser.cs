@@ -103,6 +103,11 @@ namespace TinyLang {
 						def = def.references;
 					}
 
+					if (!def.validated) {
+						// Assume Any
+						return new TinyAny();
+					}
+
 					return ((FunctionDef)def.value.Data).returns;
 				}
 				case Literal:			return TinyType.TypeFromToken(((Literal)node).token);
@@ -158,6 +163,11 @@ namespace TinyLang {
 
 					while (def.references != null) {
 						def = def.references;
+					}
+
+					if (!def.validated) {
+						// Assume Any
+						return expected;
 					}
 
 					TinyType ret = ((FunctionDef)def.value.Data).returns;
