@@ -137,6 +137,10 @@ namespace TinyLang {
 		public StringValue(string value) : base(new TinyString(), value) {}
 	}
 
+	sealed class ListValue : Value {
+		public ListValue(TinyType kind, List<Value> values) : base(kind, values) {}
+	}
+
 	sealed class FunctionValue : Value {
 		public FunctionValue(FunctionDef value) : base(new TinyFunction(), value) {}
 

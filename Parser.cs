@@ -38,10 +38,22 @@ namespace TinyLang {
 			if (current.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
 
-				Token type_id = current;
-				Consume(TokenKind.Identifier);
+				if (current.Kind == TokenKind.Identifier) {
+					Token type_id = current;
+					Consume(TokenKind.Identifier);
+					return TinyType.TypeFromLexeme(type_id);
+				}
+				else if (current.Kind == TokenKind.OpenSquare) {
+					Consume(TokenKind.OpenSquare);
+					Token type_id = current;
+					Consume(TokenKind.Identifier);
+					Consume(TokenKind.CloseSquare);
 
-				return TinyType.TypeFromLexeme(type_id);
+					return new TinyList(TinyType.TypeFromLexeme(type_id));
+				}
+				else {
+					Error($"Unknown token found in type identifier '{current.Lexeme}'");
+				}
 			}
 
 			return new TinyAny();
@@ -89,6 +101,19 @@ namespace TinyLang {
 			return new FunctionCall(identifier, arguments);
 		}
 
+		ListLiteral ListLiteral(Block block) {
+			Consume(TokenKind.OpenSquare);
+			List<Node> exprs = new List<Node>();
+
+			while(current.Kind != TokenKind.CloseSquare) {
+				exprs.Add(Expr(block));
+				ConsumeIfExists(TokenKind.Comma);
+			}
+
+			Consume(TokenKind.CloseSquare);
+			return new ListLiteral(exprs);
+		}
+
 		Node Factor(Block block) {
 			Token ftoken = current;
 			
@@ -99,6 +124,10 @@ namespace TinyLang {
 					Consume(TokenKind.CloseParen);
 					
 					return node;
+				}
+
+				case TokenKind.OpenSquare: {
+					return ListLiteral(block);
 				}
 
 				case TokenKind.Identifier: {

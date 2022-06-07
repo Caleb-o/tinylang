@@ -88,6 +88,7 @@ namespace TinyLang {
 				case BinaryOp: 				return VisitBinaryOp((BinaryOp)node);
 				case Print: 				return VisitPrintStmt((Print)node);
 				case Literal:				return VisitLiteral((Literal)node);
+				case ListLiteral:			return VisitListLiteral((ListLiteral)node);
 				case VariableDecl:			return VisitVariableDecl((VariableDecl)node);
 				case VariableAssignment:	return VisitVariableAssign((VariableAssignment)node);
 				case FunctionCall:			return VisitFunctionCall((FunctionCall)node);
@@ -148,6 +149,15 @@ namespace TinyLang {
 
 			Error($"Unknown literal type {literal.token.Kind}");
 			return null;
+		}
+
+		Value VisitListLiteral(ListLiteral literal) {
+			List<Value> values = new List<Value>();
+			foreach(Node expr in literal.exprs) {
+				values.Add(Visit(expr));
+			}
+
+			return new ListValue(literal.kind, values);
 		}
 
 		Value VisitVariableDecl(VariableDecl vardecl) {

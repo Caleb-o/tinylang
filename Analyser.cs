@@ -108,6 +108,10 @@ namespace TinyLang {
 
 					return variable.kind;
 				}
+
+				case ListLiteral: {
+					return new TinyList(FindType(((ListLiteral)node).exprs[0]));
+				}
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
@@ -120,11 +124,11 @@ namespace TinyLang {
 					TinyType left = FindType(((BinaryOp)node).left);
 					TinyType right = FindType(((BinaryOp)node).right);
 
-					if (left.GetType() != expected.GetType()) {
+					if (!TinyType.Matches(left, expected)) {
 						return left;
 					}
 
-					if (right.GetType() != expected.GetType()) {
+					if (!TinyType.Matches(right, expected)) {
 						return right;
 					}
 
@@ -142,7 +146,7 @@ namespace TinyLang {
 				case Literal: {
 					TinyType literal = TinyType.TypeFromToken(((Literal)node).token);
 
-					if (literal.GetType() != expected.GetType()) {
+					if (!TinyType.Matches(literal, expected)) {
 						return literal;
 					}
 
@@ -152,7 +156,7 @@ namespace TinyLang {
 				case Argument: {
 					TinyType arg = FindType(((Argument)node).expr);
 					
-					if (expected.GetType() != arg.GetType()) {
+					if (!TinyType.Matches(expected, arg)) {
 						return arg;
 					}
 
@@ -162,7 +166,7 @@ namespace TinyLang {
 				case Identifier: {
 					TinyType identifier = FindType(node);
 
-					if (expected.GetType() != identifier.GetType()) {
+					if (!TinyType.Matches(expected, identifier)) {
 						return identifier;
 					}
 
@@ -175,7 +179,7 @@ namespace TinyLang {
 					TinyType right = FindType(cond.right);
 
 					// Left and Right should equal
-					if (left.GetType() != right.GetType()) {
+					if (!TinyType.Matches(left, right)) {
 						return right;
 					}
 
@@ -185,6 +189,30 @@ namespace TinyLang {
 					}
 
 					return new TinyBool();
+				}
+
+				case ListLiteral: {
+					if (!TinyType.Matches(expected, FindType(node))) {
+						return new TinyList();
+					}
+
+					ListLiteral literal = (ListLiteral)node;
+
+					TinyType inner = FindType(literal.exprs[0]);
+					TinyType exInner = ((TinyList)expected).inner;
+
+					if (!TinyType.Matches(exInner, inner)) {
+						return new TinyList(inner);
+					}
+
+					foreach(Node expr in literal.exprs) {
+						TinyType exKind = ExpectType(expr, exInner);
+						if (!TinyType.Matches(exInner, exKind)) {
+							return new TinyList(exKind);
+						}
+					}
+
+					return expected;
 				}
 			}
 
@@ -206,6 +234,7 @@ namespace TinyLang {
 				case WhileStmt:				VisitWhileStatement((WhileStmt)node); break;
 				case DoWhileStmt:			VisitDoWhileStatement((DoWhileStmt)node); break;
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
+				case ListLiteral:			VisitListLiteral((ListLiteral)node); break;
 
 				// NoOp
 				case Literal: break;
@@ -234,7 +263,7 @@ namespace TinyLang {
 			TinyType left = FindType(binaryOp.left);
 			TinyType right = ExpectType(binaryOp.right, left);
 
-			if (right.GetType() != left.GetType()) {
+			if (!TinyType.Matches(right, left)) {
 				Error($"Binary operation expected type {left} but received {right}");
 			}
 		}
@@ -243,7 +272,7 @@ namespace TinyLang {
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
 			TinyType real = ExpectType(expr, kind);
 
-			if (real.GetType() != kind.GetType()) {
+			if (!TinyType.Matches(real, kind)) {
 				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
 			}
 
@@ -270,7 +299,7 @@ namespace TinyLang {
 
 			TinyType kind = FindType(vardecl.expr);
 			
-			if (vardecl.kind is not TinyAny && vardecl.kind != kind) {
+			if (vardecl.kind is not TinyAny && !TinyType.Matches(vardecl.kind, kind)) {
 				Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
 			}
 			vardecl.kind = kind;
@@ -395,6 +424,26 @@ namespace TinyLang {
 
 			if (kind is not TinyBool) {
 				Error($"Conditional expression expected type {new TinyBool()} but received {kind}");
+			}
+		}
+
+		void VisitListLiteral(ListLiteral literal) {
+			if (literal.exprs.Count == 0) {
+				// Fixme: Allow empty lists
+				Error("List literal cannot be empty");
+			}
+
+			TinyType kind = FindType(literal);
+			TinyType real = ExpectType(literal, kind);
+
+			if (!TinyType.Matches(kind, real)) {
+				Error($"List literal expected type {kind} but received {real}");
+			}
+
+			literal.kind = kind;
+
+			foreach(Node expr in literal.exprs) {
+				Visit(expr);
 			}
 		}
 	}

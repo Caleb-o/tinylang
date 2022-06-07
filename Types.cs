@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 
 namespace TinyLang {
-	class TinyType {
+	abstract class TinyType {
 		public static TinyType TypeFromToken(Token token) {
 			switch(token.Kind) {
 				case TokenKind.Int:				return new TinyInt();
@@ -25,14 +25,64 @@ namespace TinyLang {
 
 			throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}'");
 		}
+
+		public static bool Matches(TinyType x, TinyType y) {
+			switch(x) {
+				case TinyList: {
+					if (x.GetType() != y.GetType()) {
+						return false;
+					}
+
+					return ((TinyList)x).inner.GetType() == ((TinyList)y).inner.GetType();
+				}
+
+				default:
+					return x.GetType() == y.GetType();
+			}
+		}
 	}
 
-	class TinyAny : TinyType {}
-	class TinyUnit : TinyType {}
-	class TinyInt : TinyType {}
-	class TinyFloat : TinyType {}
-	class TinyBool : TinyType {}
-	class TinyString : TinyType {}
+	class TinyAny : TinyType {
+		public override string ToString()
+		{
+			return "any";
+		}
+	}
+
+	class TinyUnit : TinyType {
+		public override string ToString()
+		{
+			return "unit";
+		}
+	}
+	
+	class TinyInt : TinyType {
+		public override string ToString()
+		{
+			return "int";
+		}
+	}
+
+	class TinyFloat : TinyType {
+		public override string ToString()
+		{
+			return "float";
+		}
+	}
+	
+	class TinyBool : TinyType {
+		public override string ToString()
+		{
+			return "bool";
+		}
+	}
+	
+	class TinyString : TinyType {
+		public override string ToString()
+		{
+			return "string";
+		}
+	}
 
 	class TinyFunction : TinyType {
 		public readonly string identifier;
@@ -52,8 +102,15 @@ namespace TinyLang {
 	class TinyList : TinyType {
 		public readonly TinyType inner;
 
+		public TinyList() {}
+
 		public TinyList(TinyType inner) {
 			this.inner = inner;
+		}
+
+		public override string ToString()
+		{
+			return $"[{inner}]";
 		}
 	}
 }

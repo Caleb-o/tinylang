@@ -59,6 +59,15 @@ namespace TinyLang {
 		public Literal(Token token) : base(token) {}
 	}
 
+	sealed class ListLiteral : Node {
+		public readonly List<Node> exprs;
+		public TinyType kind;
+
+		public ListLiteral(List<Node> exprs) : base(null) {
+			this.exprs = exprs;
+		}
+	}
+
 	sealed class Identifier : Node {
 		public Identifier(Token token) : base(token) {}
 	}
