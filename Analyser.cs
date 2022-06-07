@@ -469,8 +469,8 @@ namespace TinyLang {
 				Error($"Function '{fncall.token.Lexeme}' has not been defined in any scope");
 			}
 
-			if (fnsym.kind is not TinyFunction) {
-				Error($"Identifier '{fncall.token.Lexeme}' is not of type function", fncall.token);
+			if (!TinyType.Matches(fnsym.kind, new TinyFunction())) {
+				Error($"Identifier '{fncall.token.Lexeme}' is not of type function ({fnsym.kind})", fncall.token);
 			}
 
 			foreach(Argument arg in fncall.arguments) {

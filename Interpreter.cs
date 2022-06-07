@@ -261,7 +261,12 @@ namespace TinyLang {
 
 				if (arg.expr is Identifier) {
 					variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);
+					
+					if (param.mutable && !variable.references.mutable) {
+						Error($"Trying to pass immutable argument '{variable.references.identifier}' to a mutable parameter '{param.token.Lexeme}'");
+					}
 				}
+
 
 				callStack.Add(variable);
 				idx++;
