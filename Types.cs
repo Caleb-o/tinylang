@@ -97,6 +97,10 @@ namespace TinyLang {
 		// For generic-like calls
 		public TinyFunction() {}
 
+		public TinyFunction(string identifier) {
+			this.identifier = identifier;
+		}
+
 		public TinyFunction(string identifier, List<TinyType> parameters, TinyType returns) {
 			this.identifier = identifier;
 			this.parameters = parameters;
@@ -104,7 +108,7 @@ namespace TinyLang {
 		}
 
 		public override string Inspect() => identifier;
-		public override string ToString() => $"fn(...)";
+		public override string ToString() => $"{identifier}(...)";
 	}
 	
 	sealed class TinyList : TinyType {

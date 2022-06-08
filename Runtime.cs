@@ -146,36 +146,36 @@ namespace TinyLang {
 
 			throw new InvalidOperationException($"Invalid operation in Value> {me.Kind}");
 		}
-
-		public override string ToString()
-		{
-			return Data.ToString();
-		}
 	}
 
 	sealed class UnitValue : Value {
 		public UnitValue() : base(new TinyUnit(), (byte)0) {}
 
-		public override string ToString()
-		{
-			return "()";
-		}
+		public override string ToString() => "()";
 	}
 
 	sealed class IntValue : Value {
 		public IntValue(int value) : base(new TinyInt(), value) {}
+
+		public override string ToString() => ((int)Data).ToString();
 	}
 
 	sealed class FloatValue : Value {
 		public FloatValue(float value) : base(new TinyFloat(), value) {}
+
+		public override string ToString() => ((float)Data).ToString();
 	}
 
 	sealed class BoolValue : Value {
 		public BoolValue(bool value) : base(new TinyBool(), value) {}
+
+		public override string ToString() => ((bool)Data).ToString();
 	}
 
 	sealed class StringValue : Value {
 		public StringValue(string value) : base(new TinyString(), value) {}
+
+		public override string ToString() => (string)Data;
 	}
 
 	sealed class ListValue : Value {
@@ -199,7 +199,7 @@ namespace TinyLang {
 	}
 
 	sealed class FunctionValue : Value {
-		public FunctionValue(FunctionDef value) : base(new TinyFunction(), value) {}
+		public FunctionValue(FunctionDef value) : base(new TinyFunction(value.identifier), value) {}
 
 		public override string ToString()
 		{

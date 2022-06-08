@@ -423,7 +423,7 @@ namespace TinyLang {
 
 				case TokenKind.Do: {
 					DoWhileStatement(block);
-					return;
+					break;
 				}
 
 				case TokenKind.Return: {
@@ -434,7 +434,7 @@ namespace TinyLang {
 				}
 
 				default:
-					Error($"Unknown token kind found {current.Kind}");
+					Error($"Unknown token kind found {current.Kind}", current);
 					return;
 			}
 

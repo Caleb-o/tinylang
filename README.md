@@ -104,7 +104,7 @@ let foo = function() {
 	};
 
 	bar();
-}
+};
 
 foo();
 ```
@@ -215,4 +215,30 @@ let content = file_read("sample.txt");
 
 ```julia
 file_write("sample.txt", "Hello, World!");
+```
+
+## Misc
+
+### eval
+* Parameters: source (string)
+* Returns: any
+
+```julia
+eval("result = 1 + 2;");
+```
+
+### types_match
+* Parameters: left (any), right (any)
+* Returns: bool
+
+```julia
+types_match(1, "string");
+```
+
+### type_of
+* Parameters: value (any)
+* Returns: string
+
+```julia
+type_of("string");
 ```

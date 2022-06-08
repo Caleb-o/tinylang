@@ -23,6 +23,18 @@ namespace TinyLang {
 			return new BoolValue(File.Exists((string)arguments[0].Data));
 		}
 
+		static Value TinyTypesMatch(Value[] arguments) {
+			return new BoolValue(TinyType.Matches(arguments[0].Kind, arguments[1].Kind));
+		}
+
+		static Value TinyTypeOf(Value[] arguments) {
+			return new StringValue(arguments[0].Kind.ToString());
+		}
+
+		static Value TinyEval(Value[] arguments) {
+			return new Interpreter().Run(new Parser((string)arguments[0].Data).Parse());
+		}
+
 		public static BuiltinFn[] BuiltinFunctions = new BuiltinFn[] {
 			new BuiltinFn(
 				"read_file", TinyReadFile,
@@ -45,6 +57,28 @@ namespace TinyLang {
 					new Parameter("file_name", new TinyString())
 				},
 				new TinyBool()
+			),
+			new BuiltinFn(
+				"types_match", TinyTypesMatch,
+				new Parameter[] {
+					new Parameter("left", new TinyAny()),
+					new Parameter("right", new TinyAny())
+				},
+				new TinyBool()
+			),
+			new BuiltinFn(
+				"type_of", TinyTypeOf,
+				new Parameter[] {
+					new Parameter("value", new TinyAny()),
+				},
+				new TinyString()
+			),
+			new BuiltinFn(
+				"eval", TinyEval,
+				new Parameter[] {
+					new Parameter("source", new TinyString()),
+				},
+				new TinyAny()
 			)
 		};
 	}
