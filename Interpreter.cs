@@ -91,6 +91,9 @@ namespace TinyLang {
 
 			try {
 				result = Visit(app.block);
+			} catch(AssertException assert) {
+				callStack.Print();
+				throw assert;
 			} catch (ReturnException) {}
 
 			result = resultvar.value;
