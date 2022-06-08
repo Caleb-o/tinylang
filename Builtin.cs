@@ -14,6 +14,15 @@ namespace TinyLang {
 			}
 		}
 
+		static Value TinyWriteFile(Value[] arguments) {
+			File.WriteAllText((string)arguments[0].Data, (string)arguments[1].Data);
+			return new UnitValue();
+		}
+
+		static Value TinyFileExists(Value[] arguments) {
+			return new BoolValue(File.Exists((string)arguments[0].Data));
+		}
+
 		public static BuiltinFn[] BuiltinFunctions = new BuiltinFn[] {
 			new BuiltinFn(
 				"read_file", TinyReadFile,
@@ -21,6 +30,21 @@ namespace TinyLang {
 					new Parameter("file_name", new TinyString())
 				},
 				new TinyString()
+			),
+			new BuiltinFn(
+				"write_file", TinyWriteFile,
+				new Parameter[] {
+					new Parameter("file_name", new TinyString()),
+					new Parameter("text", new TinyString())
+				},
+				new TinyUnit()
+			),
+			new BuiltinFn(
+				"file_exists", TinyFileExists,
+				new Parameter[] {
+					new Parameter("file_name", new TinyString())
+				},
+				new TinyBool()
 			)
 		};
 	}

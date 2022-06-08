@@ -7,6 +7,7 @@ A small interpreted language to try and learn more about language design and dev
 * [DataTypes](#data-types)
 * [Examples](#examples)
 * [Sample Scripts](#sample-scripts)
+* [Builtin Functions](#builtin-functions)
 
 ## TODO
 
@@ -184,4 +185,34 @@ let fib = function(nth: int): int {
 };
 
 print(fib(32)); # 2178309
+```
+
+# Builtin Functions
+
+## IO
+
+### file_exists
+* Parameters: file_name (string)
+* Returns: bool
+
+```julia
+if file_exists("sample.txt") {
+	print("File Exists");
+}
+```
+
+### file_read
+* Parameters: file_name (string)
+* Returns: string
+
+```julia
+let content = file_read("sample.txt");
+```
+
+### file_write
+* Parameters: file_name (string), content (string)
+* Returns: unit
+
+```julia
+file_write("sample.txt", "Hello, World!");
 ```
