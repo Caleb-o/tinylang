@@ -23,6 +23,7 @@ namespace TinyLang {
 		// Function Def
 		public VarSym(string identifier, FunctionDef def) : base(identifier) {
 			this.mutable = false;
+			this.validated = true;
 
 			List<TinyType> types = new List<TinyType>();
 			
@@ -88,15 +89,21 @@ namespace TinyLang {
 		Block currentBlock = null;
 
 
-		public void Analyse(Application application) {
+		public Analyser() {
 			VarSym result = new VarSym("result", true, new TinyAny());
 			result.value = new UnitValue();
 			result.validated = true;
 			table.Insert(result);
 
 			AddTypes();
+		}
 
+		public void Run(Application application) {
 			Visit(application.block);
+		}
+
+		public void ImportFunction(BuiltinFn func) {
+			table.Insert(new VarSym(func.identifier, new FunctionDef(func.identifier, func)));
 		}
 
 		void AddTypes() {
@@ -509,7 +516,7 @@ namespace TinyLang {
 			variable.validated = true;
 
 			table.Insert(variable);
-			Visit(fndef.block);
+			Visit((Block)fndef.block);
 
 			table = table.parent;
 		}

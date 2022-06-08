@@ -206,15 +206,23 @@ namespace TinyLang {
 			FunctionDef def = (FunctionDef)Data;
 
 			StringBuilder sb = new StringBuilder();
-			for(int i = 0; i < def.parameters.Count; i++) {
-				sb.Append(def.parameters[i].token.Lexeme);
 
-				if (i < def.parameters.Count - 1) {
+			if (def.block is BuiltinFn) {
+				sb.Append("[builtin] ");
+			}
+
+			sb.Append($"{def.identifier} (");
+
+			for(int i = 0; i < def.parameters.Length; i++) {
+				sb.Append(def.parameters[i].identifier);
+
+				if (i < def.parameters.Length - 1) {
 					sb.Append(", ");
 				}
 			}
+			sb.Append(")");
 
-			return $"{def.identifier}({sb.ToString()})";
+			return $"{sb.ToString()}";
 		}
 	}
 

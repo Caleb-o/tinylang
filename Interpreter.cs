@@ -66,13 +66,22 @@ namespace TinyLang {
 	}
 
 	class Interpreter {
-		CallStack callStack = new CallStack();
+		readonly CallStack callStack = new CallStack();
+		readonly Analyser analyser = new Analyser();
 
+		public Interpreter() {
+			callStack.PushRecord("global");
+		}
+
+		public void ImportFunction(BuiltinFn func) {
+			analyser.ImportFunction(func);
+			callStack.Add(new VarSym(func.identifier, new FunctionDef(func.identifier, func)));
+		}
 
 		public Value Run(Application app) {
-			Value result = new UnitValue();
+			analyser.Run(app);
 
-			callStack.PushRecord("global");
+			Value result = new UnitValue();
 
 			VarSym resultvar = new VarSym("result", true, new TinyAny());
 			resultvar.value = new UnitValue();
@@ -109,9 +118,9 @@ namespace TinyLang {
 				case ListLiteral:			return VisitListLiteral((ListLiteral)node);
 				case VariableDecl:			return VisitVariableDecl((VariableDecl)node);
 				case VariableAssignment:	return VisitVariableAssign((VariableAssignment)node);
+				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 				case FunctionCall:			return VisitFunctionCall((FunctionCall)node);
 				case Identifier:			return VisitIdentifier((Identifier)node);
-				case FunctionDef: 			return VisitFunctionDef((FunctionDef)node);
 				case StructDef: 			return VisitStructDef((StructDef)node);
 				case StructInstance:		return VisitStructInstance((StructInstance)node);
 				case ConditionalOp:			return VisitConditionalOp((ConditionalOp)node);
@@ -226,62 +235,75 @@ namespace TinyLang {
 				fncall.def = (FunctionDef)fnsym.value.Data;
 			
 				// Check for required args
-				if (fncall.arguments.Count != fncall.def.parameters.Count) {
-					Error($"Function variable '{fncall.token.Lexeme}' expected {fncall.def.parameters.Count} argument(s) but received {fncall.arguments.Count}");
+				if (fncall.arguments.Length != fncall.def.parameters.Length) {
+					Error($"Function variable '{fncall.token.Lexeme}' expected {fncall.def.parameters.Length} argument(s) but received {fncall.arguments.Length}");
 				}
 
-				for(int i = 0; i < fncall.arguments.Count; i++) {
+				for(int i = 0; i < fncall.arguments.Length; i++) {
 					TinyType param = fncall.def.parameters[i].kind;
 
 					if (param is not TinyAny && !TinyType.Matches(fncall.arguments[i].kind, param)) {
-						Error($"Argument '{fncall.def.parameters[i].token.Lexeme}' in function '{fncall.def.identifier}' expected type {param} but received {fncall.arguments[i].kind}");
+						Error($"Argument '{fncall.def.parameters[i].identifier}' in function '{fncall.def.identifier}' expected type {param} but received {fncall.arguments[i].kind}");
 					}
 				}
 			}
 
-			callStack.PushRecord(fncall.token.Lexeme);
+			if (fncall.def.block is BuiltinFn) {
+				BuiltinFn fn = (BuiltinFn)fncall.def.block;
 
-			VarSym result = new VarSym("result", true, fncall.def.returns);
-			result.value = Value.DefaultFrom(fncall.def.returns);
-			callStack.Add(result);
-			
-			int idx = 0;
-			foreach(Argument arg in fncall.arguments) {
-				Value value = Visit(arg.expr);
+				List<Value> values = new List<Value>();
 
-				// if (arg.kind is not TinyAny && !TinyType.Matches(arg.kind, value.Kind)) {
-				// 	Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
-				// }
-
-				Parameter param = fncall.def.parameters[idx];
-
-				VarSym variable = new VarSym(param.token.Lexeme, param.mutable, arg.kind);
-				variable.validated = true;
-				variable.value = value;
-
-				// FIXME: Move more analysis to the analyser
-				if (arg.expr is Identifier) {
-					variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);
-					
-					if (param.mutable && !variable.references.mutable) {
-						Error($"Trying to pass immutable argument '{variable.references.identifier}' to a mutable parameter '{param.token.Lexeme}'");
-					}
-				} else if (param.mutable) {
-					Error($"Mutable parameter '{param.token.Lexeme}' must receive an identifier, but received '{value}'", fncall.token);
+				foreach(Argument arg in fncall.arguments) {
+					values.Add(Visit(arg.expr));
 				}
 
+				return fn.function(values);
+			} else {
+				callStack.PushRecord(fncall.token.Lexeme);
 
-				callStack.Add(variable);
-				idx++;
+				VarSym result = new VarSym("result", true, fncall.def.returns);
+				result.value = Value.DefaultFrom(fncall.def.returns);
+				callStack.Add(result);
+				
+				int idx = 0;
+				foreach(Argument arg in fncall.arguments) {
+					Value value = Visit(arg.expr);
+
+					// if (arg.kind is not TinyAny && !TinyType.Matches(arg.kind, value.Kind)) {
+					// 	Error($"Argument at position {idx + 1} in function '{fncall.token.Lexeme}' expected type {arg.kind} but received {value.Kind}");
+					// }
+
+					Parameter param = fncall.def.parameters[idx];
+
+					VarSym variable = new VarSym(param.identifier, param.mutable, arg.kind);
+					variable.validated = true;
+					variable.value = value;
+
+					// FIXME: Move more analysis to the analyser
+					if (arg.expr is Identifier) {
+						variable.references = callStack.Resolve(((Identifier)arg.expr).token.Lexeme);
+						
+						if (param.mutable && !variable.references.mutable) {
+							Error($"Trying to pass immutable argument '{variable.references.identifier}' to a mutable parameter '{param.identifier}'");
+						}
+					} else if (param.mutable) {
+						Error($"Mutable parameter '{param.identifier}' must receive an identifier, but received '{value}'", fncall.token);
+					}
+
+
+					callStack.Add(variable);
+					idx++;
+				}
+				
+				try {
+					Visit((Block)fncall.def.block);
+				} catch (ReturnException) {}
+
+				callStack.PopRecord();
+
+				// FIXME: Allow returning value from calls
+				return result.value;
 			}
-
-			try {
-				Visit(fncall.def.block);
-			} catch (ReturnException) {}
-
-			callStack.PopRecord();
-			// FIXME: Allow returning value from calls
-			return result.value;
 		}
 
 		Value VisitIdentifier(Identifier identifier) {

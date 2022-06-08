@@ -72,10 +72,18 @@ namespace TinyLang {
 	}
 
 	sealed class Parameter : Node {
+		public readonly string identifier;
 		public readonly bool mutable;
 		public readonly TinyType kind;
 
+		public Parameter(string identifier, TinyType kind) : base(null) {
+			this.identifier = identifier;
+			this.mutable = false;
+			this.kind = kind;
+		}
+
 		public Parameter(Token token, bool mutable, TinyType kind) : base(token) {
+			this.identifier = token.Lexeme;
 			this.mutable = mutable;
 			this.kind = kind;
 		}
@@ -105,11 +113,21 @@ namespace TinyLang {
 
 	sealed class FunctionDef : Node {
 		public string identifier;
-		public readonly List<Parameter> parameters;
-		public readonly Block block;
+		public readonly Parameter[] parameters;
+		// Block will be reused as a delegate
+		public readonly object block;
 		public readonly TinyType returns;
 
-		public FunctionDef(Token token, List<Parameter> parameters, TinyType returns, Block block) : base(token) {
+		// Imported/Builtin function
+		public FunctionDef(string identifier, BuiltinFn fn) : base(null) {
+			this.identifier = identifier;
+			this.parameters = fn.parameters;
+			this.returns = fn.returns;
+			this.block = fn;
+		}
+
+		// User function
+		public FunctionDef(Token token, Parameter[] parameters, TinyType returns, Block block) : base(token) {
 			this.parameters = parameters;
 			this.returns = returns;
 			this.block = block;
@@ -117,10 +135,10 @@ namespace TinyLang {
 	}
 
 	sealed class FunctionCall : Node {
-		public readonly List<Argument> arguments;
+		public readonly Argument[] arguments;
 		public FunctionDef def;
 
-		public FunctionCall(Token identifier, List<Argument> arguments) : base(identifier) {
+		public FunctionCall(Token identifier, Argument[] arguments) : base(identifier) {
 			this.arguments = arguments;
 		}
 	}

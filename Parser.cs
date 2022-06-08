@@ -94,7 +94,7 @@ namespace TinyLang {
 			}
 
 			Consume(TokenKind.CloseParen);
-			return new FunctionDef(fntoken, identifiers, ParseType(), Body());
+			return new FunctionDef(fntoken, identifiers.ToArray(), ParseType(), Body());
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
@@ -107,7 +107,7 @@ namespace TinyLang {
 			}
 			Consume(TokenKind.CloseParen);
 
-			return new FunctionCall(identifier, arguments);
+			return new FunctionCall(identifier, arguments.ToArray());
 		}
 
 		StructDef StructDefinition() {
