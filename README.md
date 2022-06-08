@@ -242,3 +242,19 @@ types_match(1, "string");
 ```julia
 type_of("string");
 ```
+
+### assert
+* Parameters: condition (bool), message (string)
+* Returns: unit
+
+```julia
+assert(a == b, "A didn't equal b");
+```
+
+### assert_eq
+* Parameters: condition (bool), expected (bool), message (string)
+* Returns: unit
+
+```julia
+assert_eq(a == b, true, "A didn't equal b");
+```

@@ -35,6 +35,22 @@ namespace TinyLang {
 			return new Interpreter().Run(new Parser((string)arguments[0].Data).Parse());
 		}
 
+		static Value TinyAssert(Value[] arguments) {
+			if (!(bool)arguments[0].Data) {
+				throw new AssertException($"Assertion failed '{(string)arguments[1].Data}'");
+			}
+			
+			return new UnitValue();
+		}
+
+		static Value TinyAssertEq(Value[] arguments) {
+			if ((bool)arguments[0].Data != (bool)arguments[1].Data) {
+				throw new AssertException($"Assertion failed '{(string)arguments[2].Data}' expected {(bool)arguments[1].Data} but received {(bool)arguments[0].Data}");
+			}
+			
+			return new UnitValue();
+		}
+
 		public static BuiltinFn[] BuiltinFunctions = new BuiltinFn[] {
 			new BuiltinFn(
 				"read_file", TinyReadFile,
@@ -79,6 +95,23 @@ namespace TinyLang {
 					new Parameter("source", new TinyString()),
 				},
 				new TinyAny()
+			),
+			new BuiltinFn(
+				"assert", TinyAssert,
+				new Parameter[] {
+					new Parameter("condition", new TinyBool()),
+					new Parameter("messsage", new TinyString()),
+				},
+				new TinyUnit()
+			),
+			new BuiltinFn(
+				"assert_eq", TinyAssertEq,
+				new Parameter[] {
+					new Parameter("condition", new TinyBool()),
+					new Parameter("expected", new TinyBool()),
+					new Parameter("messsage", new TinyString()),
+				},
+				new TinyUnit()
 			)
 		};
 	}

@@ -4,9 +4,12 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace TinyLang {
-	sealed class ReturnException : Exception
-	{
+	sealed class ReturnException : Exception {
 		public ReturnException() {}
+	}
+
+	sealed class AssertException : Exception {
+		public AssertException(string message) : base(message) {}
 	}
 
 	abstract class Value {
