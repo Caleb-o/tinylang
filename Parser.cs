@@ -34,27 +34,30 @@ namespace TinyLang {
 			}
 		}
 
-		// FIXME: Allow user types to be specified
 		TinyType CollectType() {
+			if (current.Kind == TokenKind.Identifier) {
+				Token type_id = current;
+				Consume(TokenKind.Identifier);
+				return TinyType.TypeFromLexeme(type_id);
+			}
+			else if (current.Kind == TokenKind.OpenSquare) {
+				Consume(TokenKind.OpenSquare);
+				TinyType inner = CollectType();
+				Consume(TokenKind.CloseSquare);
+
+				return new TinyList(inner);
+			}
+			else {
+				Error($"Unknown token found in type identifier '{current.Lexeme}'");
+				return null;
+			}
+		}
+
+		// FIXME: Allow user types to be specified
+		TinyType ParseType() {
 			if (current.Kind == TokenKind.Colon) {
 				Consume(TokenKind.Colon);
-
-				if (current.Kind == TokenKind.Identifier) {
-					Token type_id = current;
-					Consume(TokenKind.Identifier);
-					return TinyType.TypeFromLexeme(type_id);
-				}
-				else if (current.Kind == TokenKind.OpenSquare) {
-					Consume(TokenKind.OpenSquare);
-					Token type_id = current;
-					Consume(TokenKind.Identifier);
-					Consume(TokenKind.CloseSquare);
-
-					return new TinyList(TinyType.TypeFromLexeme(type_id));
-				}
-				else {
-					Error($"Unknown token found in type identifier '{current.Lexeme}'");
-				}
+				return CollectType();
 			}
 
 			return new TinyAny();
@@ -85,12 +88,12 @@ namespace TinyLang {
 
 				values.Add(identifier.Lexeme);
 
-				identifiers.Add(new Parameter(identifier, mutable, CollectType()));
+				identifiers.Add(new Parameter(identifier, mutable, ParseType()));
 				ConsumeIfExists(TokenKind.Comma);
 			}
 
 			Consume(TokenKind.CloseParen);
-			return new FunctionDef(fntoken, identifiers, CollectType(), Body());
+			return new FunctionDef(fntoken, identifiers, ParseType(), Body());
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
@@ -121,7 +124,7 @@ namespace TinyLang {
 					Error($"Struct definition already contains a member '{identifier.Lexeme}'", identifier);
 				}
 
-				TinyType kind = CollectType();
+				TinyType kind = ParseType();
 
 				members[identifier.Lexeme] = kind;
 
@@ -289,7 +292,7 @@ namespace TinyLang {
 			Token identifier = current;
 			Consume(TokenKind.Identifier);
 
-			TinyType kind = CollectType();
+			TinyType kind = ParseType();
 
 			Consume(TokenKind.Equals);
 

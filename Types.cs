@@ -49,10 +49,6 @@ namespace TinyLang {
 				}
 
 				case TinyList: {
-					if (x.GetType() != y.GetType()) {
-						return false;
-					}
-
 					// We must use match to compare the inner type, instead of just checking its 
 					// C# class type (like I did prior)
 					return TinyType.Matches(((TinyList)x).inner, ((TinyList)y).inner);
@@ -120,7 +116,7 @@ namespace TinyLang {
 			this.inner = inner;
 		}
 
-		public override string Inspect() => inner.ToString();
+		public override string Inspect() => inner.Inspect();
 		public override string ToString() => $"[{inner}]";
 	}
 
