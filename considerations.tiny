@@ -1,0 +1,25 @@
+# Namespacing
+let Math = namespace {
+	let Point = struct { x, y };
+	let PointF = struct { x: float, y: float };
+	let PointI = struct { x: int , y: int };
+
+	let min = function(x, y) {}; 
+
+	# Export is required as visibility isn't a thing
+	export Point, PointF, PointI, min;
+};
+
+let smaller = Math.min(1, 2);
+
+
+# Throwing and catching errors
+let foo = function(flag: bool) {
+	if flag {
+		throw "Oh no!";
+	}
+};
+
+catch foo(false) as err {
+	print(err);
+};
