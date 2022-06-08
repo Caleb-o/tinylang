@@ -37,6 +37,12 @@ namespace TinyLang {
 				return true;
 			}
 
+			bool sameClass = x.GetType() == y.GetType();
+
+			if (!sameClass) {
+				return false;
+			}
+
 			switch(x) {
 				case TinyStruct: {
 					return ((TinyStruct)x).identifier == ((TinyStruct)y).identifier;
@@ -52,8 +58,7 @@ namespace TinyLang {
 					return TinyType.Matches(((TinyList)x).inner, ((TinyList)y).inner);
 				}
 
-				default:
-					return x.GetType() == y.GetType();
+				default: 		return sameClass;
 			}
 		}
 	}
