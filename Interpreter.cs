@@ -71,6 +71,8 @@ namespace TinyLang {
 
 		public Interpreter() {
 			callStack.PushRecord("global");
+
+			AddBuiltinFns();
 		}
 
 		public void ImportFunction(BuiltinFn func) {
@@ -96,6 +98,13 @@ namespace TinyLang {
 			callStack.PopRecord();
 
 			return result;
+		}
+
+		void AddBuiltinFns() {
+			foreach(BuiltinFn func in Builtins.BuiltinFunctions) {
+				analyser.ImportFunction(func);
+				callStack.Add(new VarSym(func.identifier, new FunctionDef(func.identifier, func)));
+			}
 		}
 
 		void Error(string message) {
@@ -251,13 +260,13 @@ namespace TinyLang {
 			if (fncall.def.block is BuiltinFn) {
 				BuiltinFn fn = (BuiltinFn)fncall.def.block;
 
-				List<Value> values = new List<Value>();
+				Value[] arguments = new Value[fncall.arguments.Length];
 
-				foreach(Argument arg in fncall.arguments) {
-					values.Add(Visit(arg.expr));
+				for(int idx = 0; idx < fncall.arguments.Length; idx++) {
+					arguments[idx] = Visit(fncall.arguments[idx].expr);
 				}
 
-				return fn.function(values);
+				return fn.function(arguments);
 			} else {
 				callStack.PushRecord(fncall.token.Lexeme);
 

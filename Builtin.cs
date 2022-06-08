@@ -1,8 +1,28 @@
-using System.Collections.Generic;
+using System;
+using System.IO;
+
 
 namespace TinyLang {
 	static class Builtins {
-		public delegate Value Fn(List<Value> arguments);
+		public delegate Value Fn(Value[] arguments);
+
+		static Value TinyReadFile(Value[] arguments) {
+			try {
+				return new StringValue(File.ReadAllText((string)arguments[0].Data));
+			} catch(Exception) {
+				return new StringValue("");
+			}
+		}
+
+		public static BuiltinFn[] BuiltinFunctions = new BuiltinFn[] {
+			new BuiltinFn(
+				"read_file", TinyReadFile,
+				new Parameter[] {
+					new Parameter("file_name", new TinyString())
+				},
+				new TinyString()
+			)
+		};
 	}
 
 	sealed class BuiltinFn {
