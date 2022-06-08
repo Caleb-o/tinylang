@@ -48,6 +48,10 @@ namespace TinyLang {
 		}
 	}
 
+	sealed class TypeSym : Symbol {
+		public TypeSym(string identifier) : base (identifier) {}
+	}
+
 	sealed class SymbolTable {
 		public SymbolTable parent;
 		public readonly string identifier;
@@ -90,7 +94,16 @@ namespace TinyLang {
 			result.validated = true;
 			table.Insert(result);
 
+			AddTypes();
+
 			Visit(application.block);
+		}
+
+		void AddTypes() {
+			table.Insert(new TypeSym("int"));
+			table.Insert(new TypeSym("float"));
+			table.Insert(new TypeSym("bool"));
+			table.Insert(new TypeSym("string"));
 		}
 
 		void Error(string message) {
@@ -446,14 +459,18 @@ namespace TinyLang {
 				Error($"'{vardecl.token.Lexeme}' has already been defined in the current scope");
 			}
 
-			TinyType kind = FindType(vardecl.expr);
+			if (vardecl.kind is not TinyAny && table.Lookup(vardecl.kind.Inspect(), false) == null) {
+				Error($"Type {vardecl.kind.Inspect()} does not exist in any scope");
+			}
 
-			if (vardecl.kind is not TinyAny) {
+			TinyType kind = FindType(vardecl.expr);
+			
+			if (vardecl.kind is TinyAny) {
+				vardecl.kind = kind;
+			} else {
 				if (!TinyType.Matches(vardecl.kind, kind)) {
 					Error($"Variable '{vardecl.token.Lexeme}' expected type {vardecl.kind} but received {kind}");
 				}
-			} else {
-				vardecl.kind = kind;
 			}
 
 			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr);

@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace TinyLang {
 	abstract class TinyType {
+		public abstract string Inspect();
+
+
 		public static TinyType TypeFromToken(Token token) {
 			switch(token.Kind) {
 				case TokenKind.Int:				return new TinyInt();
@@ -21,9 +24,12 @@ namespace TinyLang {
 				case "float":			return new TinyFloat();
 				case "bool":			return new TinyBool();
 				case "string":			return new TinyString();
+
+				// Assume a struct?
+				default:				return new TinyStruct(token.Lexeme);
 			}
 
-			throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}'");
+			// throw new InvalidOperationException($"Unable to determine type from '{token.Lexeme}'");
 		}
 
 		public static bool Matches(TinyType x, TinyType y) {
@@ -41,7 +47,9 @@ namespace TinyLang {
 						return false;
 					}
 
-					return ((TinyList)x).inner.GetType() == ((TinyList)y).inner.GetType();
+					// We must use match to compare the inner type, instead of just checking its 
+					// C# class type (like I did prior)
+					return TinyType.Matches(((TinyList)x).inner, ((TinyList)y).inner);
 				}
 
 				default:
@@ -51,45 +59,33 @@ namespace TinyLang {
 	}
 
 	sealed class TinyAny : TinyType {
-		public override string ToString()
-		{
-			return "any";
-		}
+		public override string Inspect() => "any";
+		public override string ToString()  => "any";
 	}
 
 	sealed class TinyUnit : TinyType {
-		public override string ToString()
-		{
-			return "unit";
-		}
+		public override string Inspect() => "unit";
+		public override string ToString() => "unit";
 	}
 	
 	sealed class TinyInt : TinyType {
-		public override string ToString()
-		{
-			return "int";
-		}
+		public override string Inspect() => "int";
+		public override string ToString() => "int";
 	}
 
 	sealed class TinyFloat : TinyType {
-		public override string ToString()
-		{
-			return "float";
-		}
+		public override string Inspect() => "float";
+		public override string ToString() => "float";
 	}
 	
 	sealed class TinyBool : TinyType {
-		public override string ToString()
-		{
-			return "bool";
-		}
+		public override string Inspect() => "bool";
+		public override string ToString() => "bool";
 	}
 	
 	sealed class TinyString : TinyType {
-		public override string ToString()
-		{
-			return "string";
-		}
+		public override string Inspect() => "string";
+		public override string ToString() => "string";
 	}
 
 	sealed class TinyFunction : TinyType {
@@ -105,6 +101,9 @@ namespace TinyLang {
 			this.parameters = parameters;
 			this.returns = returns;
 		}
+
+		public override string Inspect() => identifier;
+		public override string ToString() => $"{identifier}(...)";
 	}
 	
 	sealed class TinyList : TinyType {
@@ -116,10 +115,8 @@ namespace TinyLang {
 			this.inner = inner;
 		}
 
-		public override string ToString()
-		{
-			return $"[{inner}]";
-		}
+		public override string Inspect() => inner.ToString();
+		public override string ToString() => $"[{inner}]";
 	}
 
 	sealed class TinyStruct : TinyType {
@@ -140,9 +137,7 @@ namespace TinyLang {
 			this.fields = def.fields;
 		}
 
-		public override string ToString()
-		{
-			return identifier;
-		}
+		public override string Inspect() => identifier;
+		public override string ToString() => identifier;
 	}
 }
