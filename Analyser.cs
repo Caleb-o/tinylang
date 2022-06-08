@@ -300,9 +300,12 @@ namespace TinyLang {
 					}
 
 					foreach(Node expr in literal.exprs) {
-						TinyType exKind = ExpectType(expr, exInner);
+						TinyType exKind = FindType(expr);
 						if (!TinyType.Matches(exInner, exKind)) {
-							return new TinyList(exKind);
+							// We can't just return a list literal, as that will be inferred
+							// If we're failing at matching the contents, then we can't continue
+							Error($"List literal expected inner type {exInner} but received {exKind}");
+							return null;
 						}
 					}
 
