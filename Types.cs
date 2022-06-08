@@ -32,6 +32,10 @@ namespace TinyLang {
 			}
 
 			switch(x) {
+				case TinyStruct: {
+					return ((TinyStruct)x).identifier == ((TinyStruct)y).identifier;
+				}
+
 				case TinyList: {
 					if (x.GetType() != y.GetType()) {
 						return false;

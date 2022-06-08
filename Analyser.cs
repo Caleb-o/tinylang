@@ -621,7 +621,7 @@ namespace TinyLang {
 			}
 
 			TinyStruct sdef = (TinyStruct)def.kind;
-			instance.def = sdef.def;
+			instance.def = new StructDef(sdef.def);
 
 			if (sdef.fields.Count != instance.members.Count) {
 				Error($"Struct initialiser expected {sdef.fields.Count} arguments but received {instance.members.Count}", instance.token);
@@ -644,6 +644,8 @@ namespace TinyLang {
 				if (!TinyType.Matches(expected, kind)) {
 					Error($"Struct field {id} expected type {expected} but received {kind}", instance.token);
 				}
+
+				instance.def.fields[id] = kind;
 			}
 		}
 	}

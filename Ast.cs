@@ -129,6 +129,11 @@ namespace TinyLang {
 		public string identifier;
 		public readonly Dictionary<string, TinyType> fields;
 
+		public StructDef(StructDef other) : base(other.token) {
+			this.identifier = new string(other.identifier);
+			this.fields = new Dictionary<string, TinyType>(other.fields);
+		}
+
 		public StructDef(Token token, Dictionary<string, TinyType> fields) : base(token) {
 			this.fields = fields;
 		}
