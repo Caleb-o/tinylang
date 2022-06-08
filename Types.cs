@@ -104,7 +104,7 @@ namespace TinyLang {
 		}
 
 		public override string Inspect() => identifier;
-		public override string ToString() => $"{identifier}(...)";
+		public override string ToString() => $"fn(...)";
 	}
 	
 	sealed class TinyList : TinyType {

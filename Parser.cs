@@ -47,6 +47,7 @@ namespace TinyLang {
 
 				return new TinyList(inner);
 			}
+			// FIXME: Allow function signatures
 			else {
 				Error($"Unknown token found in type identifier '{current.Lexeme}'");
 				return null;
