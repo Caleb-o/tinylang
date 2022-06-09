@@ -21,9 +21,11 @@ namespace TinyLang {
 	}
 
 	sealed class VariableAssignment : Node {
+		public readonly Node identifier;
 		public readonly Node expr;
 
-		public VariableAssignment(Token identifier, Node expr) : base(identifier) {
+		public VariableAssignment(Node identifier, Node expr) : base(identifier.token) {
+			this.identifier = identifier;
 			this.expr = expr;
 		}
 	}

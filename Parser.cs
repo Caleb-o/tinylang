@@ -325,7 +325,7 @@ namespace TinyLang {
 			}
 		}
 
-		void VariableAssign(Block block, Token identifier) {
+		void VariableAssign(Block block, Node identifier) {
 			Consume(TokenKind.Equals);
 			block.statements.Add(new VariableAssignment(identifier, Expr(block)));
 		}
@@ -418,8 +418,10 @@ namespace TinyLang {
 
 					if (current.Kind == TokenKind.OpenParen) {
 						block.statements.Add(FnCall(block, identifier));
+					} else if (current.Kind == TokenKind.OpenSquare) {
+						VariableAssign(block, ListIndex(block, identifier));
 					} else if (current.Kind == TokenKind.Equals) {
-						VariableAssign(block, identifier);
+						VariableAssign(block, new Identifier(identifier));
 					} else {
 						Error($"Unknown token following identifier '{identifier.Lexeme}':{identifier.Kind}");
 					}

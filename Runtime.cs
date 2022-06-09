@@ -14,7 +14,7 @@ namespace TinyLang {
 
 	abstract class Value {
 		public readonly TinyType Kind;
-		public readonly object Data;
+		public object Data;
 
 		public Value(TinyType kind, object data) {
 			this.Kind = kind;

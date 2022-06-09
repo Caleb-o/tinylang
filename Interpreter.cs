@@ -223,7 +223,8 @@ namespace TinyLang {
 				variable = variable.references;
 			}
 
-			variable.value = Visit(assign.expr);
+			Value id = Visit(assign.identifier);
+			id.Data = Visit(assign.expr).Data;
 
 			return new UnitValue();
 		}

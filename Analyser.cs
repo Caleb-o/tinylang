@@ -514,7 +514,9 @@ namespace TinyLang {
 				Error($"'{assign.token.Lexeme}' is immutable and cannot be reassigned");
 			}
 
-			Assign(variable.identifier, variable.kind, variable.mutable, assign.expr);
+			Visit(assign.identifier);
+
+			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr);
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
