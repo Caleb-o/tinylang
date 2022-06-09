@@ -8,12 +8,14 @@ namespace TinyLang {
 	class ActivationRecord {
 		public readonly string identifier;
 		public readonly int depth;
+		public readonly int line;
 		public readonly Dictionary<string, VarSym> members;
 
-		public ActivationRecord(string identifier, int depth, Dictionary<string, VarSym> members) {
+		public ActivationRecord(string identifier, int depth, Dictionary<string, VarSym> members, int line) {
 			this.identifier = identifier;
 			this.depth = depth;
 			this.members = members;
+			this.line = line;
 		}
 
 		public override string ToString()
@@ -37,8 +39,13 @@ namespace TinyLang {
 			stack[^1].members[variable.identifier] = variable;
 		}
 
-		public void PushRecord(string identifier) {
-			stack.Add(new ActivationRecord(identifier, stack.Count, new Dictionary<string, VarSym>()));
+		public void PushRecord(string identifier, Block block) {
+			int line = (block != null && block.token != null) ? block.token.Line : 1;
+			stack.Add(new ActivationRecord(identifier, stack.Count, new Dictionary<string, VarSym>(), line));
+		}
+
+		public void PushRecord(string identifier, int line) {
+			stack.Add(new ActivationRecord(identifier, stack.Count, new Dictionary<string, VarSym>(), line));
 		}
 
 		public void PopRecord() {
@@ -60,7 +67,7 @@ namespace TinyLang {
 			for(int i = stack.Count - 1; i >= 0; i--) {
 				ActivationRecord record = stack[i];
 
-				Console.WriteLine($"[{i}] '{record.identifier}'\n{record}");
+				Console.WriteLine($"[{i}] '{record.identifier}' : line {record.line}\n{record}");
 			}
 		}
 	}
@@ -70,8 +77,7 @@ namespace TinyLang {
 		readonly Analyser analyser = new Analyser();
 
 		public Interpreter() {
-			callStack.PushRecord("global");
-
+			callStack.PushRecord("global", 1);
 			AddBuiltinFns();
 		}
 
@@ -82,6 +88,10 @@ namespace TinyLang {
 
 		public Value Run(Application app) {
 			analyser.Run(app);
+
+			if (Analyser.HasError) {
+				return new UnitValue();
+			}
 
 			Value result = new UnitValue();
 
@@ -176,7 +186,7 @@ namespace TinyLang {
 		}
 
 		Value VisitBlock(Block block) {
-			callStack.PushRecord("block");
+			callStack.PushRecord("block", block);
 
 			foreach(Node node in block.statements) {
 				Visit(node);
@@ -271,9 +281,13 @@ namespace TinyLang {
 					arguments[idx] = Visit(fncall.arguments[idx].expr);
 				}
 
-				return fn.function(arguments);
+				callStack.PushRecord($"builtin_{fn.identifier}", fncall.token.Line);
+				Value returns = fn.function(arguments);
+				callStack.PopRecord();
+
+				return returns;
 			} else {
-				callStack.PushRecord(fncall.token.Lexeme);
+				callStack.PushRecord(fncall.token.Lexeme, (Block)fncall.def.block);
 
 				VarSym result = new VarSym("result", true, fncall.def.returns);
 				result.value = Value.DefaultFrom(fncall.def.returns);
@@ -369,7 +383,7 @@ namespace TinyLang {
 
 		Value VisitIfStatement(IfStmt stmt) {
 			if (stmt.initStatement != null) {
-				callStack.PushRecord("if_init");
+				callStack.PushRecord("if_init", stmt.trueBody);
 				Visit(stmt.initStatement);
 			}
 
@@ -388,7 +402,7 @@ namespace TinyLang {
 
 		Value VisitWhileStatement(WhileStmt stmt) {
 			if (stmt.initStatement != null) {
-				callStack.PushRecord("while_init");
+				callStack.PushRecord("while_init", stmt.body);
 				Visit(stmt.initStatement);
 			}
 
@@ -405,7 +419,7 @@ namespace TinyLang {
 
 		Value VisitDoWhileStatement(DoWhileStmt stmt) {
 			if (stmt.initStatement != null) {
-				callStack.PushRecord("dowhile_init");
+				callStack.PushRecord("dowhile_init", stmt.body);
 				Visit(stmt.initStatement);
 			}
 

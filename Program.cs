@@ -19,9 +19,9 @@ namespace TinyLang {
 					Console.WriteLine(result);
 				}
 			} catch(AssertException assert) {
-				Console.WriteLine($"Assertion: {assert.Message}");
+				Reporter.Assert(assert.Message);
 			} catch(Exception e) {
-				Console.WriteLine($"Error: {e.Message}");
+				Reporter.Report($"Error: {e.Message}");
 				Console.WriteLine($"Trace: {e.StackTrace}");
 			}
 		}

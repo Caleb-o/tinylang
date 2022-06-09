@@ -465,8 +465,9 @@ namespace TinyLang {
 		}
 
 		Block Body() {
+			Token ftoken = current;
 			Consume(TokenKind.OpenCurly);
-			Block inner = new Block(new List<Node>());
+			Block inner = new Block(ftoken, new List<Node>());
 			StatementList(inner, TokenKind.CloseCurly);
 			Consume(TokenKind.CloseCurly);
 

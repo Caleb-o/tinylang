@@ -85,6 +85,8 @@ namespace TinyLang {
 	}
 
 	sealed class Analyser {
+		public static bool HasError { get; private set; } = false;
+
 		SymbolTable table = new SymbolTable("global", null);
 		Block currentBlock = null;
 
@@ -114,11 +116,12 @@ namespace TinyLang {
 		}
 
 		void Error(string message) {
-			throw new Exception($"Analyser: {message}");
+			HasError = true;
+			Reporter.Report(message);
 		}
 
 		void Error(string message, Token token) {
-			throw new Exception($"Analyser: {message} '{token.Lexeme}' [{token.Line}:{token.Column}]");
+			Error($"{message} '{token.Lexeme}' [{token.Line}:{token.Column}]");
 		}
 
 		TinyType FindType(Node node) {
@@ -408,7 +411,7 @@ namespace TinyLang {
 			TinyType right = ExpectType(binaryOp.right, left);
 
 			if (!TinyType.Matches(right, left)) {
-				Error($"Binary operation expected type {left} but received {right}");
+				Error($"Binary operation expected type {left} but received {right}", binaryOp.left.token);
 			}
 		}
 
@@ -447,7 +450,6 @@ namespace TinyLang {
 					StructDef def = (StructDef)expr;
 					def.identifier = identifier;
 
-					Visit(expr);
 					table.Insert(new VarSym(identifier, def));
 					break;
 				}
@@ -460,26 +462,22 @@ namespace TinyLang {
 						if (isany) {
 							Error($"Cannot assign empty list to untyped variable", literal.token);
 						}
-
-						if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					} else {
 						if (isany) {
 							literal.kind = kind;
 						}
-
-						if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					}
+
+					if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					break;
 				}
 
 				case StructInstance: {
-					Visit(expr);
 					table.Insert(new VarSym(identifier, mutable, real));
 					break;
 				}
 
 				default: {
-					Visit(expr);
 					if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					break;
 				}
@@ -525,7 +523,6 @@ namespace TinyLang {
 			}
 
 			Visit(assign.identifier);
-			Visit(assign.expr);
 
 			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr, true);
 		}

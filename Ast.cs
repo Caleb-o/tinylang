@@ -124,6 +124,10 @@ namespace TinyLang {
 		public readonly List<Node> statements;
 		public Return returnstmt;
 
+		public Block(Token token, List<Node> statements) : base(token) {
+			this.statements = statements;
+		}
+
 		public Block(List<Node> statements) : base(null) {
 			this.statements = statements;
 		}
