@@ -454,7 +454,6 @@ namespace TinyLang {
 
 				case ListLiteral: {
 					ListLiteral literal = (ListLiteral)expr;
-					TinyType listKind = FindType(literal);
 					bool isany = kind is TinyAny;
 
 					if (kind is TinyAny) {
@@ -462,21 +461,26 @@ namespace TinyLang {
 							Error($"Cannot assign empty list to untyped variable", literal.token);
 						}
 
-						if (!reassign) table.Insert(new VarSym(identifier, mutable, listKind));
+						if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					} else {
 						if (isany) {
 							literal.kind = kind;
 						}
 
-						Visit(expr);
 						if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					}
 					break;
 				}
 
-				default: {
+				case StructInstance: {
 					Visit(expr);
 					table.Insert(new VarSym(identifier, mutable, real));
+					break;
+				}
+
+				default: {
+					Visit(expr);
+					if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					break;
 				}
 			}
@@ -732,7 +736,6 @@ namespace TinyLang {
 				if (inner is not TinyList) {
 					Error($"Variable '{caller.identifier}' cannot index type {inner}", index.token);
 				}
-
 
 				TinyType last = inner;
 				inner = inner.Inner();
