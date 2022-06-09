@@ -140,6 +140,7 @@ namespace TinyLang {
 				case WhileStmt:				return VisitWhileStatement((WhileStmt)node);
 				case DoWhileStmt:			return VisitDoWhileStatement((DoWhileStmt)node);
 				case Return:				return VisitReturn((Return)node);
+				case Index:					return VisitIndex((Index)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -422,6 +423,30 @@ namespace TinyLang {
 
 		Value VisitReturn(Return ret) {
 			throw new ReturnException();
+		}
+
+		Value VisitIndex(Index index) {
+			VarSym variable = callStack.Resolve(index.token.Lexeme);
+			ListValue list = (ListValue)variable.value;
+			int lindex = -1;
+
+			int idx = 0;
+			foreach(Node expr in index.expr) {
+				lindex = (int)Visit(expr).Data;
+				List<Value> values = (List<Value>)list.Data;
+
+				if (lindex < 0 || lindex >= values.Count) {
+					Error($"Index out of bounds: {lindex} of range 0..{values.Count}", index.token);
+				}
+
+				idx++;
+
+				if (idx < index.expr.Length) {
+					list = (ListValue)values[lindex];
+				}
+			}
+
+			return ((List<Value>)list.Data)[lindex];
 		}
 	}	
 }

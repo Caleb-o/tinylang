@@ -38,7 +38,7 @@ namespace TinyLang {
 			if (current.Kind == TokenKind.Identifier) {
 				Token type_id = current;
 				Consume(TokenKind.Identifier);
-				return TinyType.TypeFromLexeme(type_id);
+				return TinyType.TypeFromLexeme(type_id.Lexeme);
 			}
 			else if (current.Kind == TokenKind.OpenSquare) {
 				Consume(TokenKind.OpenSquare);
@@ -108,6 +108,18 @@ namespace TinyLang {
 			Consume(TokenKind.CloseParen);
 
 			return new FunctionCall(identifier, arguments.ToArray());
+		}
+
+		Index ListIndex(Block block, Token identifier) {
+			List<Node> exprs = new List<Node>();
+
+			while(current.Kind == TokenKind.OpenSquare) {
+				Consume(TokenKind.OpenSquare);
+				exprs.Add(Expr(block));
+				Consume(TokenKind.CloseSquare);
+			}
+
+			return new Index(identifier, exprs.ToArray());
 		}
 
 		StructDef StructDefinition() {
@@ -205,6 +217,9 @@ namespace TinyLang {
 
 					if (current.Kind == TokenKind.OpenParen) {
 						return FnCall(block, ftoken);
+					}
+					else if (current.Kind == TokenKind.OpenSquare) {
+						return ListIndex(block, ftoken);
 					}
 
 					return new Identifier(ftoken);

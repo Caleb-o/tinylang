@@ -71,6 +71,31 @@ namespace TinyLang {
 		public Identifier(Token token) : base(token) {}
 	}
 
+	// eg. list[0]
+	// eg. list[a + 1]
+	// eg. list[a + 1][0]
+	sealed class Index : Node {
+		public readonly Node[] expr;
+		// Kind of the indexed type. eg. list[0] might be an int
+		public TinyType kind;
+
+		public Index(Token caller, Node[] expr) : base(caller) {
+			this.expr = expr;
+		}
+	}
+
+	// eg. my_instance.x
+	// eg. my_instance.obj[0]
+	// eg. my_instance.obj[0].x
+	sealed class MemberAccess : Node {
+		public readonly Node[] members;
+
+		// The caller is used to lookup the symbol to check types and mutability
+		public MemberAccess(Token caller, Node[] members) : base(caller) {
+			this.members = members;
+		}
+	}
+
 	sealed class Parameter : Node {
 		public readonly string identifier;
 		public readonly bool mutable;

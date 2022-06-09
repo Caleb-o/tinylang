@@ -166,6 +166,10 @@ namespace TinyLang {
 					}
 					return new TinyList(FindType(((ListLiteral)node).exprs[0]));
 				}
+
+				case Index: {
+					return ((Index)node).kind;
+				}
 			}
 
 			Error($"Cannot get type kind from node '{node}'");
@@ -331,6 +335,16 @@ namespace TinyLang {
 
 					return expected;
 				}
+
+				case Index: {
+					Index index = (Index)node;
+
+					if (!TinyType.Matches(expected, index.kind)) {
+						return index.kind;
+					}
+
+					return expected;
+				}
 			}
 
 			Error($"Cannot expect type kind from node '{node}'");
@@ -355,6 +369,7 @@ namespace TinyLang {
 				case ListLiteral:			VisitListLiteral((ListLiteral)node); break;
 				case Return:				VisitReturn((Return)node); break;
 				case StructInstance:		VisitStructInstance((StructInstance)node); break;
+				case Index:					VisitIndex((Index)node); break;
 
 				// NoOp
 				case Literal: break;
@@ -468,6 +483,11 @@ namespace TinyLang {
 
 			if (vardecl.kind is not TinyAny && table.Lookup(vardecl.kind.Inspect(), false) == null) {
 				Error($"Type {vardecl.kind.Inspect()} does not exist in any scope");
+			}
+
+			// Special case
+			if (vardecl.expr is Index) {
+				Visit(vardecl.expr);
 			}
 
 			TinyType kind = FindType(vardecl.expr);
@@ -674,6 +694,47 @@ namespace TinyLang {
 
 				instance.def.fields[id] = kind;
 			}
+		}
+
+		void VisitIndex(Index index) {
+			VarSym caller = (VarSym)table.Lookup(index.token.Lexeme, false);
+
+			if (caller == null) {
+				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
+			}
+
+			if (caller.kind is not TinyList) {
+				Error($"Cannot index non-list '{caller.identifier}'");
+			}
+
+			TinyType intType = new TinyInt();
+			TinyType inner = caller.kind;
+			int idx = 0;
+
+			foreach(Node expr in index.expr) {
+				Visit(expr);
+				
+				TinyType kind = FindType(expr);
+				if (!TinyType.Matches(kind, intType)) {
+					Error($"Value at position {idx + 1} in list index expected {intType} but received {kind}", index.token);
+				}
+
+				// Cannot index a non-list
+				if (inner is not TinyList) {
+					Error($"Variable '{caller.identifier}' cannot index type {inner}", index.token);
+				}
+
+				TinyType last = inner;
+				inner = inner.Inner();
+
+				if (inner is TinyNone) {
+					Error($"Variable '{caller.identifier}' in {last} does not contain a type", index.token);
+				}
+
+				idx++;
+			}
+
+			index.kind = inner;
 		}
 	}
 }

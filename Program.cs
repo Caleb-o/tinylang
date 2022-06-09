@@ -22,7 +22,7 @@ namespace TinyLang {
 				Console.WriteLine($"Assertion: {assert.Message}");
 			} catch(Exception e) {
 				Console.WriteLine($"Error: {e.Message}");
-				// Console.WriteLine($"Trace: {e.StackTrace}");
+				Console.WriteLine($"Trace: {e.StackTrace}");
 			}
 		}
 	}
