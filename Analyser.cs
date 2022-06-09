@@ -420,7 +420,7 @@ namespace TinyLang {
 		}
 
 		void Assign(string identifier, TinyType kind, bool mutable, Node expr, bool reassign) {
-			if (expr is not FunctionDef) Visit(expr);
+			Visit(expr);
 			
 			TinyType real = FindType(expr);
 			
@@ -468,11 +468,6 @@ namespace TinyLang {
 				Error($"Type {vardecl.kind.Inspect()} does not exist in any scope");
 			}
 
-			// Special case
-			if (vardecl.expr is Index) {
-				Visit(vardecl.expr);
-			}
-
 			TinyType kind = FindType(vardecl.expr);
 			
 			if (vardecl.kind is TinyAny) {
@@ -494,7 +489,7 @@ namespace TinyLang {
 			}
 
 			if (!variable.mutable) {
-				Error($"'{assign.token.Lexeme}' is immutable and cannot be reassigned");
+				Error($"'{assign.token.Lexeme}' is immutable and cannot be reassigned", assign.token);
 			}
 
 			Visit(assign.identifier);
