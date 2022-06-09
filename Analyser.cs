@@ -40,7 +40,7 @@ namespace TinyLang {
 			this.mutable = false;
 
 			this.kind = new TinyStruct(def);
-			this.value = new StructValue(def, new List<Value>());
+			this.value = new StructValue(def, new Dictionary<string, Value>());
 		}
 
 		public VarSym(string identifier, bool mutable, TinyType kind) : base(identifier) {
@@ -179,10 +179,16 @@ namespace TinyLang {
 				case Index: {
 					return ((Index)node).kind;
 				}
-			}
 
-			Error($"Cannot get type kind from node '{node}'");
-			return null;
+				case MemberAccess: {
+					return ((MemberAccess)node).kind;
+				}
+
+				default: {
+					Error($"Cannot get type kind from node '{node}'");
+					return new TinyNone();
+				}
+			}
 		}
 
 		TinyType ExpectType(Node node, TinyType expected) {
@@ -354,6 +360,16 @@ namespace TinyLang {
 
 					return expected;
 				}
+
+				case MemberAccess: {
+					MemberAccess access = (MemberAccess)node;
+
+					if (!TinyType.Matches(expected, access.kind)) {
+						return access.kind;
+					}
+					
+					return expected;
+				}
 			}
 
 			Error($"Cannot expect type kind from node '{node}'");
@@ -380,12 +396,13 @@ namespace TinyLang {
 				case StructDef:				VisitStructDef((StructDef)node); break;
 				case StructInstance:		VisitStructInstance((StructInstance)node); break;
 				case Index:					VisitIndex((Index)node); break;
+				case MemberAccess:			VisitMemberAccess((MemberAccess)node); break;
 
 				// NoOp
 				case Literal: break;
 
 				default:
-					Error($"Unhandled node in analysis {node}");
+					Reporter.ReportSystem($"Unhandled node in analysis {node}");
 					break;
 			}
 		}
@@ -431,7 +448,7 @@ namespace TinyLang {
 			switch(expr) {
 				case ListLiteral: {
 					ListLiteral literal = (ListLiteral)expr;
-					bool isany = kind is TinyAny;
+					bool isany = real is TinyAny;
 
 					if (kind is TinyAny) {
 						if (isany) {
@@ -467,6 +484,9 @@ namespace TinyLang {
 			if (vardecl.kind is not TinyAny && table.Lookup(vardecl.kind.Inspect(), false) == null) {
 				Error($"Type {vardecl.kind.Inspect()} does not exist in any scope");
 			}
+
+			// Odd errors occur if we don't visit the expression first :^)
+			Visit(vardecl.expr);
 
 			TinyType kind = FindType(vardecl.expr);
 			
@@ -680,19 +700,13 @@ namespace TinyLang {
 			}
 		}
 
-		void VisitIndex(Index index) {
-			VarSym caller = (VarSym)table.Lookup(index.token.Lexeme, false);
-
-			if (caller == null) {
-				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
+		TinyType VisitIndexExpr(string identifier, Index index, TinyType start) {
+			if (start is not TinyList) {
+				Error($"Cannot index non-list '{identifier}'");
 			}
 
-			if (caller.kind is not TinyList) {
-				Error($"Cannot index non-list '{caller.identifier}'");
-			}
-
+			TinyType inner = start;
 			TinyType intType = new TinyInt();
-			TinyType inner = caller.kind;
 			int idx = 0;
 
 			foreach(Node expr in index.expr) {
@@ -705,20 +719,65 @@ namespace TinyLang {
 
 				// Cannot index a non-list
 				if (inner is not TinyList) {
-					Error($"Variable '{caller.identifier}' cannot index type {inner}", index.token);
+					Error($"Variable '{identifier}' cannot index type {inner}", index.token);
 				}
 
 				TinyType last = inner;
 				inner = inner.Inner();
 
 				if (inner is TinyNone) {
-					Error($"Variable '{caller.identifier}' in {last} does not contain a type", index.token);
+					Error($"Variable '{identifier}' in {last} does not contain a type", index.token);
 				}
 
 				idx++;
 			}
 
-			index.kind = inner;
+			return inner;
+		}
+
+		void VisitIndex(Index index) {
+			VarSym caller = (VarSym)table.Lookup(index.token.Lexeme, false);
+
+			if (caller == null) {
+				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
+			}
+
+			index.kind = VisitIndexExpr(index.token.Lexeme, index, caller.kind);
+		}
+
+		void VisitMemberAccess(MemberAccess access) {
+			VarSym variable = (VarSym)table.Lookup(access.token.Lexeme, false);
+
+			if (variable == null) {
+				Error($"Variable '{access.token.Lexeme}' does not exist in any scope");
+				return;
+			}
+
+			if (variable.kind is not TinyStruct) {
+				Error($"Cannot access fields of non-struct '{access.token.Lexeme}'");
+				return;
+			}
+
+			TinyType inner = variable.kind;
+
+			foreach(Node expr in access.members) {
+				if (expr is Identifier) {
+					if (inner is TinyStruct) {
+						if (!((TinyStruct)inner).def.fields.ContainsKey(((Identifier)expr).token.Lexeme)) {
+							Error($"Type {inner} does not contain the field '{((Identifier)expr).token.Lexeme}'", access.token);
+							return;
+						}
+
+						TinyType last = inner;
+						inner = ((TinyStruct)inner).def.fields[((Identifier)expr).token.Lexeme];
+					} else {
+						Error($"Cannot access field in a non-struct '{((Identifier)expr).token.Lexeme}'", access.token);
+						return;
+					}
+				}
+			}
+
+			access.kind = inner;
 		}
 	}
 }

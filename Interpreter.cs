@@ -151,6 +151,7 @@ namespace TinyLang {
 				case DoWhileStmt:			return VisitDoWhileStatement((DoWhileStmt)node);
 				case Return:				return VisitReturn((Return)node);
 				case Index:					return VisitIndex((Index)node);
+				case MemberAccess:			return VisitMemberAccess((MemberAccess)node);
 			}
 
 			Error($"Unhandled node in interpreter {node}");
@@ -355,10 +356,10 @@ namespace TinyLang {
 		}
 
 		Value VisitStructInstance(StructInstance instance) {
-			List<Value> values = new List<Value>();
+			Dictionary<string, Value> values = new Dictionary<string, Value>();
 
-			foreach(Node node in instance.members.Values) {
-				values.Add(Visit(node));
+			foreach(var (id, expr) in instance.members) {
+				values[id] = Visit(expr);
 			}
 
 			return new StructValue(instance.def, values);
@@ -462,6 +463,24 @@ namespace TinyLang {
 			}
 
 			return ((List<Value>)list.Data)[lindex];
+		}
+
+		Value VisitMemberAccess(MemberAccess access) {
+			VarSym variable = callStack.Resolve(access.token.Lexeme);
+			StructValue structv = (StructValue)variable.value;
+
+			int idx = 0;
+			Identifier id = null;
+
+			foreach(Node expr in access.members) {
+				id = (Identifier)expr;
+
+				if (idx++ < access.members.Length - 1) {
+					structv = (StructValue)((Dictionary<string, Value>)structv.Data)[id.token.Lexeme];
+				}
+			}
+
+			return ((Dictionary<string, Value>)structv.Data)[id.token.Lexeme];
 		}
 	}	
 }

@@ -124,6 +124,29 @@ namespace TinyLang {
 			return new Index(identifier, exprs.ToArray());
 		}
 
+		MemberAccess StructMemberAccess(Block block, Token identifier) {
+			List<Node> exprs = new List<Node>();
+
+			Token lastID = null;
+
+			// Note: The initial can only be a dot, since we need to access a field first
+			while(current.Kind == TokenKind.Dot || current.Kind == TokenKind.OpenSquare) {
+				if (current.Kind == TokenKind.OpenSquare) {
+					// lastID should not be null here
+					exprs.Add(ListIndex(block, lastID));
+				} else {
+					Consume(TokenKind.Dot);
+
+					lastID = current;
+					Consume(TokenKind.Identifier);
+
+					exprs.Add(new Identifier(lastID));
+				}
+			}
+
+			return new MemberAccess(identifier, exprs.ToArray());
+		}
+
 		void StructDefinition(Block block) {
 			Consume(TokenKind.Struct);
 
@@ -219,6 +242,9 @@ namespace TinyLang {
 
 					if (current.Kind == TokenKind.OpenParen) {
 						return FnCall(block, ftoken);
+					}
+					else if (current.Kind == TokenKind.Dot) {
+						return StructMemberAccess(block, ftoken);
 					}
 					else if (current.Kind == TokenKind.OpenSquare) {
 						return ListIndex(block, ftoken);

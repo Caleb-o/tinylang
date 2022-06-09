@@ -91,6 +91,8 @@ namespace TinyLang {
 	// eg. my_instance.obj[0].x
 	sealed class MemberAccess : Node {
 		public readonly Node[] members;
+		// Kind of the indexed type. eg. list[0] might be an int
+		public TinyType kind;
 
 		// The caller is used to lookup the symbol to check types and mutability
 		public MemberAccess(Token caller, Node[] members) : base(caller) {

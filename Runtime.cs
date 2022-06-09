@@ -230,7 +230,7 @@ namespace TinyLang {
 	}
 
 	sealed class StructValue : Value {
-		public StructValue(StructDef def, List<Value> values) : base(new TinyStruct(def), values) {}
+		public StructValue(StructDef def, Dictionary<string, Value> values) : base(new TinyStruct(def), values) {}
 
 		public override string ToString()
 		{
@@ -240,7 +240,7 @@ namespace TinyLang {
 			StringBuilder sb = new StringBuilder(def.identifier);
 			sb.Append(" { ");
 
-			foreach(var ((id, kind), val) in def.fields.Zip((List<Value>)Data)) {
+			foreach(var ((id, kind), val) in def.fields.Zip(((Dictionary<string, Value>)Data).Values)) {
 				sb.Append($"{id}:{kind} = {val}");
 
 				if (idx < def.fields.Count - 1) {
