@@ -1,27 +1,27 @@
 # This is function implicitly returns a unit, which is a 0-type 
-let say_hello = function(name: string, age: int) {
+function say_hello(name: string, age: int) {
 	# Types will be inferred and then bound to the type
 	# X will now be an integer
 	var x = 10 + age;
 	var y = x * x;
 
 	# Nesting a function is possible
-	let say_hello_again = function() {
+	function say_hello_again() {
 		print("Hello again, ", name);
-	};
+	}
 
 	print("Hello , ", name);
 	say_hello_again();
-};
+}
 
-let bar = function(foo: bool) {
+function bar(foo: bool) {
 	var x = -foo;
 	print(x, " ", foo, " ", -true, " ", -false);
-};
+}
 
-let baz = function() {
+function baz() {
 	print(-100, " ", 100);
-};
+}
 
 var name = "Bob";
 say_hello(name, 32);

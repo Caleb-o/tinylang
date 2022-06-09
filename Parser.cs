@@ -64,9 +64,11 @@ namespace TinyLang {
 			return new TinyAny();
 		}
 
-		FunctionDef FunctionDefinition() {
-			Token fntoken = current;
+		void FunctionDefinition(Block block) {
 			Consume(TokenKind.Function);
+
+			Token function_name = current;
+			Consume(TokenKind.Identifier);
 
 			Consume(TokenKind.OpenParen);
 			List<Parameter> identifiers = new List<Parameter>();
@@ -94,7 +96,7 @@ namespace TinyLang {
 			}
 
 			Consume(TokenKind.CloseParen);
-			return new FunctionDef(fntoken, identifiers.ToArray(), ParseType(), Body());
+			block.statements.Add(new FunctionDef(function_name, identifiers.ToArray(), ParseType(), Body()));
 		}
 
 		FunctionCall FnCall(Block block, Token identifier) {
@@ -122,9 +124,11 @@ namespace TinyLang {
 			return new Index(identifier, exprs.ToArray());
 		}
 
-		StructDef StructDefinition() {
-			Token structtoken = current;
+		void StructDefinition(Block block) {
 			Consume(TokenKind.Struct);
+
+			Token struct_name = current;
+			Consume(TokenKind.Identifier);
 
 			Dictionary<string, TinyType> members = new Dictionary<string, TinyType>();
 
@@ -137,15 +141,13 @@ namespace TinyLang {
 					Error($"Struct definition already contains a member '{identifier.Lexeme}'", identifier);
 				}
 
-				TinyType kind = ParseType();
-
-				members[identifier.Lexeme] = kind;
+				members[identifier.Lexeme] = ParseType();
 
 				ConsumeIfExists(TokenKind.Comma);
 			}
 			Consume(TokenKind.CloseCurly);
 
-			return new StructDef(structtoken, members);
+			block.statements.Add(new StructDef(struct_name, members));
 		}
 
 		StructInstance StructInstance(Block block) {
@@ -231,14 +233,6 @@ namespace TinyLang {
 				case TokenKind.Bool: {
 					Consume(current.Kind);
 					return new Literal(ftoken);
-				}
-
-				case TokenKind.Function: {
-					return FunctionDefinition();
-				}
-
-				case TokenKind.Struct: {
-					return StructDefinition();
 				}
 
 				case TokenKind.New: {
@@ -426,6 +420,16 @@ namespace TinyLang {
 						Error($"Unknown token following identifier '{identifier.Lexeme}':{identifier.Kind}");
 					}
 					break;
+				}
+
+				case TokenKind.Function: {
+					FunctionDefinition(block);
+					return;
+				}
+
+				case TokenKind.Struct: {
+					StructDefinition(block);
+					return;
 				}
 
 				case TokenKind.If: {

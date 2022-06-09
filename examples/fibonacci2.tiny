@@ -1,5 +1,5 @@
 # Fibonacci using variable swaps instead of recursion
-let fib = function(nth: int): int {
+function fib(nth: int): int {
 	var a = 0, b = 1, c = 0;
 
 	if (nth == 0) {
@@ -16,6 +16,6 @@ let fib = function(nth: int): int {
 	}
 
 	result = b;
-};
+}
 
 print(fib(32)); # 2178309

@@ -1,7 +1,7 @@
 # Define a type with 2 floats
-let Point = struct {
+struct Point {
 	x: float, y: float,
-};
+}
 
 # Instantiate a Point (fields must match)
 # We must use the new keyword when instantiating
@@ -12,15 +12,15 @@ print(p1);
 print(p2);
 
 # We can also define generic and partially generic structs
-let PointT = struct {
+struct PointT {
 	# X and Y are Any
 	x, y,
-};
+}
 
 # Partial
-let PointP = struct {
+struct PointP {
 	x: float, y,
-};
+}
 
 # Instantiate these types
 let p3 = new PointT { x: true, y: "Hello" };

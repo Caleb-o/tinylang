@@ -70,18 +70,18 @@ var baz: int = 22;
 
 ### Functions
 ```julia
-let simple = function() {
+function simple() {
 	# unit is the assumed return type when the return type is omitted
 	print("Hello!");
-};
+}
 
-let return_integer = function(): int {
+function return_integer(): int {
 	# Notice there is no return statement here, as an implicit
 	# 'result' variable is made with the type int
 	# and will be returned on function exit
 	# The default value will be the default of a primitive,
 	# otherwise it's a unit
-};
+}
 
 simple(); # Hello!
 let foo = return_integer();
@@ -94,17 +94,17 @@ print(foo, " ", 1234); # 0 1234
 # Functions can be defined and called within each other
 # They are scope based, so they can only be called from
 # its current scope
-let foo = function() {
-	let bar = function() {
-		let baz = function() {
+function foo() {
+	function bar() {
+		function baz() {
 
-		};
+		}
 
 		baz();
-	};
+	}
 
 	bar();
-};
+}
 
 foo();
 ```
@@ -149,13 +149,13 @@ do {
 ### [Fibonacci](./examples/fibonacci.tiny) (Recursive)
 ```julia
 # Recursive function to get the Nth value of the fibonacci sequence
-let fib = function(n: int): int {
+function fib(n: int): int {
 	if n > 1 {
 		result = fib(n - 1) + fib(n - 2);
 	} else {
 		result = n;
 	}
-};
+}
 
 print(fib(24)); # 46368
 ```
@@ -165,7 +165,7 @@ print(fib(24)); # 46368
 # This approach improves on performance dramatically. We can get a higher
 # Nth value of the sequence, in a fraction of the time.
 # This has to do with the performance of recursion
-let fib = function(nth: int): int {
+function fib(nth: int): int {
 	var a = 0, b = 1, c = 0;
 
 	if (nth == 0) {
@@ -182,7 +182,7 @@ let fib = function(nth: int): int {
 	}
 
 	result = b;
-};
+}
 
 print(fib(32)); # 2178309
 ```

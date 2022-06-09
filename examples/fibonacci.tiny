@@ -1,9 +1,9 @@
-let fib = function(n: int): int {
+function fib(n: int): int {
 	if n > 1 {
 		result = fib(n - 1) + fib(n - 2);
 	} else {
 		result = n;
 	}
-};
+}
 
 print(fib(24)); # 46368

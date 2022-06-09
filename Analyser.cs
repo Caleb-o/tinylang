@@ -377,12 +377,12 @@ namespace TinyLang {
 				case ConditionalOp:			VisitConditionalOp((ConditionalOp)node); break;
 				case ListLiteral:			VisitListLiteral((ListLiteral)node); break;
 				case Return:				VisitReturn((Return)node); break;
+				case StructDef:				VisitStructDef((StructDef)node); break;
 				case StructInstance:		VisitStructInstance((StructInstance)node); break;
 				case Index:					VisitIndex((Index)node); break;
 
 				// NoOp
 				case Literal: break;
-				case StructDef: break;
 
 				default:
 					Error($"Unhandled node in analysis {node}");
@@ -429,32 +429,6 @@ namespace TinyLang {
 			}
 
 			switch(expr) {
-				case FunctionDef: {
-					if (mutable) {
-						Error($"Function definition '{identifier}' cannot be mutable, use let instead.");
-					}
-
-					FunctionDef fndef = (FunctionDef)expr;
-					fndef.identifier = identifier;
-
-					// Must be done here
-					Visit(expr);
-					table.Insert(new VarSym(identifier, fndef));
-					break;
-				}
-
-				case StructDef: {
-					if (mutable) {
-						Error($"Struct definition '{identifier}' cannot be mutable, use let instead.");
-					}
-
-					StructDef def = (StructDef)expr;
-					def.identifier = identifier;
-
-					table.Insert(new VarSym(identifier, def));
-					break;
-				}
-
 				case ListLiteral: {
 					ListLiteral literal = (ListLiteral)expr;
 					bool isany = kind is TinyAny;
@@ -529,6 +503,11 @@ namespace TinyLang {
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
+			VarSym variable = new VarSym(fndef.identifier, fndef);
+			variable.value = new FunctionValue(fndef);
+			variable.validated = true;
+			table.Insert(variable);
+
 			SymbolTable blockTable = new SymbolTable(fndef.identifier, table);
 			table = blockTable;
 
@@ -542,11 +521,6 @@ namespace TinyLang {
 			result.validated = true;
 			table.Insert(result);
 
-			VarSym variable = new VarSym(fndef.identifier, fndef);
-			variable.value = new FunctionValue(fndef);
-			variable.validated = true;
-
-			table.Insert(variable);
 			Visit((Block)fndef.block);
 
 			table = table.parent;
@@ -665,6 +639,10 @@ namespace TinyLang {
 			}
 
 			currentBlock.returnstmt = ret;
+		}
+
+		void VisitStructDef(StructDef def) {
+			table.Insert(new VarSym(def.identifier, def));
 		}
 
 		void VisitStructInstance(StructInstance instance) {

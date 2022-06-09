@@ -185,6 +185,7 @@ namespace TinyLang {
 		}
 
 		public StructDef(Token token, Dictionary<string, TinyType> fields) : base(token) {
+			this.identifier = token.Lexeme;
 			this.fields = fields;
 		}
 	}

@@ -9,5 +9,9 @@ namespace TinyLang {
 		public static void Report(string message) {
 			Console.WriteLine($"\u001b[31;1mError:\u001b[0m {message}");
 		}
+
+		public static void ReportSystem(string message) {
+			Console.WriteLine($"\u001b[31;1mSystem Error:\u001b[0m {message}");
+		}
 	}
 }
