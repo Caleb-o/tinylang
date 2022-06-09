@@ -410,12 +410,12 @@ namespace TinyLang {
 			Visit(uanry.right);
 		}
 
-		void Assign(string identifier, TinyType kind, bool mutable, Node expr) {
+		void Assign(string identifier, TinyType kind, bool mutable, Node expr, bool reassign) {
 			// FIXME: Once the left-most type is found, compare that against the rest of the expression
-			TinyType real = ExpectType(expr, kind);
+			TinyType real = FindType(expr);
 
 			if (!TinyType.Matches(real, kind)) {
-				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}");
+				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}", expr.token);
 			}
 			
 			switch(expr) {
@@ -429,7 +429,7 @@ namespace TinyLang {
 
 					// Must be done here
 					Visit(expr);
-					table.Insert(new VarSym(identifier, fndef));
+					if (reassign) table.Insert(new VarSym(identifier, fndef));
 					break;
 				}
 
@@ -442,7 +442,7 @@ namespace TinyLang {
 					def.identifier = identifier;
 
 					Visit(expr);
-					table.Insert(new VarSym(identifier, def));
+					if (reassign) table.Insert(new VarSym(identifier, def));
 					break;
 				}
 
@@ -456,21 +456,21 @@ namespace TinyLang {
 							Error($"Cannot assign empty list to untyped variable", literal.token);
 						}
 
-						table.Insert(new VarSym(identifier, mutable, listKind));
+						if (reassign) table.Insert(new VarSym(identifier, mutable, listKind));
 					} else {
 						if (isany) {
 							literal.kind = kind;
 						}
 
-						Visit(literal);
-						table.Insert(new VarSym(identifier, mutable, kind));
+						Visit(expr);
+						if (reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					}
 					break;
 				}
 
 				default: {
 					Visit(expr);
-					table.Insert(new VarSym(identifier, mutable, kind));
+					if (reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					break;
 				}
 			}
@@ -500,7 +500,7 @@ namespace TinyLang {
 				}
 			}
 
-			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr);
+			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr, true);
 		}
 
 		void VisitVariableAssign(VariableAssignment assign) {
@@ -516,7 +516,7 @@ namespace TinyLang {
 
 			Visit(assign.identifier);
 
-			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr);
+			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr, false);
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
@@ -725,6 +725,7 @@ namespace TinyLang {
 				if (inner is not TinyList) {
 					Error($"Variable '{caller.identifier}' cannot index type {inner}", index.token);
 				}
+
 
 				TinyType last = inner;
 				inner = inner.Inner();
