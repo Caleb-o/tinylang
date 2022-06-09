@@ -159,6 +159,7 @@ namespace TinyLang {
 
 		// User function
 		public FunctionDef(Token token, Parameter[] parameters, TinyType returns, Block block) : base(token) {
+			this.identifier = token.Lexeme;
 			this.parameters = parameters;
 			this.returns = returns;
 			this.block = block;

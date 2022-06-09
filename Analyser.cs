@@ -420,7 +420,8 @@ namespace TinyLang {
 		}
 
 		void Assign(string identifier, TinyType kind, bool mutable, Node expr, bool reassign) {
-			Visit(expr);
+			if (expr is not FunctionDef) Visit(expr);
+			
 			TinyType real = FindType(expr);
 			
 			if (!TinyType.Matches(real, kind)) {
@@ -540,7 +541,7 @@ namespace TinyLang {
 			result.value = new UnitValue();
 			result.validated = true;
 			table.Insert(result);
-			
+
 			VarSym variable = new VarSym(fndef.identifier, fndef);
 			variable.value = new FunctionValue(fndef);
 			variable.validated = true;
