@@ -129,7 +129,13 @@ namespace TinyLang {
 				case StructDef:			return new TinyStruct();
 				
 				case StructInstance: {
-					return new TinyStruct(((StructInstance)node).identifier);
+					StructInstance instance = (StructInstance)node;
+
+					if (instance.def != null) {
+						return new TinyStruct(instance.def);
+					}
+
+					return new TinyStruct(instance.identifier);
 				}
 
 				case FunctionCall: {
@@ -276,10 +282,10 @@ namespace TinyLang {
 				}
 
 				case Identifier: {
-					TinyType identifier = FindType(node);
+					TinyType id = ((VarSym)table.Lookup(node.token.Lexeme, false)).kind;
 
-					if (!TinyType.Matches(expected, identifier)) {
-						return identifier;
+					if (!TinyType.Matches(expected, id)) {
+						return id;
 					}
 
 					return expected;
@@ -411,13 +417,13 @@ namespace TinyLang {
 		}
 
 		void Assign(string identifier, TinyType kind, bool mutable, Node expr, bool reassign) {
-			// FIXME: Once the left-most type is found, compare that against the rest of the expression
+			Visit(expr);
 			TinyType real = FindType(expr);
-
+			
 			if (!TinyType.Matches(real, kind)) {
 				Error($"Trying to reassign '{identifier}' with type {real} but expected {kind}", expr.token);
 			}
-			
+
 			switch(expr) {
 				case FunctionDef: {
 					if (mutable) {
@@ -429,7 +435,7 @@ namespace TinyLang {
 
 					// Must be done here
 					Visit(expr);
-					if (reassign) table.Insert(new VarSym(identifier, fndef));
+					table.Insert(new VarSym(identifier, fndef));
 					break;
 				}
 
@@ -442,35 +448,35 @@ namespace TinyLang {
 					def.identifier = identifier;
 
 					Visit(expr);
-					if (reassign) table.Insert(new VarSym(identifier, def));
+					table.Insert(new VarSym(identifier, def));
 					break;
 				}
 
 				case ListLiteral: {
 					ListLiteral literal = (ListLiteral)expr;
 					TinyType listKind = FindType(literal);
-					bool isany = real is TinyAny;
+					bool isany = kind is TinyAny;
 
 					if (kind is TinyAny) {
 						if (isany) {
 							Error($"Cannot assign empty list to untyped variable", literal.token);
 						}
 
-						if (reassign) table.Insert(new VarSym(identifier, mutable, listKind));
+						if (!reassign) table.Insert(new VarSym(identifier, mutable, listKind));
 					} else {
 						if (isany) {
 							literal.kind = kind;
 						}
 
 						Visit(expr);
-						if (reassign) table.Insert(new VarSym(identifier, mutable, kind));
+						if (!reassign) table.Insert(new VarSym(identifier, mutable, kind));
 					}
 					break;
 				}
 
 				default: {
 					Visit(expr);
-					if (reassign) table.Insert(new VarSym(identifier, mutable, kind));
+					table.Insert(new VarSym(identifier, mutable, real));
 					break;
 				}
 			}
@@ -500,7 +506,7 @@ namespace TinyLang {
 				}
 			}
 
-			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr, true);
+			Assign(vardecl.token.Lexeme, vardecl.kind, vardecl.mutable, vardecl.expr, false);
 		}
 
 		void VisitVariableAssign(VariableAssignment assign) {
@@ -515,8 +521,9 @@ namespace TinyLang {
 			}
 
 			Visit(assign.identifier);
+			Visit(assign.expr);
 
-			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr, false);
+			Assign(variable.identifier, FindType(assign.identifier), variable.mutable, assign.expr, true);
 		}
 
 		void VisitFunctionDef(FunctionDef fndef) {
@@ -687,11 +694,11 @@ namespace TinyLang {
 
 				Visit(expr);
 
-				TinyType expected = sdef.fields[id];
+				TinyType expected = instance.def.fields[id];
 				TinyType kind = FindType(expr);
 
 				if (!TinyType.Matches(expected, kind)) {
-					Error($"Struct field {id} expected type {expected} but received {kind}", instance.token);
+					Error($"Struct field {id} expected type {expected} but received {kind}", expr.token);
 				}
 
 				instance.def.fields[id] = kind;

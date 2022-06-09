@@ -1,4 +1,6 @@
 using System;
+using System.Text;
+using System.Linq;
 using System.Collections.Generic;
 
 
@@ -46,7 +48,29 @@ namespace TinyLang {
 
 			switch(x) {
 				case TinyStruct: {
-					return ((TinyStruct)x).identifier == ((TinyStruct)y).identifier;
+					TinyStruct a = (TinyStruct)x;
+					TinyStruct b = (TinyStruct)y;
+
+					if (a.identifier != b.identifier) {
+						return false;
+					}
+
+					if (a.def == null || b.def == null) {
+						return true;
+					}
+
+					// This can happen because of nested types
+					if (a.def.fields.Count != b.def.fields.Count) {
+						return false;
+					}
+
+					foreach(var (atype, btype) in a.def.fields.Values.Zip(b.def.fields.Values)) {
+						if (!Matches(atype, btype)) {
+							return false;
+						}
+					}
+
+					return true;
 				}
 
 				case TinyList: {
@@ -145,10 +169,13 @@ namespace TinyLang {
 		public StructDef def;
 		public readonly Dictionary<string, TinyType> fields;
 
-		public TinyStruct() {}
+		public TinyStruct() {
+			this.fields = new Dictionary<string, TinyType>();
+		}
 
 		public TinyStruct(string identifier) {
 			this.identifier = identifier;
+			this.fields = new Dictionary<string, TinyType>();
 		}
 
 		public TinyStruct(StructDef def) {
@@ -158,7 +185,24 @@ namespace TinyLang {
 		}
 
 		public override string Inspect() => identifier;
-		public override string ToString() => identifier;
+
+		public override string ToString() {
+			StringBuilder sb = new StringBuilder(identifier);
+			sb.Append(" { ");
+		
+			int idx = 0;
+			foreach(var (id, kind) in fields) {
+				sb.Append($"{id}: {kind}");
+
+				if (idx < fields.Count - 1) {
+					sb.Append(", ");
+				}
+				idx++;
+			}
+			sb.Append(" }");
+			
+			return sb.ToString();
+		}
 		public override TinyType Inner() => new TinyNone();
 	}
 }
