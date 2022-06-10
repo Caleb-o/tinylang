@@ -27,6 +27,10 @@ func (lexer *Lexer) Next() *Token {
 		return lexer.readDigit()
 	}
 
+	if lexer.peek() == '"' {
+		return lexer.readString()
+	}
+
 	// This is a fallthrough, which will return an error *Token otherwise
 	return lexer.readSingle()
 }
@@ -143,6 +147,20 @@ func (lexer *Lexer) readDigit() *Token {
 	}
 
 	return lexer.makeToken(kind, lexer.source[start:lexer.pos], start_col)
+}
+
+func (lexer *Lexer) readString() *Token {
+	lexer.advance()
+
+	start := lexer.pos
+	start_col := lexer.column
+
+	for !lexer.isAtEnd() && lexer.peek() != '"' {
+		lexer.advance()
+	}
+
+	lexer.advance()
+	return lexer.makeToken(STRING, lexer.source[start:lexer.pos-1], start_col)
 }
 
 func (lexer *Lexer) readIdentifier() *Token {
