@@ -11,7 +11,7 @@ func New(source string) *Lexer {
 	return &Lexer{source, 1, 1, 0}
 }
 
-func (lexer *Lexer) Next() Token {
+func (lexer *Lexer) Next() *Token {
 	lexer.skipWhitespace()
 
 	if lexer.isAtEnd() {
@@ -27,21 +27,21 @@ func (lexer *Lexer) Next() Token {
 		return lexer.readDigit()
 	}
 
-	// This is a fallthrough, which will return an error token otherwise
+	// This is a fallthrough, which will return an error *Token otherwise
 	return lexer.readSingle()
 }
 
 // --- Private ---
-func (lexer *Lexer) makeEof() Token {
-	return Token{EOF, "EndOfFile", lexer.line, lexer.column}
+func (lexer *Lexer) makeEof() *Token {
+	return &Token{EOF, "EndOfFile", lexer.line, lexer.column}
 }
 
-func (lexer *Lexer) makeError(msg string, arg ...any) Token {
-	return Token{ERROR, fmt.Sprintf(msg, arg...), lexer.line, lexer.column}
+func (lexer *Lexer) makeError(msg string, arg ...any) *Token {
+	return &Token{ERROR, fmt.Sprintf(msg, arg...), lexer.line, lexer.column}
 }
 
-func (lexer *Lexer) makeToken(kind TokenKind, lexeme string, column int) Token {
-	return Token{kind, lexeme, lexer.line, column}
+func (lexer *Lexer) makeToken(kind TokenKind, lexeme string, column int) *Token {
+	return &Token{kind, lexeme, lexer.line, column}
 }
 
 func (lexer *Lexer) peek() byte {
@@ -112,7 +112,7 @@ func (lexer *Lexer) skipWhitespace() {
 	}
 }
 
-func (lexer *Lexer) readSingle() Token {
+func (lexer *Lexer) readSingle() *Token {
 	kind, ok := Characters[lexer.peek()]
 	lexer.advance()
 
@@ -123,7 +123,7 @@ func (lexer *Lexer) readSingle() Token {
 	}
 }
 
-func (lexer *Lexer) readDigit() Token {
+func (lexer *Lexer) readDigit() *Token {
 	start := lexer.pos
 	start_col := lexer.column
 	kind := INT
@@ -145,7 +145,7 @@ func (lexer *Lexer) readDigit() Token {
 	return lexer.makeToken(kind, lexer.source[start:lexer.pos], start_col)
 }
 
-func (lexer *Lexer) readIdentifier() Token {
+func (lexer *Lexer) readIdentifier() *Token {
 	start := lexer.pos
 	start_col := lexer.column
 
