@@ -5,16 +5,13 @@ namespace Math {
 	struct PointI { x: int , y: int }
 	
 	function min(x, y) {}
-
-	# Export is required as visibility isn't a thing
-	export Point, PointF, PointI, min;
 };
 
 let smaller = Math.min(1, 2);
 
 
 # Throwing and catching errors
-function foo(flag: bool) {
+function foo(flag: bool): int {
 	if flag {
 		throw "Oh no!";
 	}
