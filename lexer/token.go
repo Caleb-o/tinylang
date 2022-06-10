@@ -1,6 +1,6 @@
 package lexer
 
-type TokenKind int
+type TokenKind uint8
 
 const (
 	PLUS TokenKind = iota
