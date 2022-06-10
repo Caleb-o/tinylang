@@ -702,7 +702,7 @@ namespace TinyLang {
 
 		TinyType VisitIndexExpr(string identifier, Index index, TinyType start) {
 			if (start is not TinyList) {
-				Error($"Cannot index non-list '{identifier}'");
+				Error($"Cannot index non-list '{identifier}'", index.token);
 			}
 
 			TinyType inner = start;
@@ -739,7 +739,7 @@ namespace TinyLang {
 			VarSym caller = (VarSym)table.Lookup(index.token.Lexeme, false);
 
 			if (caller == null) {
-				Error($"Variable '{index.token.Lexeme}' does not exist in any scope");
+				Error($"Variable '{index.token.Lexeme}' does not exist in any scope", index.token);
 			}
 
 			index.kind = VisitIndexExpr(index.token.Lexeme, index, caller.kind);
@@ -749,12 +749,12 @@ namespace TinyLang {
 			VarSym variable = (VarSym)table.Lookup(access.token.Lexeme, false);
 
 			if (variable == null) {
-				Error($"Variable '{access.token.Lexeme}' does not exist in any scope");
+				Error($"Variable '{access.token.Lexeme}' does not exist in any scope", access.token);
 				return;
 			}
 
 			if (variable.kind is not TinyStruct) {
-				Error($"Cannot access fields of non-struct '{access.token.Lexeme}'");
+				Error($"Cannot access fields of non-struct '{access.token.Lexeme}'", access.token);
 				return;
 			}
 
@@ -774,6 +774,9 @@ namespace TinyLang {
 						Error($"Cannot access field in a non-struct '{((Identifier)expr).token.Lexeme}'", access.token);
 						return;
 					}
+				} else {
+					inner = ((TinyStruct)inner).def.fields[expr.token.Lexeme];
+					inner = VisitIndexExpr(expr.token.Lexeme, (Index)expr, inner);
 				}
 			}
 

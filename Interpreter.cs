@@ -220,7 +220,7 @@ namespace TinyLang {
 
 		Value VisitVariableDecl(VariableDecl vardecl) {
 			VarSym variable = new VarSym(vardecl.token.Lexeme, vardecl.mutable, vardecl.kind);
-			variable.value = Visit(vardecl.expr);
+			variable.value = Value.Copy(Visit(vardecl.expr));
 			variable.validated = true;
 			callStack.Add(variable);
 
@@ -235,7 +235,7 @@ namespace TinyLang {
 			}
 
 			Value id = Visit(assign.identifier);
-			id.Data = Visit(assign.expr).Data;
+			id.Data = Value.Copy(Visit(assign.expr)).Data;
 
 			return new UnitValue();
 		}
@@ -441,9 +441,7 @@ namespace TinyLang {
 			throw new ReturnException();
 		}
 
-		Value VisitIndex(Index index) {
-			VarSym variable = callStack.Resolve(index.token.Lexeme);
-			ListValue list = (ListValue)variable.value;
+		Value VisitIndexData(Index index, ListValue list) {
 			int lindex = -1;
 
 			int idx = 0;
@@ -465,22 +463,45 @@ namespace TinyLang {
 			return ((List<Value>)list.Data)[lindex];
 		}
 
+		Value VisitIndex(Index index) {
+			VarSym variable = callStack.Resolve(index.token.Lexeme);
+			return VisitIndexData(index, (ListValue)variable.value);
+		}
+
 		Value VisitMemberAccess(MemberAccess access) {
 			VarSym variable = callStack.Resolve(access.token.Lexeme);
-			StructValue structv = (StructValue)variable.value;
+			Value value = variable.value;
 
 			int idx = 0;
-			Identifier id = null;
+			string id = "";
 
 			foreach(Node expr in access.members) {
-				id = (Identifier)expr;
+				if (expr is Identifier) {
+					id = ((Identifier)expr).token.Lexeme;
 
-				if (idx++ < access.members.Length - 1) {
-					structv = (StructValue)((Dictionary<string, Value>)structv.Data)[id.token.Lexeme];
+					if (idx++ < access.members.Length - 1) {
+						value = (StructValue)((Dictionary<string, Value>)((StructValue)value).Data)[id];
+					}
+				} else {
+					Index index = (Index)expr;
+					id = index.token.Lexeme;
+
+					ListValue list = (ListValue)((Dictionary<string, Value>)((StructValue)value).Data)[id];
+					int lindex = (int)VisitIndexData(index, list).Data;
+
+					List<Value> values = (List<Value>)list.Data;
+
+					if (lindex < 0 || lindex >= values.Count) {
+						Error($"Index out of bounds: {lindex} of range 0..{values.Count}", access.token);
+					}
+
+					if (idx++ < access.members.Length - 1) {
+						value = (Value)values[lindex].Data;
+					}
 				}
 			}
 
-			return ((Dictionary<string, Value>)structv.Data)[id.token.Lexeme];
+			return value;
 		}
 	}	
 }

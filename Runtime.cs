@@ -21,6 +21,19 @@ namespace TinyLang {
 			this.Data = data;
 		}
 
+		public static Value Copy(Value other) {
+			switch(other) {
+				case IntValue:			return new IntValue((int)other.Data);
+				case FloatValue:		return new FloatValue((float)other.Data);
+				case BoolValue:			return new BoolValue((bool)other.Data);
+				case StringValue:		return new StringValue((string)other.Data);
+				case ListValue:			return new ListValue(other.Kind, (List<Value>)other.Data);
+				case StructValue:		return new StructValue(other.Kind, (Dictionary<string, Value>)other.Data);
+				// Other values should just copy the reference
+				default:				return other;
+			}
+		}
+
 		public static Value DefaultFrom(TinyType kind) {
 			switch(kind) {
 				case TinyInt:			return new IntValue(0);
@@ -230,6 +243,7 @@ namespace TinyLang {
 	}
 
 	sealed class StructValue : Value {
+		public StructValue(TinyType def, Dictionary<string, Value> values) : base(def, values) {}
 		public StructValue(StructDef def, Dictionary<string, Value> values) : base(new TinyStruct(def), values) {}
 
 		public override string ToString()
