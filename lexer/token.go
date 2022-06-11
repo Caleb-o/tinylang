@@ -31,7 +31,7 @@ const (
 	VAR
 	LET
 	FUNCTION
-	STRUCT
+	CLASS
 	NAMESPACE
 
 	EOF
@@ -48,7 +48,7 @@ var KeyWords = map[string]TokenKind{
 	"let":      LET,
 	"var":      VAR,
 	"function": FUNCTION,
-	"struct":   STRUCT,
+	"class":    CLASS,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
@@ -91,8 +91,8 @@ func (kind TokenKind) Name() string {
 		return "var"
 	case FUNCTION:
 		return "function"
-	case STRUCT:
-		return "struct"
+	case CLASS:
+		return "class"
 	case OPENCURLY:
 		return "{"
 	case CLOSECURLY:

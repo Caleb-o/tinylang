@@ -2,6 +2,7 @@ package parser
 
 import (
 	"testing"
+	"tiny/ast"
 	"tiny/shared"
 )
 
@@ -13,8 +14,8 @@ func TestSimpleExpression(t *testing.T) {
 	source := shared.ReadFile("../tests/valid/parser/simple_expression.tiny")
 	parser := New(source)
 
-	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((+ (+ 1 (* 2 3)) (* 1 2)))") {
+	result := parser.expr(ast.NewBlock(nil)).AsSExp()
+	if !exprEq(result, "(+ (+ 1 (* 2 3)) (* 1 2))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
@@ -45,6 +46,26 @@ func TestFunctionDefinitionNested(t *testing.T) {
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((foo (a: any): any)((bar (b: any): any)()))))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}
+
+func TestImmutableVariableDeclaration(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/immutable_variable_declaration.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((foo (+ 1 2)))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}
+
+func TestMutableVariableDeclaration(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/mutable_variable_declaration.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((mut foo (+ 1 2)))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }

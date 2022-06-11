@@ -128,6 +128,17 @@ func (parser *Parser) functionDef(outer *ast.Block) *ast.FunctionDef {
 	return ast.NewFnDef(identifier, parser.collectParameters(), parser.block())
 }
 
+func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) {
+	identifier := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	parser.consume(lexer.EQUAL)
+	expr := parser.expr(outer)
+	parser.consume(lexer.SEMICOLON)
+
+	outer.Statements = append(outer.Statements, ast.NewVarDecl(identifier, mutable, expr))
+}
+
 func (parser *Parser) block() *ast.Block {
 	start_token := parser.current
 	parser.consume(lexer.OPENCURLY)
@@ -144,8 +155,14 @@ func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
 	case lexer.FUNCTION:
 		outer.Statements = append(outer.Statements, parser.functionDef(outer))
+	case lexer.VAR:
+		parser.consume(lexer.VAR)
+		parser.variableDecl(outer, true)
+	case lexer.LET:
+		parser.consume(lexer.LET)
+		parser.variableDecl(outer, false)
 	default:
-		outer.Statements = append(outer.Statements, parser.expr(outer))
+		report("Unknown token found in statement '%s'", parser.current.Lexeme)
 	}
 }
 

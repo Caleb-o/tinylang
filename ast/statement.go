@@ -7,8 +7,9 @@ import (
 )
 
 type VariableDecl struct {
-	token *lexer.Token
-	Expr  *Node
+	token   *lexer.Token
+	Mutable bool
+	Expr    Node
 }
 
 type FunctionDef struct {
@@ -18,12 +19,26 @@ type FunctionDef struct {
 	Body    *Block
 }
 
+func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
+	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
+}
+
 func (decl *VariableDecl) GetToken() *lexer.Token {
 	return decl.token
 }
 
 func (decl *VariableDecl) AsSExp() string {
-	return (*decl.Expr).AsSExp()
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	if decl.Mutable {
+		sb.WriteString("mut ")
+	}
+	sb.WriteString(decl.token.Lexeme + " ")
+	sb.WriteString(decl.Expr.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
 }
 
 func NewFnDef(token *lexer.Token, params []*Parameter, body *Block) *FunctionDef {
