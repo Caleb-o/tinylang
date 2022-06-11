@@ -38,3 +38,13 @@ func TestFunctionDefinitionMutable(t *testing.T) {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
+
+func TestFunctionDefinitionNested(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/function_definition_nested.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((foo (a: any): any)((bar (b: any): any)()))))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}
