@@ -12,6 +12,7 @@ const (
 	COLON
 	SEMICOLON
 	DOT
+	COMMA
 
 	OPENCURLY
 	CLOSECURLY
@@ -62,6 +63,7 @@ var Characters = map[byte]TokenKind{
 	':': COLON,
 	';': SEMICOLON,
 	'.': DOT,
+	',': COMMA,
 	'(': OPENPAREN,
 	')': CLOSEPAREN,
 	'{': OPENCURLY,

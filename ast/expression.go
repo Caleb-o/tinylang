@@ -20,6 +20,12 @@ type Identifier struct {
 	Token *lexer.Token
 }
 
+type Parameter struct {
+	Token   *lexer.Token
+	Mutable bool
+	Type    runtime.Type
+}
+
 type Literal struct {
 	Token *lexer.Token
 	Value *runtime.Value
@@ -65,6 +71,21 @@ func (id *Identifier) GetToken() *lexer.Token {
 
 func (id *Identifier) AsSExp() string {
 	return id.Token.Lexeme
+}
+
+func (param *Parameter) GetToken() *lexer.Token {
+	return param.Token
+}
+
+func (param *Parameter) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(param.Token.Lexeme)
+	sb.WriteByte(':')
+	sb.WriteByte(' ')
+	sb.WriteString(param.Type.GetName())
+
+	return sb.String()
 }
 
 func (lit *Literal) GetToken() *lexer.Token {

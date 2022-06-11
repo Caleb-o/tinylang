@@ -1,18 +1,65 @@
 package ast
 
 import (
+	"strings"
 	"tiny/lexer"
+	"tiny/runtime"
 )
 
-type Variable struct {
-	Expr  *Node
+type VariableDecl struct {
 	token *lexer.Token
+	Expr  *Node
 }
 
-func (va *Variable) GetToken() *lexer.Token {
-	return va.token
+type FunctionDef struct {
+	token   *lexer.Token
+	Params  []*Parameter
+	ReturnT runtime.Type
+	Body    *Block
 }
 
-func (va *Variable) AsSExp() string {
-	return (*va.Expr).AsSExp()
+func (decl *VariableDecl) GetToken() *lexer.Token {
+	return decl.token
+}
+
+func (decl *VariableDecl) AsSExp() string {
+	return (*decl.Expr).AsSExp()
+}
+
+func NewFnDef(token *lexer.Token, params []*Parameter, body *Block) *FunctionDef {
+	return &FunctionDef{token: token, Params: params, Body: body, ReturnT: &runtime.AnyType{}}
+}
+
+func (fndef *FunctionDef) GetToken() *lexer.Token {
+	return fndef.token
+}
+
+func (fndef *FunctionDef) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString(fndef.token.Lexeme)
+	sb.WriteByte(' ')
+	sb.WriteByte('(')
+
+	for idx, param := range fndef.Params {
+		if param.Mutable {
+			sb.WriteString("mut ")
+		}
+
+		sb.WriteString(param.AsSExp())
+
+		if idx < len(fndef.Params)-1 {
+			sb.WriteString(", ")
+		}
+	}
+
+	sb.WriteByte(')')
+	sb.WriteString(": ")
+	sb.WriteString(fndef.ReturnT.GetName())
+	sb.WriteByte(')')
+	sb.WriteString(fndef.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
 }
