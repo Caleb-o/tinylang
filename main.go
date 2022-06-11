@@ -10,7 +10,7 @@ import (
 func main() {
 	parser := parser.New(shared.ReadFile("./experimenting.tiny"))
 	program := parser.Parse()
-	analyser := analysis.New()
+	analyser := analysis.NewAnalyser(false)
 
 	if !analyser.Run(program.Body) {
 		shared.ReportErrFatal("Failed to analyse")

@@ -9,14 +9,15 @@ import (
 
 type Analyser struct {
 	hadErr bool
+	quiet  bool
 	table  []*SymbolTable
 }
 
-func New() *Analyser {
+func NewAnalyser(quiet bool) *Analyser {
 	table := make([]*SymbolTable, 0, 2)
 	table = append(table, NewTable(nil))
 
-	return &Analyser{hadErr: false, table: table}
+	return &Analyser{hadErr: false, quiet: quiet, table: table}
 }
 
 func (an *Analyser) Run(root ast.Node) bool {
@@ -29,16 +30,20 @@ func (an *Analyser) Run(root ast.Node) bool {
 func (an *Analyser) report(msg string, args ...any) {
 	an.hadErr = true
 
-	res := fmt.Sprintf(msg, args...)
-	shared.ReportErr(res)
+	if !an.quiet {
+		res := fmt.Sprintf(msg, args...)
+		shared.ReportErr(res)
+	}
 }
 
 func (an *Analyser) reportT(msg string, token *lexer.Token, args ...any) {
 	an.hadErr = true
 
-	res := fmt.Sprintf(msg, args...)
-	res2 := fmt.Sprintf("%s [%d:%d]", res, token.Line, token.Column)
-	shared.ReportErr(res2)
+	if !an.quiet {
+		res := fmt.Sprintf(msg, args...)
+		res2 := fmt.Sprintf("%s [%d:%d]", res, token.Line, token.Column)
+		shared.ReportErr(res2)
+	}
 }
 
 func (an *Analyser) top() *SymbolTable {
