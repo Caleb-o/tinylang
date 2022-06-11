@@ -15,10 +15,10 @@ func ReadFile(path string) string {
 }
 
 func ReportErr(msg string) {
-	log.Printf("\u001b[31;1mError:\u001b[0m%s", msg)
+	log.Printf("\u001b[31;1mError:\u001b[0m %s", msg)
 }
 
 func ReportErrFatal(msg string) {
-	log.Printf("\u001b[31;1mError:\u001b[0m%s", msg)
+	log.Printf("\u001b[31;1mError:\u001b[0m %s", msg)
 	os.Exit(0)
 }

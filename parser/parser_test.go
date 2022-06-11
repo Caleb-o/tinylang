@@ -69,3 +69,13 @@ func TestMutableVariableDeclaration(t *testing.T) {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
+
+func TestFunctionWithBlock(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/function_def_with_block.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((mut a 1)(mut b a)(foo (a: any, b: any, c: any): any)((mut d 1)(mut e a))))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}

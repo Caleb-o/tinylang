@@ -60,6 +60,10 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 		parser.consume(ftoken.Kind)
 		return &ast.Literal{Token: ftoken, Value: nil}
 
+	case lexer.IDENTIFIER:
+		parser.consume(lexer.IDENTIFIER)
+		return &ast.Identifier{Token: ftoken}
+
 	case lexer.OPENPAREN:
 		parser.consume(lexer.OPENPAREN)
 		expr := parser.expr(outer)
