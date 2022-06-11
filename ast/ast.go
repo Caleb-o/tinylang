@@ -12,3 +12,7 @@ type Node interface {
 type Program struct {
 	Body *Block
 }
+
+func New() *Program {
+	return &Program{&Block{make([]Node, 0, 8), nil}}
+}

@@ -6,7 +6,7 @@ import (
 )
 
 type Block struct {
-	Statements []*Node
+	Statements []Node
 	token      *lexer.Token
 }
 
@@ -18,7 +18,7 @@ func (block *Block) AsSExp() string {
 	var sb strings.Builder
 
 	for _, stmt := range block.Statements {
-		sb.WriteString((*stmt).AsSExp())
+		sb.WriteString(stmt.AsSExp())
 	}
 
 	return sb.String()

@@ -1,7 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"tiny/parser"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	parser := parser.New("1 + 2 * 3 + (1 * 2)")
+	program := parser.Parse()
+
+	fmt.Println(program.Body.AsSExp())
 }

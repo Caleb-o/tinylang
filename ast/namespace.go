@@ -20,7 +20,7 @@ func (ns *NameSpace) AsSExp() string {
 	var sb strings.Builder
 
 	for _, stmt := range ns.Body.Statements {
-		sb.WriteString((*stmt).AsSExp())
+		sb.WriteString(stmt.AsSExp())
 	}
 
 	return sb.String()

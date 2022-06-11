@@ -69,3 +69,57 @@ var Characters = map[byte]TokenKind{
 	'[': OPENSQUARE,
 	']': CLOSESQUARE,
 }
+
+// There has to be a nicer way of doing this
+func (kind TokenKind) Name() string {
+	switch kind {
+	case INT:
+		return "int"
+	case FLOAT:
+		return "float"
+	case BOOL:
+		return "bool"
+	case CHAR:
+		return "char"
+	case STRING:
+		return "string"
+	case LET:
+		return "let"
+	case VAR:
+		return "var"
+	case FUNCTION:
+		return "function"
+	case STRUCT:
+		return "struct"
+	case OPENCURLY:
+		return "{"
+	case CLOSECURLY:
+		return "}"
+	case OPENPAREN:
+		return "("
+	case CLOSEPAREN:
+		return ")"
+	case OPENSQUARE:
+		return "["
+	case CLOSESQUARE:
+		return "]"
+	case PLUS:
+		return "+"
+	case MINUS:
+		return "-"
+	case STAR:
+		return "*"
+	case SLASH:
+		return "/"
+	case EQUAL:
+		return "="
+	case DOT:
+		return "."
+	case COLON:
+		return ":"
+	case SEMICOLON:
+		return ";"
+	default:
+		return "Unknown"
+	}
+}
