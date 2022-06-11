@@ -62,4 +62,10 @@ var Characters = map[byte]TokenKind{
 	':': COLON,
 	';': SEMICOLON,
 	'.': DOT,
+	'(': OPENPAREN,
+	')': CLOSEPAREN,
+	'{': OPENCURLY,
+	'}': CLOSECURLY,
+	'[': OPENSQUARE,
+	']': CLOSESQUARE,
 }
