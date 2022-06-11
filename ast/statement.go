@@ -19,6 +19,11 @@ type FunctionDef struct {
 	Body    *Block
 }
 
+type Print struct {
+	Token *lexer.Token
+	Exprs []Node
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -76,6 +81,31 @@ func (fndef *FunctionDef) AsSExp() string {
 	sb.WriteByte(')')
 	sb.WriteString(fndef.Body.AsSExp())
 	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (p *Print) GetToken() *lexer.Token {
+	return p.Token
+}
+
+func (p *Print) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("print")
+	sb.WriteByte('(')
+
+	for idx, n := range p.Exprs {
+		sb.WriteString(n.AsSExp())
+
+		if idx < len(p.Exprs)-1 {
+			sb.WriteString(", ")
+		}
+	}
+
+	sb.WriteByte(')')
+	sb.WriteByte('(')
 
 	return sb.String()
 }

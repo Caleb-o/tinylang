@@ -28,6 +28,7 @@ const (
 	BOOL
 
 	IDENTIFIER
+	PRINT
 	VAR
 	LET
 	FUNCTION
@@ -47,6 +48,7 @@ type Token struct {
 var KeyWords = map[string]TokenKind{
 	"let":      LET,
 	"var":      VAR,
+	"print":    PRINT,
 	"function": FUNCTION,
 	"class":    CLASS,
 	// These will be temporary, they will become a value later?

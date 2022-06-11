@@ -138,7 +138,6 @@ func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) {
 
 	parser.consume(lexer.EQUAL)
 	expr := parser.expr(outer)
-	parser.consume(lexer.SEMICOLON)
 
 	outer.Statements = append(outer.Statements, ast.NewVarDecl(identifier, mutable, expr))
 }
@@ -155,6 +154,22 @@ func (parser *Parser) block() *ast.Block {
 	return block
 }
 
+func (parser *Parser) print(outer *ast.Block) {
+	token := parser.current
+	parser.consume(lexer.PRINT)
+	parser.consume(lexer.OPENPAREN)
+
+	exprs := make([]ast.Node, 0)
+	for parser.current.Kind != lexer.CLOSEPAREN {
+		exprs = append(exprs, parser.expr(outer))
+		parser.consumeIfExists(lexer.COMMA)
+	}
+
+	parser.consume(lexer.CLOSEPAREN)
+
+	outer.Statements = append(outer.Statements, &ast.Print{Token: token, Exprs: exprs})
+}
+
 func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
 	case lexer.FUNCTION:
@@ -165,9 +180,13 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.LET:
 		parser.consume(lexer.LET)
 		parser.variableDecl(outer, false)
+	case lexer.PRINT:
+		parser.print(outer)
 	default:
 		report("Unknown token found in statement '%s'", parser.current.Lexeme)
 	}
+
+	parser.consume(lexer.SEMICOLON)
 }
 
 func (parser *Parser) statementList(outer *ast.Block, endType lexer.TokenKind) {

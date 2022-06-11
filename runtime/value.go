@@ -8,6 +8,7 @@ type TypeKind uint8
 
 const (
 	TYPE_ANY TypeKind = iota
+	TYPE_UNIT
 	TYPE_INT
 	TYPE_FLOAT
 	TYPE_BOOL
@@ -24,6 +25,7 @@ type Type interface {
 }
 
 type AnyType struct{}
+type UnitType struct{}
 type IntType struct{}
 type FloatType struct{}
 type CharType struct{}
@@ -32,6 +34,9 @@ type StringType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
+
+func (t *UnitType) GetKind() TypeKind { return TYPE_UNIT }
+func (t *UnitType) GetName() string   { return "unit" }
 
 func (t *IntType) GetKind() TypeKind { return TYPE_INT }
 func (t *IntType) GetName() string   { return "int" }
@@ -53,6 +58,8 @@ type Value interface {
 	Inspect() string
 }
 
+type UnitVal struct{}
+
 type IntVal struct {
 	Value int
 }
@@ -68,6 +75,9 @@ type BoolVal struct {
 type StringVal struct {
 	Value string
 }
+
+func (u *UnitVal) GetType() Type   { return &UnitType{} }
+func (u *UnitVal) Inspect() string { return "()" }
 
 func (i *IntVal) GetType() Type   { return &IntType{} }
 func (i *IntVal) Inspect() string { return fmt.Sprintf("%d", i.Value) }

@@ -68,6 +68,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitIdentifier(n)
 	case *ast.Block:
 		an.visitBlock(n, true)
+	case *ast.Print:
+		an.visitPrint(n)
 	case *ast.UnaryOp:
 		an.visit(n.Right)
 	case *ast.BinaryOp:
@@ -126,5 +128,11 @@ func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {
 
 	if newTable {
 		an.pop()
+	}
+}
+
+func (an *Analyser) visitPrint(print *ast.Print) {
+	for _, expr := range print.Exprs {
+		an.visit(expr)
 	}
 }
