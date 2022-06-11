@@ -53,6 +53,7 @@ func (fndef *FunctionDef) AsSExp() string {
 	var sb strings.Builder
 
 	sb.WriteByte('(')
+	sb.WriteString("function ")
 	sb.WriteString(fndef.token.Lexeme)
 	sb.WriteByte(' ')
 	sb.WriteByte('(')
