@@ -6,6 +6,7 @@ import "tiny/lexer"
 // This not too generic, but should work in this case
 type Node interface {
 	GetToken() *lexer.Token
+	AsSExp() string
 }
 
 type Program struct {

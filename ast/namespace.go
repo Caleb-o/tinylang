@@ -1,6 +1,9 @@
 package ast
 
-import "tiny/lexer"
+import (
+	"strings"
+	"tiny/lexer"
+)
 
 type NameSpace struct {
 	Variables []*Node
@@ -11,4 +14,14 @@ type NameSpace struct {
 
 func (ns *NameSpace) GetToken() *lexer.Token {
 	return ns.token
+}
+
+func (ns *NameSpace) AsSExp() string {
+	var sb strings.Builder
+
+	for _, stmt := range ns.Body.Statements {
+		sb.WriteString((*stmt).AsSExp())
+	}
+
+	return sb.String()
 }

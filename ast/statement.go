@@ -1,6 +1,8 @@
 package ast
 
-import "tiny/lexer"
+import (
+	"tiny/lexer"
+)
 
 type Variable struct {
 	Expr  *Node
@@ -9,4 +11,8 @@ type Variable struct {
 
 func (va *Variable) GetToken() *lexer.Token {
 	return va.token
+}
+
+func (va *Variable) AsSExp() string {
+	return (*va.Expr).AsSExp()
 }
