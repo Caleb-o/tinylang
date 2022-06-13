@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"tiny/ast"
 )
 
 type TypeKind uint8
@@ -81,6 +82,10 @@ type StringVal struct {
 	Value string
 }
 
+type FunctionValue struct {
+	definition *ast.FunctionDef
+}
+
 func (u *UnitVal) GetType() Type   { return &UnitType{} }
 func (u *UnitVal) Inspect() string { return "()" }
 
@@ -95,3 +100,20 @@ func (b *BoolVal) Inspect() string { return fmt.Sprintf("%t", b.Value) }
 
 func (str *StringVal) GetType() Type   { return &StringType{} }
 func (str *StringVal) Inspect() string { return str.Value }
+
+func (fn *FunctionValue) GetType() Type   { return &FunctionType{} }
+func (fn *FunctionValue) Inspect() string { return fn.definition.GetToken().Lexeme }
+func (fn *FunctionValue) Arity() int      { return len(fn.definition.Params) }
+
+func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
+	interpreter.push()
+
+	for idx, arg := range values {
+		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
+	}
+
+	interpreter.Visit(fn.definition.Body)
+
+	interpreter.pop()
+	return fn
+}

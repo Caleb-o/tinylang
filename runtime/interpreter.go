@@ -24,27 +24,6 @@ type TinyCallable interface {
 	Call(*Interpreter, []Value) Value
 }
 
-type FunctionValue struct {
-	definition *ast.FunctionDef
-}
-
-func (fn *FunctionValue) GetType() Type   { return &FunctionType{} }
-func (fn *FunctionValue) Inspect() string { return fn.definition.GetToken().Lexeme }
-func (fn *FunctionValue) Arity() int      { return len(fn.definition.Params) }
-
-func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
-	interpreter.push()
-
-	for idx, arg := range values {
-		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
-	}
-
-	interpreter.Visit(fn.definition.Body)
-
-	interpreter.pop()
-	return fn
-}
-
 func New() *Interpreter {
 	return &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}}
 }
