@@ -149,14 +149,50 @@ func (parser *Parser) functionDef(outer *ast.Block) *ast.FunctionDef {
 	return ast.NewFnDef(identifier, parser.collectParameters(), parser.block())
 }
 
-func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) {
+func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
+	parser.consume(lexer.CLASS)
+
+	identifier := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	// TODO: identifier for inheritance
+	curly := parser.current
+	parser.consume(lexer.OPENCURLY)
+
+	fields := make(map[string]*ast.VariableDecl, 0)
+	methods := make(map[string]*ast.FunctionDef, 0)
+
+	block := ast.NewBlock(curly)
+
+	for parser.current.Kind != lexer.CLOSECURLY {
+		switch parser.current.Kind {
+		case lexer.FUNCTION:
+			fn := parser.functionDef(block)
+			methods[fn.GetToken().Lexeme] = fn
+
+		case lexer.LET:
+			variable := parser.variableDecl(block, true)
+			fields[variable.GetToken().Lexeme] = variable
+			parser.consume(lexer.SEMICOLON)
+
+		default:
+			shared.ReportErrFatal(fmt.Sprintf("Unknown item in class definition '%s'", parser.current.Lexeme))
+		}
+	}
+
+	parser.consume(lexer.CLOSECURLY)
+
+	return &ast.ClassDef{Token: identifier, Fields: fields, Methods: methods}
+}
+
+func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) *ast.VariableDecl {
 	identifier := parser.current
 	parser.consume(lexer.IDENTIFIER)
 
 	parser.consume(lexer.EQUAL)
 	expr := parser.expr(outer)
 
-	outer.Statements = append(outer.Statements, ast.NewVarDecl(identifier, mutable, expr))
+	return ast.NewVarDecl(identifier, mutable, expr)
 }
 
 func (parser *Parser) block() *ast.Block {
@@ -192,12 +228,15 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.FUNCTION:
 		outer.Statements = append(outer.Statements, parser.functionDef(outer))
 		return
+	case lexer.CLASS:
+		outer.Statements = append(outer.Statements, parser.classDef(outer))
+		return
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
-		parser.variableDecl(outer, true)
+		outer.Statements = append(outer.Statements, parser.variableDecl(outer, true))
 	case lexer.LET:
 		parser.consume(lexer.LET)
-		parser.variableDecl(outer, false)
+		outer.Statements = append(outer.Statements, parser.variableDecl(outer, false))
 	case lexer.PRINT:
 		parser.print(outer)
 	default:

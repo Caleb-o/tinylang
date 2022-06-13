@@ -22,6 +22,12 @@ type Print struct {
 	Exprs []Node
 }
 
+type ClassDef struct {
+	Token   *lexer.Token
+	Fields  map[string]*VariableDecl
+	Methods map[string]*FunctionDef
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -100,7 +106,42 @@ func (p *Print) AsSExp() string {
 	}
 
 	sb.WriteByte(')')
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (klass *ClassDef) GetToken() *lexer.Token {
+	return klass.Token
+}
+
+func (klass *ClassDef) AsSExp() string {
+	var sb strings.Builder
+
 	sb.WriteByte('(')
+	sb.WriteString(klass.Token.Lexeme)
+	sb.WriteByte('(')
+
+	idx := 0
+	for _, value := range klass.Fields {
+		sb.WriteString(value.AsSExp())
+
+		if idx < len(klass.Fields)-1 {
+			sb.WriteString(", ")
+		}
+
+		idx += 1
+	}
+
+	sb.WriteByte(')')
+	sb.WriteByte('(')
+
+	for _, value := range klass.Methods {
+		sb.WriteString(value.AsSExp())
+	}
+
+	sb.WriteByte(')')
+	sb.WriteByte(')')
 
 	return sb.String()
 }
