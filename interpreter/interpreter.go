@@ -20,6 +20,32 @@ type Interpreter struct {
 	env environment
 }
 
+type TinyCallable interface {
+	Arity() int
+	Call(*Interpreter, []runtime.Value) runtime.Value
+}
+
+type FunctionValue struct {
+	definition *ast.FunctionDef
+}
+
+func (fn *FunctionValue) GetType() runtime.Type { return &runtime.FunctionType{} }
+func (fn *FunctionValue) Inspect() string       { return fn.definition.GetToken().Lexeme }
+func (fn *FunctionValue) Arity() int            { return len(fn.definition.Params) }
+
+func (fn *FunctionValue) Call(interpreter *Interpreter, values []runtime.Value) runtime.Value {
+	interpreter.push()
+
+	for idx, arg := range values {
+		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
+	}
+
+	interpreter.Visit(fn.definition.Body)
+
+	interpreter.pop()
+	return fn
+}
+
 func New() *Interpreter {
 	return &Interpreter{env: environment{variables: make([]map[string]runtime.Value, 0, 1), depth: 0}}
 }
@@ -29,7 +55,6 @@ func (interpreter *Interpreter) Run(program *ast.Program) {
 	_ = interpreter.visitBlock(program.Body, true)
 }
 
-// --- Private ---
 func (interpreter *Interpreter) insert(identifier string, value runtime.Value) {
 	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
 }
@@ -56,12 +81,13 @@ func (interpreter *Interpreter) pop() {
 	interpreter.env.variables = interpreter.env.variables[:len(interpreter.env.variables)-1]
 }
 
+// --- Private ---
 func (interpreter *Interpreter) report(msg string, args ...any) {
 	res := fmt.Sprintf(msg, args...)
 	shared.ReportErr("Runtime: " + res)
 }
 
-func (interpreter *Interpreter) visit(node ast.Node) runtime.Value {
+func (interpreter *Interpreter) Visit(node ast.Node) runtime.Value {
 	switch n := node.(type) {
 	case *ast.Block:
 		return interpreter.visitBlock(n, true)
@@ -73,9 +99,13 @@ func (interpreter *Interpreter) visit(node ast.Node) runtime.Value {
 		return interpreter.visitVarDecl(n)
 	case *ast.Print:
 		return interpreter.visitPrint(n)
+	case *ast.FunctionDef:
+		return interpreter.visitFunctionDef(n)
+	case *ast.Call:
+		return interpreter.visitCall(n)
 	}
 
-	interpreter.report("Unhandled node in visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
+	interpreter.report("Unhandled node in Visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
 	return nil
 }
 
@@ -85,7 +115,7 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) runtim
 	}
 
 	for _, stmt := range block.Statements {
-		interpreter.visit(stmt)
+		interpreter.Visit(stmt)
 	}
 
 	if newEnv {
@@ -122,7 +152,7 @@ func (interpreter *Interpreter) visitIdentifier(id *ast.Identifier) runtime.Valu
 }
 
 func (interpreter *Interpreter) visitVarDecl(decl *ast.VariableDecl) runtime.Value {
-	interpreter.insert(decl.GetToken().Lexeme, interpreter.visit(decl.Expr))
+	interpreter.insert(decl.GetToken().Lexeme, interpreter.Visit(decl.Expr))
 	return &runtime.UnitVal{}
 }
 
@@ -130,9 +160,26 @@ func (interpreter *Interpreter) visitPrint(print *ast.Print) runtime.Value {
 	var sb strings.Builder
 
 	for _, expr := range print.Exprs {
-		sb.WriteString(interpreter.visit(expr).Inspect())
+		sb.WriteString(interpreter.Visit(expr).Inspect())
 	}
 
 	fmt.Println(sb.String())
 	return &runtime.UnitVal{}
+}
+
+func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef) runtime.Value {
+	interpreter.insert(fndef.GetToken().Lexeme, &FunctionValue{definition: fndef})
+	return &runtime.UnitVal{}
+}
+
+func (interpreter *Interpreter) visitCall(call *ast.Call) runtime.Value {
+	sym, _ := interpreter.lookup(call.Token.Lexeme).(*FunctionValue)
+	callable := TinyCallable(sym)
+	arguments := make([]runtime.Value, 0, len(call.Arguments))
+
+	for _, arg := range call.Arguments {
+		arguments = append(arguments, interpreter.Visit(arg))
+	}
+
+	return callable.Call(interpreter, arguments)
 }

@@ -31,6 +31,12 @@ type Literal struct {
 	Value *runtime.Value
 }
 
+type Call struct {
+	Token     *lexer.Token
+	Callee    Node
+	Arguments []Node
+}
+
 func (bin *BinaryOp) GetToken() *lexer.Token {
 	return bin.Token
 }
@@ -94,4 +100,27 @@ func (lit *Literal) GetToken() *lexer.Token {
 
 func (lit *Literal) AsSExp() string {
 	return lit.Token.Lexeme
+}
+
+func (call *Call) GetToken() *lexer.Token {
+	return call.Token
+}
+
+func (call *Call) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(call.Token.Lexeme)
+	sb.WriteByte('(')
+
+	for idx, arg := range call.Arguments {
+		sb.WriteString(arg.AsSExp())
+
+		if idx < len(call.Arguments)-1 {
+			sb.WriteString(", ")
+		}
+	}
+
+	sb.WriteByte(')')
+
+	return sb.String()
 }

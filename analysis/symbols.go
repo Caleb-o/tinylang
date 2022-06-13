@@ -1,5 +1,7 @@
 package analysis
 
+import "tiny/ast"
+
 type Symbol interface {
 	GetName() string
 }
@@ -10,6 +12,7 @@ type VarSymbol struct {
 
 type FunctionSymbol struct {
 	identifier string
+	def        *ast.FunctionDef
 }
 
 func (v *VarSymbol) GetName() string {

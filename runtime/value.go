@@ -16,6 +16,7 @@ const (
 	TYPE_STRING
 	TYPE_LIST
 	TYPE_STRUCT
+	TYPE_FUNCTION
 	TYPE_NAMESPACE
 )
 
@@ -31,6 +32,7 @@ type FloatType struct{}
 type CharType struct{}
 type BoolType struct{}
 type StringType struct{}
+type FunctionType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
@@ -52,6 +54,9 @@ func (t *BoolType) GetName() string   { return "bool" }
 
 func (t *StringType) GetKind() TypeKind { return TYPE_STRING }
 func (t *StringType) GetName() string   { return "string" }
+
+func (t *FunctionType) GetKind() TypeKind { return TYPE_FUNCTION }
+func (t *FunctionType) GetName() string   { return "function" }
 
 type Value interface {
 	GetType() Type

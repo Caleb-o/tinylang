@@ -44,6 +44,19 @@ func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
 	}
 }
 
+func (parser *Parser) functionCall(outer *ast.Block, identifier *lexer.Token) ast.Node {
+	arguments := make([]ast.Node, 0)
+
+	parser.consume(lexer.OPENPAREN)
+	for parser.current.Kind != lexer.CLOSEPAREN {
+		arguments = append(arguments, parser.expr(outer))
+		parser.consumeIfExists(lexer.COMMA)
+	}
+	parser.consume(lexer.CLOSEPAREN)
+
+	return &ast.Call{Token: identifier, Callee: &ast.Identifier{Token: identifier}, Arguments: arguments}
+}
+
 func (parser *Parser) factor(outer *ast.Block) ast.Node {
 	ftoken := parser.current
 
@@ -62,6 +75,11 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 
 	case lexer.IDENTIFIER:
 		parser.consume(lexer.IDENTIFIER)
+
+		if parser.current.Kind == lexer.OPENPAREN {
+			return parser.functionCall(outer, ftoken)
+		}
+
 		return &ast.Identifier{Token: ftoken}
 
 	case lexer.OPENPAREN:
@@ -174,6 +192,7 @@ func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
 	case lexer.FUNCTION:
 		outer.Statements = append(outer.Statements, parser.functionDef(outer))
+		return
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
 		parser.variableDecl(outer, true)
@@ -183,7 +202,8 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.PRINT:
 		parser.print(outer)
 	default:
-		report("Unknown token found in statement '%s'", parser.current.Lexeme)
+		// Expression assignment
+		outer.Statements = append(outer.Statements, parser.expr(outer))
 	}
 
 	parser.consume(lexer.SEMICOLON)

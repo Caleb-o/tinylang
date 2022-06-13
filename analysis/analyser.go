@@ -75,12 +75,14 @@ func (an *Analyser) visit(node ast.Node) {
 	case *ast.BinaryOp:
 		an.visit(n.Left)
 		an.visit(n.Right)
+	case *ast.Call:
+		an.visitCall(n)
 
 	// Ignore
 	case *ast.Literal:
 
 	default:
-		an.reportT("Unhandled node in analysis '%s'", n.GetToken(), n.GetToken().Kind.Name())
+		an.report("Unhandled node in analysis '%s':'%s'", n.GetToken().Lexeme, n.GetToken().Kind.Name())
 	}
 }
 
@@ -99,7 +101,7 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 
 	an.pop()
 
-	an.top().Insert(def.GetToken().Lexeme, &FunctionSymbol{identifier: def.GetToken().Lexeme})
+	an.top().Insert(def.GetToken().Lexeme, &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
 }
 
 func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
@@ -133,6 +135,26 @@ func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {
 
 func (an *Analyser) visitPrint(print *ast.Print) {
 	for _, expr := range print.Exprs {
+		an.visit(expr)
+	}
+}
+
+func (an *Analyser) visitCall(call *ast.Call) {
+	symbol := an.lookup(call.GetToken().Lexeme, false)
+	if symbol == nil {
+		an.reportT("Function does not exist '%s'", call.Token, call.Token.Lexeme)
+	} else {
+		if fnsym, ok := symbol.(*FunctionSymbol); !ok {
+			an.reportT("Identifier '%s' is not a function", call.Token, call.Token.Lexeme)
+		} else {
+			if len(fnsym.def.Params) != len(call.Arguments) {
+				an.reportT("Function '%s' expected %d arguments but received %d", call.Token,
+					call.Token.Lexeme, len(fnsym.def.Params), len(call.Arguments))
+			}
+		}
+	}
+
+	for _, expr := range call.Arguments {
 		an.visit(expr)
 	}
 }
