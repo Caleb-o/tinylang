@@ -1,4 +1,4 @@
-package interpreter
+package runtime
 
 import (
 	"fmt"
@@ -6,13 +6,12 @@ import (
 	"strings"
 	"tiny/ast"
 	"tiny/lexer"
-	"tiny/runtime"
 	"tiny/shared"
 )
 
 type environment struct {
 	// FIXME: Make an abstraction for variables, to allow mutability
-	variables []map[string]runtime.Value
+	variables []map[string]Value
 	depth     int
 }
 
@@ -22,18 +21,18 @@ type Interpreter struct {
 
 type TinyCallable interface {
 	Arity() int
-	Call(*Interpreter, []runtime.Value) runtime.Value
+	Call(*Interpreter, []Value) Value
 }
 
 type FunctionValue struct {
 	definition *ast.FunctionDef
 }
 
-func (fn *FunctionValue) GetType() runtime.Type { return &runtime.FunctionType{} }
-func (fn *FunctionValue) Inspect() string       { return fn.definition.GetToken().Lexeme }
-func (fn *FunctionValue) Arity() int            { return len(fn.definition.Params) }
+func (fn *FunctionValue) GetType() Type   { return &FunctionType{} }
+func (fn *FunctionValue) Inspect() string { return fn.definition.GetToken().Lexeme }
+func (fn *FunctionValue) Arity() int      { return len(fn.definition.Params) }
 
-func (fn *FunctionValue) Call(interpreter *Interpreter, values []runtime.Value) runtime.Value {
+func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	interpreter.push()
 
 	for idx, arg := range values {
@@ -47,7 +46,7 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []runtime.Value) 
 }
 
 func New() *Interpreter {
-	return &Interpreter{env: environment{variables: make([]map[string]runtime.Value, 0, 1), depth: 0}}
+	return &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}}
 }
 
 func (interpreter *Interpreter) Run(program *ast.Program) {
@@ -55,11 +54,11 @@ func (interpreter *Interpreter) Run(program *ast.Program) {
 	_ = interpreter.visitBlock(program.Body, true)
 }
 
-func (interpreter *Interpreter) insert(identifier string, value runtime.Value) {
+func (interpreter *Interpreter) insert(identifier string, value Value) {
 	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
 }
 
-func (interpreter *Interpreter) lookup(identifier string) runtime.Value {
+func (interpreter *Interpreter) lookup(identifier string) Value {
 	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
 		if value, ok := interpreter.env.variables[idx][identifier]; ok {
 			return value
@@ -73,7 +72,7 @@ func (interpreter *Interpreter) lookup(identifier string) runtime.Value {
 
 func (interpreter *Interpreter) push() {
 	interpreter.env.depth += 1
-	interpreter.env.variables = append(interpreter.env.variables, make(map[string]runtime.Value))
+	interpreter.env.variables = append(interpreter.env.variables, make(map[string]Value))
 }
 
 func (interpreter *Interpreter) pop() {
@@ -87,7 +86,7 @@ func (interpreter *Interpreter) report(msg string, args ...any) {
 	shared.ReportErr("Runtime: " + res)
 }
 
-func (interpreter *Interpreter) Visit(node ast.Node) runtime.Value {
+func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
 	case *ast.Block:
 		return interpreter.visitBlock(n, true)
@@ -109,7 +108,7 @@ func (interpreter *Interpreter) Visit(node ast.Node) runtime.Value {
 	return nil
 }
 
-func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) runtime.Value {
+func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value {
 	if newEnv {
 		interpreter.push()
 	}
@@ -122,41 +121,41 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) runtim
 		interpreter.pop()
 	}
 
-	return &runtime.UnitVal{}
+	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) runtime.Value {
+func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) Value {
 	switch lit.Token.Kind {
 	case lexer.INT:
 		value, _ := strconv.ParseInt(lit.GetToken().Lexeme, 10, 32)
-		return &runtime.IntVal{Value: int(value)}
+		return &IntVal{Value: int(value)}
 
 	case lexer.FLOAT:
 		value, _ := strconv.ParseFloat(lit.GetToken().Lexeme, 32)
-		return &runtime.FloatVal{Value: float32(value)}
+		return &FloatVal{Value: float32(value)}
 
 	case lexer.BOOL:
 		value, _ := strconv.ParseBool(lit.GetToken().Lexeme)
-		return &runtime.BoolVal{Value: value}
+		return &BoolVal{Value: value}
 
 	case lexer.STRING:
-		return &runtime.StringVal{Value: lit.GetToken().Lexeme}
+		return &StringVal{Value: lit.GetToken().Lexeme}
 	}
 
 	interpreter.report("Unknown literal type found '%s'", lit.GetToken().Lexeme)
-	return &runtime.UnitVal{}
+	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitIdentifier(id *ast.Identifier) runtime.Value {
+func (interpreter *Interpreter) visitIdentifier(id *ast.Identifier) Value {
 	return interpreter.lookup(id.GetToken().Lexeme)
 }
 
-func (interpreter *Interpreter) visitVarDecl(decl *ast.VariableDecl) runtime.Value {
+func (interpreter *Interpreter) visitVarDecl(decl *ast.VariableDecl) Value {
 	interpreter.insert(decl.GetToken().Lexeme, interpreter.Visit(decl.Expr))
-	return &runtime.UnitVal{}
+	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitPrint(print *ast.Print) runtime.Value {
+func (interpreter *Interpreter) visitPrint(print *ast.Print) Value {
 	var sb strings.Builder
 
 	for _, expr := range print.Exprs {
@@ -164,18 +163,18 @@ func (interpreter *Interpreter) visitPrint(print *ast.Print) runtime.Value {
 	}
 
 	fmt.Println(sb.String())
-	return &runtime.UnitVal{}
+	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef) runtime.Value {
+func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef) Value {
 	interpreter.insert(fndef.GetToken().Lexeme, &FunctionValue{definition: fndef})
-	return &runtime.UnitVal{}
+	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitCall(call *ast.Call) runtime.Value {
+func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	sym, _ := interpreter.lookup(call.Token.Lexeme).(*FunctionValue)
 	callable := TinyCallable(sym)
-	arguments := make([]runtime.Value, 0, len(call.Arguments))
+	arguments := make([]Value, 0, len(call.Arguments))
 
 	for _, arg := range call.Arguments {
 		arguments = append(arguments, interpreter.Visit(arg))

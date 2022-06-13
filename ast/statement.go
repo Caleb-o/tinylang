@@ -3,7 +3,6 @@ package ast
 import (
 	"strings"
 	"tiny/lexer"
-	"tiny/runtime"
 )
 
 type VariableDecl struct {
@@ -13,10 +12,9 @@ type VariableDecl struct {
 }
 
 type FunctionDef struct {
-	token   *lexer.Token
-	Params  []*Parameter
-	ReturnT runtime.Type
-	Body    *Block
+	token  *lexer.Token
+	Params []*Parameter
+	Body   *Block
 }
 
 type Print struct {
@@ -47,7 +45,7 @@ func (decl *VariableDecl) AsSExp() string {
 }
 
 func NewFnDef(token *lexer.Token, params []*Parameter, body *Block) *FunctionDef {
-	return &FunctionDef{token: token, Params: params, Body: body, ReturnT: &runtime.AnyType{}}
+	return &FunctionDef{token: token, Params: params, Body: body}
 }
 
 func (fndef *FunctionDef) GetToken() *lexer.Token {
@@ -75,9 +73,6 @@ func (fndef *FunctionDef) AsSExp() string {
 		}
 	}
 
-	sb.WriteByte(')')
-	sb.WriteString(": ")
-	sb.WriteString(fndef.ReturnT.GetName())
 	sb.WriteByte(')')
 	sb.WriteString(fndef.Body.AsSExp())
 	sb.WriteByte(')')

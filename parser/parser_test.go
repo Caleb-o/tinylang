@@ -25,7 +25,7 @@ func TestFunctionDefinition(t *testing.T) {
 	parser := New(source)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function foo (a: any, b: any, c: any): any)()))") {
+	if !exprEq(result, "((function foo (a, b, c)()))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
@@ -35,7 +35,7 @@ func TestFunctionDefinitionMutable(t *testing.T) {
 	parser := New(source)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function foo (mut a: any, mut b: any, c: any): any)()))") {
+	if !exprEq(result, "((function foo (mut a, mut b, c)()))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
@@ -45,7 +45,7 @@ func TestFunctionDefinitionNested(t *testing.T) {
 	parser := New(source)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function foo (a: any): any)((function bar (b: any): any)()))))") {
+	if !exprEq(result, "((function foo (a)((function bar (b)()))))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
@@ -75,7 +75,7 @@ func TestFunctionWithBlock(t *testing.T) {
 	parser := New(source)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((mut a 1)(mut b a)(function foo (a: any, b: any, c: any): any)((mut d 1)(mut e a))))") {
+	if !exprEq(result, "((mut a 1)(mut b a)(function foo (a, b, c)((mut d 1)(mut e a))))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }

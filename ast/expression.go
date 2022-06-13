@@ -3,7 +3,6 @@ package ast
 import (
 	"strings"
 	"tiny/lexer"
-	"tiny/runtime"
 )
 
 type BinaryOp struct {
@@ -23,12 +22,10 @@ type Identifier struct {
 type Parameter struct {
 	Token   *lexer.Token
 	Mutable bool
-	Type    runtime.Type
 }
 
 type Literal struct {
 	Token *lexer.Token
-	Value *runtime.Value
 }
 
 type Call struct {
@@ -84,14 +81,7 @@ func (param *Parameter) GetToken() *lexer.Token {
 }
 
 func (param *Parameter) AsSExp() string {
-	var sb strings.Builder
-
-	sb.WriteString(param.Token.Lexeme)
-	sb.WriteByte(':')
-	sb.WriteByte(' ')
-	sb.WriteString(param.Type.GetName())
-
-	return sb.String()
+	return param.Token.Lexeme
 }
 
 func (lit *Literal) GetToken() *lexer.Token {

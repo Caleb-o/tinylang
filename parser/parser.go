@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"tiny/ast"
 	"tiny/lexer"
-	"tiny/runtime"
 	"tiny/shared"
 )
 
@@ -71,7 +70,7 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 		fallthrough
 	case lexer.STRING:
 		parser.consume(ftoken.Kind)
-		return &ast.Literal{Token: ftoken, Value: nil}
+		return &ast.Literal{Token: ftoken}
 
 	case lexer.IDENTIFIER:
 		parser.consume(lexer.IDENTIFIER)
@@ -132,7 +131,7 @@ func (parser *Parser) collectParameters() []*ast.Parameter {
 		identifier := parser.current
 		parser.consume(lexer.IDENTIFIER)
 
-		params = append(params, &ast.Parameter{Token: identifier, Mutable: mutable, Type: &runtime.AnyType{}})
+		params = append(params, &ast.Parameter{Token: identifier, Mutable: mutable})
 		parser.consumeIfExists(lexer.COMMA)
 	}
 

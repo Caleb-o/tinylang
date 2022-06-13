@@ -2,8 +2,8 @@ package main
 
 import (
 	"tiny/analysis"
-	"tiny/interpreter"
 	"tiny/parser"
+	"tiny/runtime"
 	"tiny/shared"
 )
 
@@ -16,6 +16,6 @@ func main() {
 		shared.ReportErrFatal("Failed to analyse")
 	}
 
-	interpreter := interpreter.New()
+	interpreter := runtime.New()
 	interpreter.Run(program)
 }
