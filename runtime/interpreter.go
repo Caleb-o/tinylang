@@ -67,6 +67,8 @@ func (interpreter *Interpreter) report(msg string, args ...any) {
 
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
+	case *ast.BinaryOp:
+		return interpreter.visitBinaryOp(n)
 	case *ast.Block:
 		return interpreter.visitBlock(n, true)
 	case *ast.Literal:
@@ -85,6 +87,19 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 
 	interpreter.report("Unhandled node in Visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
 	return nil
+}
+
+func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
+	// FIXME: Analysis should make sure all expressions are of the same type
+	left := interpreter.Visit(binop.Left)
+	right := interpreter.Visit(binop.Right)
+
+	switch left.(type) {
+	case *IntVal:
+		return IntBinop(binop.Token.Kind, left.(*IntVal), right.(*IntVal))
+	}
+
+	return &UnitVal{}
 }
 
 func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value {

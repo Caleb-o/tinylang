@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"tiny/ast"
+	"tiny/lexer"
 )
 
 type TypeKind uint8
@@ -116,4 +117,20 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 
 	interpreter.pop()
 	return fn
+}
+
+func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {
+	switch operator {
+	case lexer.PLUS:
+		return &IntVal{Value: a.Value + b.Value}
+	case lexer.MINUS:
+		return &IntVal{Value: a.Value - b.Value}
+	case lexer.STAR:
+		return &IntVal{Value: a.Value * b.Value}
+	case lexer.SLASH:
+		return &IntVal{Value: a.Value / b.Value}
+	}
+
+	// Unreachable
+	return nil
 }
