@@ -134,3 +134,19 @@ func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {
 	// Unreachable
 	return nil
 }
+
+func FloatBinop(operator lexer.TokenKind, a *FloatVal, b *FloatVal) Value {
+	switch operator {
+	case lexer.PLUS:
+		return &FloatVal{Value: a.Value + b.Value}
+	case lexer.MINUS:
+		return &FloatVal{Value: a.Value - b.Value}
+	case lexer.STAR:
+		return &FloatVal{Value: a.Value * b.Value}
+	case lexer.SLASH:
+		return &FloatVal{Value: a.Value / b.Value}
+	}
+
+	// Unreachable
+	return nil
+}

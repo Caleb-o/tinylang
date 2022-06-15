@@ -97,6 +97,8 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	switch left.(type) {
 	case *IntVal:
 		return IntBinop(binop.Token.Kind, left.(*IntVal), right.(*IntVal))
+	case *FloatVal:
+		return FloatBinop(binop.Token.Kind, left.(*FloatVal), right.(*FloatVal))
 	}
 
 	return &UnitVal{}
