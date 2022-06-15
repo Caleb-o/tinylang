@@ -8,6 +8,7 @@ type Symbol interface {
 
 type VarSymbol struct {
 	identifier string
+	mutable    bool
 }
 
 type FunctionSymbol struct {

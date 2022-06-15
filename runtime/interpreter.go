@@ -83,6 +83,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitFunctionDef(n)
 	case *ast.Call:
 		return interpreter.visitCall(n)
+	case *ast.Assign:
+		return interpreter.visitAssign(n)
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
@@ -177,4 +179,11 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	}
 
 	return callable.Call(interpreter, arguments)
+}
+
+func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
+	value := interpreter.Visit(assign.Expr)
+	interpreter.insert(assign.GetToken().Lexeme, value)
+
+	return value
 }

@@ -77,6 +77,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visit(n.Right)
 	case *ast.Call:
 		an.visitCall(n)
+	case *ast.Assign:
+		an.visitAssign(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -110,12 +112,12 @@ func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
 	}
 
 	an.visit(decl.Expr)
-	an.top().Insert(decl.GetToken().Lexeme, &VarSymbol{identifier: decl.GetToken().Lexeme})
+	an.top().Insert(decl.GetToken().Lexeme, &VarSymbol{identifier: decl.GetToken().Lexeme, mutable: decl.Mutable})
 }
 
 func (an *Analyser) visitIdentifier(id *ast.Identifier) {
 	if an.lookup(id.GetToken().Lexeme, false) == nil {
-		an.reportT("Variable with name '%s' does not exist in any scope", id.GetToken(), id.GetToken().Lexeme)
+		an.reportT("Variable '%s' does not exist in any scope", id.GetToken(), id.GetToken().Lexeme)
 	}
 }
 
@@ -142,19 +144,41 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 func (an *Analyser) visitCall(call *ast.Call) {
 	symbol := an.lookup(call.GetToken().Lexeme, false)
 	if symbol == nil {
-		an.reportT("Function does not exist '%s'", call.Token, call.Token.Lexeme)
+		an.reportT("Function '%s' does not exist", call.Token, call.Token.Lexeme)
+		return
+	}
+
+	if fnsym, ok := symbol.(*FunctionSymbol); !ok {
+		an.reportT("Identifier '%s' is not a function", call.Token, call.Token.Lexeme)
+		return
 	} else {
-		if fnsym, ok := symbol.(*FunctionSymbol); !ok {
-			an.reportT("Identifier '%s' is not a function", call.Token, call.Token.Lexeme)
-		} else {
-			if len(fnsym.def.Params) != len(call.Arguments) {
-				an.reportT("Function '%s' expected %d arguments but received %d", call.Token,
-					call.Token.Lexeme, len(fnsym.def.Params), len(call.Arguments))
-			}
+		if len(fnsym.def.Params) != len(call.Arguments) {
+			an.reportT("Function '%s' expected %d arguments but received %d", call.Token,
+				call.Token.Lexeme, len(fnsym.def.Params), len(call.Arguments))
 		}
 	}
 
 	for _, expr := range call.Arguments {
 		an.visit(expr)
 	}
+}
+
+func (an *Analyser) visitAssign(assign *ast.Assign) {
+	symbol := an.lookup(assign.GetToken().Lexeme, false)
+	if symbol == nil {
+		an.reportT("Variable '%s' does not exist", assign.Token, assign.Token.Lexeme)
+		return
+	} else {
+		if varsym, ok := symbol.(*VarSymbol); !ok {
+			an.reportT("Identifier '%s' is not a variable", assign.Token, assign.Token.Lexeme)
+			return
+		} else {
+			if !varsym.mutable {
+				an.reportT("Variable '%s' is immutable", assign.Token, assign.Token.Lexeme)
+				return
+			}
+		}
+	}
+
+	an.visit(assign.Expr)
 }

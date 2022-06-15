@@ -56,7 +56,7 @@ func (parser *Parser) functionCall(outer *ast.Block, identifier *lexer.Token) as
 	return &ast.Call{Token: identifier, Callee: &ast.Identifier{Token: identifier}, Arguments: arguments}
 }
 
-func (parser *Parser) factor(outer *ast.Block) ast.Node {
+func (parser *Parser) primary(outer *ast.Block) ast.Node {
 	ftoken := parser.current
 
 	switch parser.current.Kind {
@@ -77,6 +77,8 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 
 		if parser.current.Kind == lexer.OPENPAREN {
 			return parser.functionCall(outer, ftoken)
+		} else if parser.current.Kind == lexer.EQUAL {
+			return parser.variableAssign(outer, ftoken)
 		}
 
 		return &ast.Identifier{Token: ftoken}
@@ -92,10 +94,22 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 	return nil
 }
 
+func (parser *Parser) factor(outer *ast.Block) ast.Node {
+	node := parser.primary(outer)
+
+	for parser.current.Kind == lexer.STAR || parser.current.Kind == lexer.SLASH {
+		operator := parser.current
+		parser.consume(operator.Kind)
+		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.primary(outer)}
+	}
+
+	return node
+}
+
 func (parser *Parser) term(outer *ast.Block) ast.Node {
 	node := parser.factor(outer)
 
-	for parser.current.Kind == lexer.STAR || parser.current.Kind == lexer.SLASH {
+	for parser.current.Kind == lexer.PLUS || parser.current.Kind == lexer.MINUS {
 		operator := parser.current
 		parser.consume(operator.Kind)
 		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.factor(outer)}
@@ -105,15 +119,7 @@ func (parser *Parser) term(outer *ast.Block) ast.Node {
 }
 
 func (parser *Parser) expr(outer *ast.Block) ast.Node {
-	node := parser.term(outer)
-
-	for parser.current.Kind == lexer.PLUS || parser.current.Kind == lexer.MINUS {
-		operator := parser.current
-		parser.consume(operator.Kind)
-		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.term(outer)}
-	}
-
-	return node
+	return parser.term(outer)
 }
 
 func (parser *Parser) collectParameters() []*ast.Parameter {
@@ -185,6 +191,11 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	return &ast.ClassDef{Token: identifier, Fields: fields, Methods: methods}
 }
 
+func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token) *ast.Assign {
+	parser.consume(lexer.EQUAL)
+	return &ast.Assign{Token: identifier, Expr: parser.expr(outer)}
+}
+
 func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) *ast.VariableDecl {
 	identifier := parser.current
 	parser.consume(lexer.IDENTIFIER)
@@ -223,6 +234,7 @@ func (parser *Parser) print(outer *ast.Block) {
 	outer.Statements = append(outer.Statements, &ast.Print{Token: token, Exprs: exprs})
 }
 
+// FIXME: Use a system similar to Lox so that parsing expression statements are simplified
 func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
 	case lexer.FUNCTION:
