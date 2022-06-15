@@ -79,3 +79,13 @@ func TestFunctionWithBlock(t *testing.T) {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
+
+func TestAssignment(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/assignment.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((mut a 10)(mut b (a = (+ 3 (/ (* 20 3) 2))))(b = 2))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}
