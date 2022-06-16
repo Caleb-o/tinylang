@@ -208,14 +208,7 @@ func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
-	var callable TinyCallable = nil
-	sym := interpreter.lookup(call.Token.Lexeme)
-
-	switch sym.(type) {
-	case *FunctionValue:
-	case *ClassDefValue:
-		callable = sym.(TinyCallable)
-	}
+	callable := interpreter.lookup(call.Callee.GetToken().Lexeme).(TinyCallable)
 
 	arguments := make([]Value, 0, len(call.Arguments))
 

@@ -55,7 +55,7 @@ func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
 	}
 }
 
-func (parser *Parser) functionCall(outer *ast.Block, identifier *lexer.Token) ast.Node {
+func (parser *Parser) functionCall(outer *ast.Block, callee ast.Node) ast.Node {
 	arguments := make([]ast.Node, 0)
 
 	for parser.current.Kind != lexer.CLOSEPAREN {
@@ -64,7 +64,7 @@ func (parser *Parser) functionCall(outer *ast.Block, identifier *lexer.Token) as
 	}
 	parser.consume(lexer.CLOSEPAREN)
 
-	return &ast.Call{Token: identifier, Callee: &ast.Identifier{Token: identifier}, Arguments: arguments}
+	return &ast.Call{Token: callee.GetToken(), Callee: callee, Arguments: arguments}
 }
 
 func (parser *Parser) primary(outer *ast.Block) ast.Node {
@@ -85,13 +85,6 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 
 	case lexer.IDENTIFIER:
 		parser.consume(lexer.IDENTIFIER)
-
-		if parser.match(lexer.OPENPAREN) {
-			return parser.functionCall(outer, ftoken)
-		} else if parser.match(lexer.EQUAL) {
-			return parser.variableAssign(outer, ftoken)
-		}
-
 		return &ast.Identifier{Token: ftoken}
 
 	case lexer.OPENPAREN:
@@ -105,13 +98,38 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 	return nil
 }
 
-func (parser *Parser) factor(outer *ast.Block) ast.Node {
+func (parser *Parser) call(outer *ast.Block) ast.Node {
 	node := parser.primary(outer)
+
+	for {
+		if parser.match(lexer.OPENPAREN) {
+			node = parser.functionCall(outer, node)
+		} else if parser.match(lexer.DOT) {
+			identifier := parser.current
+			parser.consume(lexer.IDENTIFIER)
+
+			node = &ast.Get{Token: identifier, Expr: node}
+		} else {
+			break
+		}
+	}
+
+	return node
+}
+
+func (parser *Parser) unary(outer *ast.Block) ast.Node {
+	node := parser.call(outer)
+	// TODO
+	return node
+}
+
+func (parser *Parser) factor(outer *ast.Block) ast.Node {
+	node := parser.unary(outer)
 
 	for parser.current.Kind == lexer.STAR || parser.current.Kind == lexer.SLASH {
 		operator := parser.current
 		parser.consume(operator.Kind)
-		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.primary(outer)}
+		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.unary(outer)}
 	}
 
 	return node
@@ -129,8 +147,22 @@ func (parser *Parser) term(outer *ast.Block) ast.Node {
 	return node
 }
 
+func (parser *Parser) assignment(outer *ast.Block) ast.Node {
+	node := parser.term(outer)
+
+	if parser.match(lexer.EQUAL) {
+		if _, ok := node.(*ast.Identifier); !ok {
+			report("Cannot assign to non-identifier")
+		} else {
+			node = parser.variableAssign(outer, node.GetToken())
+		}
+	}
+
+	return node
+}
+
 func (parser *Parser) expr(outer *ast.Block) ast.Node {
-	return parser.term(outer)
+	return parser.assignment(outer)
 }
 
 func (parser *Parser) collectParameters() []*ast.Parameter {

@@ -11,11 +11,6 @@ type VariableDecl struct {
 	Expr    Node
 }
 
-type Assign struct {
-	Token *lexer.Token
-	Expr  Node
-}
-
 type FunctionDef struct {
 	token  *lexer.Token
 	Params []*Parameter
@@ -55,21 +50,6 @@ func (decl *VariableDecl) AsSExp() string {
 	}
 	sb.WriteString(decl.token.Lexeme + " ")
 	sb.WriteString(decl.Expr.AsSExp())
-	sb.WriteByte(')')
-
-	return sb.String()
-}
-
-func (assign *Assign) GetToken() *lexer.Token {
-	return assign.Token
-}
-
-func (assign *Assign) AsSExp() string {
-	var sb strings.Builder
-
-	sb.WriteByte('(')
-	sb.WriteString(assign.Token.Lexeme + " = ")
-	sb.WriteString(assign.Expr.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()

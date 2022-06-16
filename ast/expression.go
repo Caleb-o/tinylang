@@ -34,6 +34,16 @@ type Call struct {
 	Arguments []Node
 }
 
+type Assign struct {
+	Token *lexer.Token
+	Expr  Node
+}
+
+type Get struct {
+	Token *lexer.Token
+	Expr  Node
+}
+
 func (bin *BinaryOp) GetToken() *lexer.Token {
 	return bin.Token
 }
@@ -111,6 +121,35 @@ func (call *Call) AsSExp() string {
 	}
 
 	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (assign *Assign) GetToken() *lexer.Token {
+	return assign.Token
+}
+
+func (assign *Assign) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString(assign.Token.Lexeme + " = ")
+	sb.WriteString(assign.Expr.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (expr *Get) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Get) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(expr.Token.Lexeme)
+	sb.WriteByte('.')
+	sb.WriteString(expr.Expr.AsSExp())
 
 	return sb.String()
 }

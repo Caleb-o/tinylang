@@ -180,9 +180,11 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 }
 
 func (an *Analyser) visitCall(call *ast.Call) {
+	an.visit(call.Callee)
+
 	symbol := an.lookup(call.GetToken().Lexeme, false)
 	if symbol == nil {
-		an.reportT("Function '%s' does not exist", call.Token, call.Token.Lexeme)
+		an.reportT("Item '%s' does not exist in any scope.", call.Token, call.Token.Lexeme)
 		return
 	}
 
@@ -193,9 +195,6 @@ func (an *Analyser) visitCall(call *ast.Call) {
 				call.Token.Lexeme, len(sym.def.Params), len(call.Arguments))
 		}
 	case *ClassDefSymbol:
-	default:
-		an.reportT("Identifier '%s' is not callable", call.Token, call.Token.Lexeme)
-		return
 	}
 
 	for _, expr := range call.Arguments {
