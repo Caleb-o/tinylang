@@ -20,6 +20,7 @@ const (
 	TYPE_STRUCT
 	TYPE_FUNCTION
 	TYPE_NAMESPACE
+	TYPE_RETURN
 )
 
 type Type interface {
@@ -35,6 +36,7 @@ type CharType struct{}
 type BoolType struct{}
 type StringType struct{}
 type FunctionType struct{}
+type ReturnType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
@@ -59,6 +61,9 @@ func (t *StringType) GetName() string   { return "string" }
 
 func (t *FunctionType) GetKind() TypeKind { return TYPE_FUNCTION }
 func (t *FunctionType) GetName() string   { return "function" }
+
+func (t *ReturnType) GetKind() TypeKind { return TYPE_RETURN }
+func (t *ReturnType) GetName() string   { return "return" }
 
 type Value interface {
 	GetType() Type
@@ -87,6 +92,10 @@ type FunctionValue struct {
 	definition *ast.FunctionDef
 }
 
+type ReturnValue struct {
+	inner Value
+}
+
 func (u *UnitVal) GetType() Type   { return &UnitType{} }
 func (u *UnitVal) Inspect() string { return "()" }
 
@@ -102,9 +111,11 @@ func (b *BoolVal) Inspect() string { return fmt.Sprintf("%t", b.Value) }
 func (str *StringVal) GetType() Type   { return &StringType{} }
 func (str *StringVal) Inspect() string { return str.Value }
 
-func (fn *FunctionValue) GetType() Type   { return &FunctionType{} }
-func (fn *FunctionValue) Inspect() string { return fn.definition.GetToken().Lexeme }
-func (fn *FunctionValue) Arity() int      { return len(fn.definition.Params) }
+func (fn *FunctionValue) GetType() Type { return &FunctionType{} }
+func (fn *FunctionValue) Inspect() string {
+	return fmt.Sprintf("<fn %s>", fn.definition.GetToken().Lexeme)
+}
+func (fn *FunctionValue) Arity() int { return len(fn.definition.Params) }
 
 func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	interpreter.push()
@@ -113,11 +124,14 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
 	}
 
-	interpreter.Visit(fn.definition.Body)
+	value := interpreter.Visit(fn.definition.Body)
 
 	interpreter.pop()
-	return fn
+	return value
 }
+
+func (ret *ReturnValue) GetType() Type   { return &ReturnType{} }
+func (ret *ReturnValue) Inspect() string { return ret.inner.Inspect() }
 
 func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {
 	switch operator {

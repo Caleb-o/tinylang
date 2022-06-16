@@ -33,6 +33,11 @@ type ClassDef struct {
 	Methods map[string]*FunctionDef
 }
 
+type Return struct {
+	Token *lexer.Token
+	Expr  Node
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -161,6 +166,24 @@ func (klass *ClassDef) AsSExp() string {
 	}
 
 	sb.WriteByte(')')
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (ret *Return) GetToken() *lexer.Token {
+	return ret.Token
+}
+
+func (ret *Return) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("return")
+
+	if ret.Expr != nil {
+		sb.WriteString(" " + ret.Expr.AsSExp())
+	}
 	sb.WriteByte(')')
 
 	return sb.String()

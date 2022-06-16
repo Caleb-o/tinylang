@@ -96,6 +96,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitCall(n)
 	case *ast.Assign:
 		return interpreter.visitAssign(n)
+	case *ast.Return:
+		return interpreter.visitReturn(n)
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
@@ -126,7 +128,13 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value 
 	}
 
 	for _, stmt := range block.Statements {
-		interpreter.Visit(stmt)
+		if val, ok := interpreter.Visit(stmt).(*ReturnValue); ok {
+			if newEnv {
+				interpreter.pop()
+			}
+
+			return val.inner
+		}
 	}
 
 	if newEnv {
@@ -200,4 +208,12 @@ func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
 	interpreter.insert(assign.GetToken().Lexeme, value)
 
 	return value
+}
+
+func (interpreter *Interpreter) visitReturn(ret *ast.Return) Value {
+	if ret.Expr != nil {
+		return &ReturnValue{inner: interpreter.Visit(ret.Expr)}
+	}
+
+	return &ReturnValue{inner: &UnitVal{}}
 }

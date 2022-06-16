@@ -10,6 +10,7 @@ import (
 type Analyser struct {
 	hadErr bool
 	quiet  bool
+	inFunc bool
 	table  []*SymbolTable
 }
 
@@ -17,7 +18,7 @@ func NewAnalyser(quiet bool) *Analyser {
 	table := make([]*SymbolTable, 0, 2)
 	table = append(table, NewTable(nil))
 
-	return &Analyser{hadErr: false, quiet: quiet, table: table}
+	return &Analyser{hadErr: false, quiet: quiet, inFunc: false, table: table}
 }
 
 func (an *Analyser) Run(root ast.Node) bool {
@@ -104,6 +105,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitCall(n)
 	case *ast.Assign:
 		an.visitAssign(n)
+	case *ast.Return:
+		an.visitReturn(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -114,6 +117,9 @@ func (an *Analyser) visit(node ast.Node) {
 }
 
 func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
+	inFunc := an.inFunc
+	an.inFunc = true
+
 	// Must implement a block ourselves, so we don't mess up the current scope's symbols with params
 	an.table = append(an.table, NewTable(an.top()))
 
@@ -126,6 +132,8 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 	an.pop()
 
 	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
+
+	an.inFunc = inFunc
 }
 
 func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
@@ -197,4 +205,15 @@ func (an *Analyser) visitAssign(assign *ast.Assign) {
 	}
 
 	an.visit(assign.Expr)
+}
+
+func (an *Analyser) visitReturn(ret *ast.Return) {
+	if !an.inFunc {
+		an.reportT("Cannot return outside of a function", ret.Token)
+		return
+	}
+
+	if ret.Expr != nil {
+		an.visit(ret.Expr)
+	}
 }

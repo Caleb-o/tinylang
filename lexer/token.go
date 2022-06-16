@@ -34,6 +34,7 @@ const (
 	FUNCTION
 	CLASS
 	NAMESPACE
+	RETURN
 
 	EOF
 	ERROR
@@ -51,6 +52,7 @@ var KeyWords = map[string]TokenKind{
 	"print":    PRINT,
 	"function": FUNCTION,
 	"class":    CLASS,
+	"return":   RETURN,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

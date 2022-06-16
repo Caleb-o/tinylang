@@ -237,6 +237,18 @@ func (parser *Parser) print(outer *ast.Block) {
 	outer.Statements = append(outer.Statements, &ast.Print{Token: token, Exprs: exprs})
 }
 
+func (parser *Parser) returns(outer *ast.Block) {
+	ret := parser.current
+	parser.consume(lexer.RETURN)
+
+	var expr ast.Node = nil
+	if parser.current.Kind != lexer.SEMICOLON {
+		expr = parser.expr(outer)
+	}
+
+	outer.Statements = append(outer.Statements, &ast.Return{Token: ret, Expr: expr})
+}
+
 // FIXME: Use a system similar to Lox so that parsing expression statements are simplified
 func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
@@ -254,6 +266,8 @@ func (parser *Parser) statement(outer *ast.Block) {
 		outer.Statements = append(outer.Statements, parser.variableDecl(outer, false))
 	case lexer.PRINT:
 		parser.print(outer)
+	case lexer.RETURN:
+		parser.returns(outer)
 	default:
 		// Expression assignment
 		outer.Statements = append(outer.Statements, parser.expr(outer))
