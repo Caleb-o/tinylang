@@ -17,7 +17,8 @@ const (
 	TYPE_CHAR
 	TYPE_STRING
 	TYPE_LIST
-	TYPE_STRUCT
+	TYPE_CLASS
+	TYPE_CLASS_INSTANCE
 	TYPE_FUNCTION
 	TYPE_NAMESPACE
 	TYPE_RETURN
@@ -37,6 +38,8 @@ type BoolType struct{}
 type StringType struct{}
 type FunctionType struct{}
 type ReturnType struct{}
+type ClassDefType struct{}
+type ClassInstanceType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
@@ -64,6 +67,12 @@ func (t *FunctionType) GetName() string   { return "function" }
 
 func (t *ReturnType) GetKind() TypeKind { return TYPE_RETURN }
 func (t *ReturnType) GetName() string   { return "return" }
+
+func (t *ClassDefType) GetKind() TypeKind { return TYPE_CLASS }
+func (t *ClassDefType) GetName() string   { return "class" }
+
+func (t *ClassInstanceType) GetKind() TypeKind { return TYPE_CLASS_INSTANCE }
+func (t *ClassInstanceType) GetName() string   { return "instance" }
 
 type Value interface {
 	GetType() Type
@@ -94,6 +103,17 @@ type FunctionValue struct {
 
 type ReturnValue struct {
 	inner Value
+}
+
+// TODO: Parent class
+type ClassDefValue struct {
+	identifier string
+	methods    map[string]*FunctionValue
+}
+
+type ClassInstanceValue struct {
+	def    *ClassDefValue
+	fields map[string]Value
 }
 
 func (u *UnitVal) GetType() Type   { return &UnitType{} }
@@ -132,6 +152,20 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 
 func (ret *ReturnValue) GetType() Type   { return &ReturnType{} }
 func (ret *ReturnValue) Inspect() string { return ret.inner.Inspect() }
+
+func (def *ClassDefValue) GetType() Type   { return &ClassDefType{} }
+func (def *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", def.identifier) }
+
+func (def *ClassDefValue) Arity() int { return 0 }
+func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
+	// TODO: Call constructor
+	return &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+}
+
+func (instance *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
+func (instance *ClassInstanceValue) Inspect() string {
+	return fmt.Sprintf("<instance %s>", instance.def.identifier)
+}
 
 func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {
 	switch operator {

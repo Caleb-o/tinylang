@@ -16,10 +16,19 @@ type FunctionSymbol struct {
 	def        *ast.FunctionDef
 }
 
-func (v *VarSymbol) GetName() string {
-	return v.identifier
+type ClassDefSymbol struct {
+	identifier string
+	def        *ast.ClassDef
 }
 
-func (fn *FunctionSymbol) GetName() string {
-	return fn.identifier
+func (s *VarSymbol) GetName() string {
+	return s.identifier
+}
+
+func (s *FunctionSymbol) GetName() string {
+	return s.identifier
+}
+
+func (s *ClassDefSymbol) GetName() string {
+	return s.identifier
 }

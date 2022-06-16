@@ -88,6 +88,8 @@ func (an *Analyser) visit(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.FunctionDef:
 		an.visitFunctionDef(n)
+	case *ast.ClassDef:
+		an.visitClassDef(n)
 	case *ast.VariableDecl:
 		an.visitVarDecl(n)
 	case *ast.Identifier:
@@ -136,6 +138,18 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 	an.inFunc = inFunc
 }
 
+func (an *Analyser) visitClassDef(def *ast.ClassDef) {
+	an.declare(def.Token, &ClassDefSymbol{def: def})
+
+	an.table = append(an.table, NewTable(an.top()))
+
+	for _, fn := range def.Methods {
+		an.visit(fn)
+	}
+
+	an.pop()
+}
+
 func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
 	an.visit(decl.Expr)
 	an.declare(decl.GetToken(), &VarSymbol{identifier: decl.GetToken().Lexeme, mutable: decl.Mutable})
@@ -172,14 +186,16 @@ func (an *Analyser) visitCall(call *ast.Call) {
 		return
 	}
 
-	if fnsym, ok := symbol.(*FunctionSymbol); !ok {
-		an.reportT("Identifier '%s' is not a function", call.Token, call.Token.Lexeme)
-		return
-	} else {
-		if len(fnsym.def.Params) != len(call.Arguments) {
+	switch sym := symbol.(type) {
+	case *FunctionSymbol:
+		if len(sym.def.Params) != len(call.Arguments) {
 			an.reportT("Function '%s' expected %d arguments but received %d", call.Token,
-				call.Token.Lexeme, len(fnsym.def.Params), len(call.Arguments))
+				call.Token.Lexeme, len(sym.def.Params), len(call.Arguments))
 		}
+	case *ClassDefSymbol:
+	default:
+		an.reportT("Identifier '%s' is not callable", call.Token, call.Token.Lexeme)
+		return
 	}
 
 	for _, expr := range call.Arguments {

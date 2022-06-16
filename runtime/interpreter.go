@@ -91,7 +91,9 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	case *ast.Print:
 		return interpreter.visitPrint(n)
 	case *ast.FunctionDef:
-		return interpreter.visitFunctionDef(n)
+		return interpreter.visitFunctionDef(n, true)
+	case *ast.ClassDef:
+		return interpreter.visitClassDef(n)
 	case *ast.Call:
 		return interpreter.visitCall(n)
 	case *ast.Assign:
@@ -186,14 +188,35 @@ func (interpreter *Interpreter) visitPrint(print *ast.Print) Value {
 	return &UnitVal{}
 }
 
-func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef) Value {
-	interpreter.insert(fndef.GetToken().Lexeme, &FunctionValue{definition: fndef})
+func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert bool) Value {
+	def := &FunctionValue{definition: fndef}
+	if insert {
+		interpreter.insert(fndef.GetToken().Lexeme, def)
+	}
+	return def
+}
+
+func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
+	methods := make(map[string]*FunctionValue, 0)
+
+	for id, val := range def.Methods {
+		methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
+	}
+
+	interpreter.insert(def.GetToken().Lexeme, &ClassDefValue{identifier: def.GetToken().Lexeme, methods: methods})
 	return &UnitVal{}
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
-	sym, _ := interpreter.lookup(call.Token.Lexeme).(*FunctionValue)
-	callable := TinyCallable(sym)
+	var callable TinyCallable = nil
+	sym := interpreter.lookup(call.Token.Lexeme)
+
+	switch sym.(type) {
+	case *FunctionValue:
+	case *ClassDefValue:
+		callable = sym.(TinyCallable)
+	}
+
 	arguments := make([]Value, 0, len(call.Arguments))
 
 	for _, arg := range call.Arguments {

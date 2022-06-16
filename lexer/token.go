@@ -97,6 +97,8 @@ func (kind TokenKind) Name() string {
 		return "function"
 	case CLASS:
 		return "class"
+	case IDENTIFIER:
+		return "identifier"
 	case OPENCURLY:
 		return "{"
 	case CLOSECURLY:

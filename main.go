@@ -13,7 +13,7 @@ func main() {
 	analyser := analysis.NewAnalyser(false)
 
 	if !analyser.Run(program.Body) {
-		shared.ReportErrFatal("Failed to analyse")
+		return
 	}
 
 	interpreter := runtime.New()
