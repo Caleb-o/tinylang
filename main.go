@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"tiny/analysis"
 	"tiny/parser"
 	"tiny/runtime"
@@ -19,6 +18,4 @@ func main() {
 
 	interpreter := runtime.New()
 	interpreter.Run(program)
-
-	fmt.Println(program.Body.AsSExp())
 }

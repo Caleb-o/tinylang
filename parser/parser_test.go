@@ -35,7 +35,7 @@ func TestFunctionDefinitionMutable(t *testing.T) {
 	parser := New(source)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function foo (mut a, mut b, c)()))") {
+	if !exprEq(result, "((function foo (a, b, c)()))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }

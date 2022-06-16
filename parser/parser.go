@@ -37,6 +37,18 @@ func (parser *Parser) consume(expected lexer.TokenKind) {
 	}
 }
 
+// From crafting interpreters
+func (parser *Parser) match(expected ...lexer.TokenKind) bool {
+	for _, kind := range expected {
+		if parser.current.Kind == kind {
+			parser.consume(kind)
+			return true
+		}
+	}
+
+	return false
+}
+
 func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
 	if parser.current.Kind == expected {
 		parser.current = parser.lexer.Next()
@@ -46,7 +58,6 @@ func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
 func (parser *Parser) functionCall(outer *ast.Block, identifier *lexer.Token) ast.Node {
 	arguments := make([]ast.Node, 0)
 
-	parser.consume(lexer.OPENPAREN)
 	for parser.current.Kind != lexer.CLOSEPAREN {
 		arguments = append(arguments, parser.expr(outer))
 		parser.consumeIfExists(lexer.COMMA)
@@ -75,9 +86,9 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 	case lexer.IDENTIFIER:
 		parser.consume(lexer.IDENTIFIER)
 
-		if parser.current.Kind == lexer.OPENPAREN {
+		if parser.match(lexer.OPENPAREN) {
 			return parser.functionCall(outer, ftoken)
-		} else if parser.current.Kind == lexer.EQUAL {
+		} else if parser.match(lexer.EQUAL) {
 			return parser.variableAssign(outer, ftoken)
 		}
 
@@ -126,18 +137,11 @@ func (parser *Parser) collectParameters() []*ast.Parameter {
 	params := make([]*ast.Parameter, 0, 2)
 	parser.consume(lexer.OPENPAREN)
 
-	for parser.current.Kind == lexer.IDENTIFIER || parser.current.Kind == lexer.VAR {
-		mutable := false
-
-		if parser.current.Kind == lexer.VAR {
-			parser.consume(lexer.VAR)
-			mutable = true
-		}
-
+	for parser.current.Kind == lexer.IDENTIFIER {
 		identifier := parser.current
 		parser.consume(lexer.IDENTIFIER)
 
-		params = append(params, &ast.Parameter{Token: identifier, Mutable: mutable})
+		params = append(params, &ast.Parameter{Token: identifier, Mutable: false})
 		parser.consumeIfExists(lexer.COMMA)
 	}
 
@@ -192,7 +196,6 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 }
 
 func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token) *ast.Assign {
-	parser.consume(lexer.EQUAL)
 	return &ast.Assign{Token: identifier, Expr: parser.expr(outer)}
 }
 

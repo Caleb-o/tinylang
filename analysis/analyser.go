@@ -58,6 +58,31 @@ func (an *Analyser) lookup(identifier string, local bool) Symbol {
 	return an.top().Lookup(identifier, local)
 }
 
+func (an *Analyser) resolve(identifier *lexer.Token) {
+	if an.lookup(identifier.Lexeme, false) == nil {
+		an.reportT("Item with name '%s' does not exist in any scope.", identifier, identifier.Lexeme)
+	}
+}
+
+func (an *Analyser) resolveLocal(identifier *lexer.Token) {
+	if an.lookup(identifier.Lexeme, true) == nil {
+		an.reportT("Item with name '%s' does not exist in the current scope.", identifier, identifier.Lexeme)
+	}
+}
+
+func (an *Analyser) define(identifier *lexer.Token, sym Symbol) {
+	an.top().Insert(identifier.Lexeme, sym)
+}
+
+func (an *Analyser) declare(identifier *lexer.Token, sym Symbol) {
+	if an.lookup(identifier.Lexeme, true) != nil {
+		an.reportT("Item with name '%s' already exists in the current scope.", identifier, identifier.Lexeme)
+		return
+	}
+
+	an.top().Insert(identifier.Lexeme, sym)
+}
+
 func (an *Analyser) visit(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.FunctionDef:
@@ -89,36 +114,27 @@ func (an *Analyser) visit(node ast.Node) {
 }
 
 func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
-	if an.lookup(def.GetToken().Lexeme, true) != nil {
-		an.reportT("Item with name '%s' already exists in its current scope", def.GetToken(), def.GetToken().Lexeme)
-	}
 	// Must implement a block ourselves, so we don't mess up the current scope's symbols with params
 	an.table = append(an.table, NewTable(an.top()))
 
 	for _, param := range def.Params {
-		an.top().Insert(param.GetToken().Lexeme, &VarSymbol{identifier: param.GetToken().Lexeme})
+		an.define(param.GetToken(), &VarSymbol{identifier: param.GetToken().Lexeme})
 	}
 
 	an.visitBlock(def.Body, false)
 
 	an.pop()
 
-	an.top().Insert(def.GetToken().Lexeme, &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
+	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
 }
 
 func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
-	if an.lookup(decl.GetToken().Lexeme, true) != nil {
-		an.reportT("Item with name '%s' already exists in its current scope", decl.GetToken(), decl.GetToken().Lexeme)
-	}
-
 	an.visit(decl.Expr)
-	an.top().Insert(decl.GetToken().Lexeme, &VarSymbol{identifier: decl.GetToken().Lexeme, mutable: decl.Mutable})
+	an.declare(decl.GetToken(), &VarSymbol{identifier: decl.GetToken().Lexeme, mutable: decl.Mutable})
 }
 
 func (an *Analyser) visitIdentifier(id *ast.Identifier) {
-	if an.lookup(id.GetToken().Lexeme, false) == nil {
-		an.reportT("Variable '%s' does not exist in any scope", id.GetToken(), id.GetToken().Lexeme)
-	}
+	an.resolve(id.GetToken())
 }
 
 func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {

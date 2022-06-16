@@ -62,7 +62,18 @@ func (interpreter *Interpreter) pop() {
 // --- Private ---
 func (interpreter *Interpreter) report(msg string, args ...any) {
 	res := fmt.Sprintf(msg, args...)
-	shared.ReportErr("Runtime: " + res)
+	shared.ReportErrFatal("Runtime: " + res)
+}
+
+func (interpreter *Interpreter) checkNumericOperand(token *lexer.Token, operand Value) {
+	switch operand.(type) {
+	case *IntVal:
+		return
+	case *FloatVal:
+		return
+	default:
+		interpreter.report("Value '%s' is not a numeric value '%s'", token.Lexeme, operand.GetType())
+	}
 }
 
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
@@ -95,6 +106,9 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	// FIXME: Analysis should make sure all expressions are of the same type
 	left := interpreter.Visit(binop.Left)
 	right := interpreter.Visit(binop.Right)
+
+	interpreter.checkNumericOperand(binop.Left.GetToken(), left)
+	interpreter.checkNumericOperand(binop.Right.GetToken(), right)
 
 	switch left.(type) {
 	case *IntVal:
