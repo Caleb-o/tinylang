@@ -23,9 +23,10 @@ type Print struct {
 }
 
 type ClassDef struct {
-	Token   *lexer.Token
-	Fields  map[string]*VariableDecl
-	Methods map[string]*FunctionDef
+	Token       *lexer.Token
+	Constructor *FunctionDef
+	Fields      map[string]*VariableDecl
+	Methods     map[string]*FunctionDef
 }
 
 type Return struct {

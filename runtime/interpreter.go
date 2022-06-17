@@ -203,7 +203,12 @@ func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 		methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
 	}
 
-	interpreter.insert(def.GetToken().Lexeme, &ClassDefValue{identifier: def.GetToken().Lexeme, methods: methods})
+	var constructor *FunctionValue = nil
+	if def.Constructor != nil {
+		constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
+	}
+
+	interpreter.insert(def.GetToken().Lexeme, &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: constructor, methods: methods})
 	return &UnitVal{}
 }
 

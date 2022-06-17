@@ -107,8 +107,9 @@ type ReturnValue struct {
 
 // TODO: Parent class
 type ClassDefValue struct {
-	identifier string
-	methods    map[string]*FunctionValue
+	identifier  string
+	constructor *FunctionValue
+	methods     map[string]*FunctionValue
 }
 
 type ClassInstanceValue struct {
@@ -158,8 +159,16 @@ func (def *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", de
 
 func (def *ClassDefValue) Arity() int { return 0 }
 func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
-	// TODO: Call constructor
-	return &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+
+	// Run the constructor
+	if def.constructor != nil {
+		interpreter.push()
+		interpreter.insert("self", instance)
+		def.constructor.Call(interpreter, values)
+		interpreter.pop()
+	}
+	return instance
 }
 
 func (instance *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }

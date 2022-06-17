@@ -210,10 +210,20 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 		switch parser.current.Kind {
 		case lexer.FUNCTION:
 			fn := parser.functionDef(block)
+
+			if _, ok := methods[fn.GetToken().Lexeme]; ok {
+				shared.ReportErrFatal(fmt.Sprintf("Function with name '%s' already exists in class '%s'", fn.GetToken().Lexeme, identifier.Lexeme))
+			}
+
 			methods[fn.GetToken().Lexeme] = fn
 
 		case lexer.LET:
 			variable := parser.variableDecl(block, true)
+
+			if _, ok := fields[variable.GetToken().Lexeme]; ok {
+				shared.ReportErrFatal(fmt.Sprintf("Field with name '%s' already exists in class '%s'", variable.GetToken().Lexeme, identifier.Lexeme))
+			}
+
 			fields[variable.GetToken().Lexeme] = variable
 			parser.consume(lexer.SEMICOLON)
 
@@ -224,7 +234,7 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 
 	parser.consume(lexer.CLOSECURLY)
 
-	return &ast.ClassDef{Token: identifier, Fields: fields, Methods: methods}
+	return &ast.ClassDef{Token: identifier, Constructor: nil, Fields: fields, Methods: methods}
 }
 
 func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token) *ast.Assign {

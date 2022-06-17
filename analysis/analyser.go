@@ -7,18 +7,35 @@ import (
 	"tiny/shared"
 )
 
+type ClassType byte
+type FunctionType byte
+
+const (
+	CLASS_NONE ClassType = iota
+	CLASS_CLASS
+	CLASS_SUBCLASS
+)
+
+const (
+	FUNCTION_NONE FunctionType = iota
+	FUNCTION_FUNCTION
+	FUNCTION_CONSTRUCTOR
+	FUNCTION_METHOD
+)
+
 type Analyser struct {
-	hadErr bool
-	quiet  bool
-	inFunc bool
-	table  []*SymbolTable
+	hadErr          bool
+	quiet           bool
+	currentClass    ClassType
+	currentFunction FunctionType
+	table           []*SymbolTable
 }
 
 func NewAnalyser(quiet bool) *Analyser {
 	table := make([]*SymbolTable, 0, 2)
 	table = append(table, NewTable(nil))
 
-	return &Analyser{hadErr: false, quiet: quiet, inFunc: false, table: table}
+	return &Analyser{hadErr: false, quiet: quiet, currentClass: CLASS_NONE, currentFunction: FUNCTION_NONE, table: table}
 }
 
 func (an *Analyser) Run(root ast.Node) bool {
@@ -87,7 +104,7 @@ func (an *Analyser) declare(identifier *lexer.Token, sym Symbol) {
 func (an *Analyser) visit(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.FunctionDef:
-		an.visitFunctionDef(n)
+		an.visitFunctionDef(n, FUNCTION_FUNCTION)
 	case *ast.ClassDef:
 		an.visitClassDef(n)
 	case *ast.VariableDecl:
@@ -118,10 +135,7 @@ func (an *Analyser) visit(node ast.Node) {
 	}
 }
 
-func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
-	inFunc := an.inFunc
-	an.inFunc = true
-
+func (an *Analyser) visitFunctionDef(def *ast.FunctionDef, fnType FunctionType) {
 	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
 
 	// Must implement a block ourselves, so we don't mess up the current scope's symbols with params
@@ -134,20 +148,32 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 	an.visitBlock(def.Body, false)
 
 	an.pop()
-
-	an.inFunc = inFunc
 }
 
 func (an *Analyser) visitClassDef(def *ast.ClassDef) {
+	enclosing := an.currentClass
+	an.currentClass = CLASS_CLASS
+
 	an.declare(def.Token, &ClassDefSymbol{def: def})
 
 	an.table = append(an.table, NewTable(an.top()))
+	an.top().Insert("self", &VarSymbol{identifier: "self", mutable: false})
 
-	for _, fn := range def.Methods {
-		an.visit(fn)
+	for id, fn := range def.Methods {
+		declaration := FUNCTION_METHOD
+
+		if id == def.Token.Lexeme {
+			declaration = FUNCTION_CONSTRUCTOR
+			// Assign constructor to remove resolution at run-time
+			def.Constructor = fn
+		}
+
+		an.visitFunctionDef(fn, declaration)
 	}
 
 	an.pop()
+
+	an.currentClass = enclosing
 }
 
 func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
@@ -201,6 +227,14 @@ func (an *Analyser) visitCall(call *ast.Call) {
 				call.Token.Lexeme, len(sym.def.Params), len(call.Arguments))
 		}
 	case *ClassDefSymbol:
+		if sym.def.Constructor != nil {
+			cons := sym.def.Constructor
+
+			if len(cons.Params) != len(call.Arguments) {
+				an.reportT("Constuctor '%s' expected %d arguments but received %d", call.Token,
+					call.Token.Lexeme, len(cons.Params), len(call.Arguments))
+			}
+		}
 	}
 
 	for _, expr := range call.Arguments {
@@ -229,7 +263,7 @@ func (an *Analyser) visitAssign(assign *ast.Assign) {
 }
 
 func (an *Analyser) visitReturn(ret *ast.Return) {
-	if !an.inFunc {
+	if an.currentFunction == FUNCTION_NONE {
 		an.reportT("Cannot return outside of a function", ret.Token)
 		return
 	}
