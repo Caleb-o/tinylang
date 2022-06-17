@@ -146,6 +146,10 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
 	}
 
+	if fn.bound != nil {
+		interpreter.insert("self", fn.bound)
+	}
+
 	value := interpreter.Visit(fn.definition.Body)
 
 	if ret, ok := value.(*ReturnValue); ok {
