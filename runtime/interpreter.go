@@ -77,6 +77,15 @@ func (interpreter *Interpreter) checkNumericOperand(token *lexer.Token, operand 
 	}
 }
 
+func (interpreter *Interpreter) checkBoolOperand(token *lexer.Token, operand Value) {
+	switch operand.(type) {
+	case *BoolVal:
+		return
+	default:
+		interpreter.report("Value '%s' is not a boolean value '%s'", token.Lexeme, operand.GetType())
+	}
+}
+
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
 	case *ast.BinaryOp:
@@ -107,6 +116,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitSet(n)
 	case *ast.Self:
 		return interpreter.lookup("self")
+	case *ast.If:
+		return interpreter.visitIfStmt(n)
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
@@ -275,4 +286,24 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 	}
 
 	return value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr))
+}
+
+func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
+	interpreter.push()
+
+	if stmt.VarDec != nil {
+		interpreter.visitVarDecl(stmt.VarDec)
+	}
+
+	condition := interpreter.Visit(stmt.Condition)
+	interpreter.checkBoolOperand(stmt.Condition.GetToken(), condition)
+
+	if condition.(*BoolVal).Value {
+		interpreter.visitBlock(stmt.TrueBody, false)
+	} else if stmt.FalseBody != nil {
+		interpreter.Visit(stmt.FalseBody)
+	}
+
+	interpreter.pop()
+	return &UnitVal{}
 }

@@ -34,6 +34,14 @@ type Return struct {
 	Expr  Node
 }
 
+type If struct {
+	Token     *lexer.Token
+	VarDec    *VariableDecl
+	Condition Node
+	TrueBody  *Block
+	FalseBody Node
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -164,6 +172,31 @@ func (ret *Return) AsSExp() string {
 
 	if ret.Expr != nil {
 		sb.WriteString(" " + ret.Expr.AsSExp())
+	}
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *If) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *If) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("if ")
+
+	if stmt.VarDec != nil {
+		sb.WriteString(stmt.VarDec.AsSExp())
+		sb.WriteString("; ")
+	}
+
+	sb.WriteString(stmt.TrueBody.AsSExp())
+
+	if stmt.FalseBody != nil {
+		sb.WriteString(stmt.FalseBody.AsSExp())
 	}
 	sb.WriteByte(')')
 

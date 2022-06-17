@@ -27,6 +27,9 @@ const (
 	STRING
 	BOOL
 
+	IF
+	ELSE
+
 	IDENTIFIER
 	PRINT
 	VAR
@@ -55,6 +58,8 @@ var KeyWords = map[string]TokenKind{
 	"self":     SELF,
 	"class":    CLASS,
 	"return":   RETURN,
+	"if":       IF,
+	"else":     ELSE,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

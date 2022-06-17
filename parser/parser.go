@@ -295,6 +295,34 @@ func (parser *Parser) returns(outer *ast.Block) {
 	outer.Statements = append(outer.Statements, &ast.Return{Token: ret, Expr: expr})
 }
 
+func (parser *Parser) ifstmt(outer *ast.Block) *ast.If {
+	ftoken := parser.current
+	parser.consume(lexer.IF)
+
+	var varDecl *ast.VariableDecl = nil
+	if parser.current.Kind == lexer.LET || parser.current.Kind == lexer.VAR {
+		mutable := parser.current.Kind == lexer.VAR
+		parser.consume(parser.current.Kind)
+
+		varDecl = parser.variableDecl(outer, mutable)
+		parser.consume(lexer.SEMICOLON)
+	}
+
+	condition := parser.expr(outer)
+	trueBody := parser.block()
+	var falseBody ast.Node = nil
+
+	if parser.match(lexer.ELSE) {
+		if parser.current.Kind == lexer.IF {
+			falseBody = parser.ifstmt(outer)
+		} else {
+			falseBody = parser.block()
+		}
+	}
+
+	return &ast.If{Token: ftoken, VarDec: varDecl, Condition: condition, TrueBody: trueBody, FalseBody: falseBody}
+}
+
 // FIXME: Use a system similar to Lox so that parsing expression statements are simplified
 func (parser *Parser) statement(outer *ast.Block) {
 	switch parser.current.Kind {
@@ -314,6 +342,9 @@ func (parser *Parser) statement(outer *ast.Block) {
 		parser.print(outer)
 	case lexer.RETURN:
 		parser.returns(outer)
+	case lexer.IF:
+		outer.Statements = append(outer.Statements, parser.ifstmt(outer))
+		return
 	default:
 		// Expression assignment
 		outer.Statements = append(outer.Statements, parser.expr(outer))

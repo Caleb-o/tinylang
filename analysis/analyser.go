@@ -132,6 +132,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitSet(n)
 	case *ast.Self:
 		an.visitSelf(n)
+	case *ast.If:
+		an.visitIfStmt(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -278,5 +280,18 @@ func (an *Analyser) visitSet(set *ast.Set) {
 func (an *Analyser) visitSelf(self *ast.Self) {
 	if an.currentClass == CLASS_NONE {
 		an.report("Cannot use 'self' outside of a class.")
+	}
+}
+
+func (an *Analyser) visitIfStmt(stmt *ast.If) {
+	if stmt.VarDec != nil {
+		an.visit(stmt.VarDec)
+	}
+
+	an.visit(stmt.Condition)
+	an.visit(stmt.TrueBody)
+
+	if stmt.FalseBody != nil {
+		an.visit(stmt.FalseBody)
 	}
 }
