@@ -73,7 +73,7 @@ func (interpreter *Interpreter) checkNumericOperand(token *lexer.Token, operand 
 	case *FloatVal:
 		return
 	default:
-		interpreter.report("Value '%s' is not a numeric value '%s'", token.Lexeme, operand.GetType())
+		interpreter.report("Value '%s' is not a numeric value '%s':%s %d", token.Lexeme, operand.Inspect(), reflect.TypeOf(operand), token.Line)
 	}
 }
 
@@ -174,7 +174,7 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value 
 				interpreter.pop()
 			}
 
-			return val.inner
+			return val
 		}
 	}
 
@@ -319,12 +319,13 @@ func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
 	condition := interpreter.Visit(stmt.Condition)
 	interpreter.checkBoolOperand(stmt.Condition.GetToken(), condition)
 
+	var value Value = nil
 	if condition.(*BoolVal).Value {
-		interpreter.visitBlock(stmt.TrueBody, false)
+		value = interpreter.visitBlock(stmt.TrueBody, false)
 	} else if stmt.FalseBody != nil {
-		interpreter.Visit(stmt.FalseBody)
+		value = interpreter.Visit(stmt.FalseBody)
 	}
 
 	interpreter.pop()
-	return &UnitVal{}
+	return value
 }

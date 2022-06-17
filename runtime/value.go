@@ -148,6 +148,10 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 
 	value := interpreter.Visit(fn.definition.Body)
 
+	if ret, ok := value.(*ReturnValue); ok {
+		value = ret.inner
+	}
+
 	interpreter.pop()
 	return value
 }
