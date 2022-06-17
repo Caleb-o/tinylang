@@ -99,6 +99,7 @@ type StringVal struct {
 
 type FunctionValue struct {
 	definition *ast.FunctionDef
+	bound      *ClassInstanceValue
 }
 
 type ReturnValue struct {
@@ -141,6 +142,10 @@ func (fn *FunctionValue) Arity() int { return len(fn.definition.Params) }
 func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	interpreter.push()
 
+	if fn.bound != nil {
+		// interpreter.insert("self", inte)
+	}
+
 	for idx, arg := range values {
 		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
 	}
@@ -174,6 +179,25 @@ func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
 func (instance *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
 func (instance *ClassInstanceValue) Inspect() string {
 	return fmt.Sprintf("<instance %s>", instance.def.identifier)
+}
+
+func (instance *ClassInstanceValue) Get(identifier string) Value {
+	if val, ok := instance.fields[identifier]; ok {
+		return val
+	}
+
+	if fn, ok := instance.def.methods[identifier]; ok {
+		fn.bound = instance
+		return fn
+	}
+
+	instance.fields[identifier] = &UnitVal{}
+	return instance.fields[identifier]
+}
+
+func (instance *ClassInstanceValue) Set(identifier string, value Value) Value {
+	instance.fields[identifier] = value
+	return value
 }
 
 func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {

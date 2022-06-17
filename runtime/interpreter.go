@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"tiny/ast"
@@ -100,9 +101,15 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitAssign(n)
 	case *ast.Return:
 		return interpreter.visitReturn(n)
+	case *ast.Get:
+		return interpreter.visitGet(n)
+	case *ast.Set:
+		return interpreter.visitSet(n)
+	case *ast.Self:
+		return interpreter.lookup("self")
 	}
 
-	interpreter.report("Unhandled node in Visit '%s':'%s'", node.GetToken().Lexeme, node.GetToken().Kind.Name())
+	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
 	return nil
 }
 
@@ -189,7 +196,7 @@ func (interpreter *Interpreter) visitPrint(print *ast.Print) Value {
 }
 
 func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert bool) Value {
-	def := &FunctionValue{definition: fndef}
+	def := &FunctionValue{definition: fndef, bound: nil}
 	if insert {
 		interpreter.insert(fndef.GetToken().Lexeme, def)
 	}
@@ -199,21 +206,28 @@ func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 	methods := make(map[string]*FunctionValue, 0)
 
+	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, methods: methods}
+
+	if def.Constructor != nil {
+		classDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
+	}
+
 	for id, val := range def.Methods {
 		methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
 	}
 
-	var constructor *FunctionValue = nil
-	if def.Constructor != nil {
-		constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
-	}
-
-	interpreter.insert(def.GetToken().Lexeme, &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: constructor, methods: methods})
+	interpreter.insert(def.GetToken().Lexeme, classDef)
 	return &UnitVal{}
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
-	callable := interpreter.lookup(call.Callee.GetToken().Lexeme).(TinyCallable)
+	caller := interpreter.Visit(call.Callee)
+
+	if _, ok := caller.(TinyCallable); !ok {
+		interpreter.report("'%s' is not callable.", caller.Inspect())
+	}
+
+	callable := caller.(TinyCallable)
 
 	arguments := make([]Value, 0, len(call.Arguments))
 
@@ -237,4 +251,28 @@ func (interpreter *Interpreter) visitReturn(ret *ast.Return) Value {
 	}
 
 	return &ReturnValue{inner: &UnitVal{}}
+}
+
+func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
+	value := interpreter.Visit(get.Expr)
+
+	switch value.(type) {
+	case *ClassInstanceValue:
+	default:
+		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
+	}
+
+	return value.(*ClassInstanceValue).Get(get.GetToken().Lexeme)
+}
+
+func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
+	value := interpreter.Visit(set.Caller)
+
+	switch value.(type) {
+	case *ClassInstanceValue:
+	default:
+		interpreter.report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
+	}
+
+	return value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr))
 }

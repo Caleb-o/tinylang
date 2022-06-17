@@ -44,6 +44,16 @@ type Get struct {
 	Expr  Node
 }
 
+type Set struct {
+	Token  *lexer.Token
+	Caller Node
+	Expr   Node
+}
+
+type Self struct {
+	Token *lexer.Token
+}
+
 func (bin *BinaryOp) GetToken() *lexer.Token {
 	return bin.Token
 }
@@ -152,4 +162,26 @@ func (expr *Get) AsSExp() string {
 	sb.WriteString(expr.Expr.AsSExp())
 
 	return sb.String()
+}
+
+func (expr *Set) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Set) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(expr.Token.Lexeme)
+	sb.WriteByte('.')
+	sb.WriteString(expr.Expr.AsSExp())
+
+	return sb.String()
+}
+
+func (expr *Self) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Self) AsSExp() string {
+	return "self"
 }

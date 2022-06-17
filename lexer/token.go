@@ -32,6 +32,7 @@ const (
 	VAR
 	LET
 	FUNCTION
+	SELF
 	CLASS
 	NAMESPACE
 	RETURN
@@ -51,6 +52,7 @@ var KeyWords = map[string]TokenKind{
 	"var":      VAR,
 	"print":    PRINT,
 	"function": FUNCTION,
+	"self":     SELF,
 	"class":    CLASS,
 	"return":   RETURN,
 	// These will be temporary, they will become a value later?

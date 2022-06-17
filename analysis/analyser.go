@@ -126,6 +126,12 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitAssign(n)
 	case *ast.Return:
 		an.visitReturn(n)
+	case *ast.Get:
+		an.visitGet(n)
+	case *ast.Set:
+		an.visitSet(n)
+	case *ast.Self:
+		an.visitSelf(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -136,6 +142,9 @@ func (an *Analyser) visit(node ast.Node) {
 }
 
 func (an *Analyser) visitFunctionDef(def *ast.FunctionDef, fnType FunctionType) {
+	enclosing := an.currentFunction
+	an.currentFunction = fnType
+
 	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
 
 	// Must implement a block ourselves, so we don't mess up the current scope's symbols with params
@@ -148,6 +157,7 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef, fnType FunctionType) 
 	an.visitBlock(def.Body, false)
 
 	an.pop()
+	an.currentFunction = enclosing
 }
 
 func (an *Analyser) visitClassDef(def *ast.ClassDef) {
@@ -182,7 +192,8 @@ func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
 }
 
 func (an *Analyser) visitIdentifier(id *ast.Identifier) {
-	an.resolve(id.GetToken())
+	// an.resolve(id.GetToken())
+	an.define(id.Token, &VarSymbol{identifier: id.Token.Lexeme, mutable: false})
 }
 
 func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {
@@ -206,19 +217,16 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 }
 
 func (an *Analyser) visitCall(call *ast.Call) {
+	// FIXME: Allow Identifiers + Get
 	// This should help fix weird chains like func()()()()();
-	if _, ok := call.Callee.(*ast.Identifier); !ok {
-		an.reportT("Cannot call non-identifier '%s'.", call.GetToken(), call.GetToken().Lexeme)
-		return
-	}
+	// if _, ok := call.Callee.(*ast.Identifier); !ok {
+	// 	an.reportT("Cannot call non-identifier '%s':%s.", call.GetToken(), call.GetToken().Lexeme, call.GetToken().Kind.Name())
+	// 	return
+	// }
 
 	an.visit(call.Callee)
 
-	symbol := an.lookup(call.GetToken().Lexeme, false)
-	if symbol == nil {
-		an.reportT("Item '%s' does not exist in any scope.", call.Token, call.Token.Lexeme)
-		return
-	}
+	symbol := an.lookup(call.Callee.GetToken().Lexeme, false)
 
 	switch sym := symbol.(type) {
 	case *FunctionSymbol:
@@ -243,22 +251,7 @@ func (an *Analyser) visitCall(call *ast.Call) {
 }
 
 func (an *Analyser) visitAssign(assign *ast.Assign) {
-	symbol := an.lookup(assign.GetToken().Lexeme, false)
-	if symbol == nil {
-		an.reportT("Variable '%s' does not exist", assign.Token, assign.Token.Lexeme)
-		return
-	} else {
-		if varsym, ok := symbol.(*VarSymbol); !ok {
-			an.reportT("Identifier '%s' is not a variable", assign.Token, assign.Token.Lexeme)
-			return
-		} else {
-			if !varsym.mutable {
-				an.reportT("Variable '%s' is immutable", assign.Token, assign.Token.Lexeme)
-				return
-			}
-		}
-	}
-
+	an.resolve(assign.GetToken())
 	an.visit(assign.Expr)
 }
 
@@ -270,5 +263,20 @@ func (an *Analyser) visitReturn(ret *ast.Return) {
 
 	if ret.Expr != nil {
 		an.visit(ret.Expr)
+	}
+}
+
+func (an *Analyser) visitGet(get *ast.Get) {
+	an.visit(get.Expr)
+}
+
+func (an *Analyser) visitSet(set *ast.Set) {
+	an.visit(set.Caller)
+	an.visit(set.Expr)
+}
+
+func (an *Analyser) visitSelf(self *ast.Self) {
+	if an.currentClass == CLASS_NONE {
+		an.report("Cannot use 'self' outside of a class.")
 	}
 }

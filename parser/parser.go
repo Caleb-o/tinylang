@@ -83,6 +83,10 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		parser.consume(ftoken.Kind)
 		return &ast.Literal{Token: ftoken}
 
+	case lexer.SELF:
+		parser.consume(ftoken.Kind)
+		return &ast.Self{Token: ftoken}
+
 	case lexer.IDENTIFIER:
 		parser.consume(lexer.IDENTIFIER)
 		return &ast.Identifier{Token: ftoken}
@@ -151,10 +155,10 @@ func (parser *Parser) assignment(outer *ast.Block) ast.Node {
 	node := parser.term(outer)
 
 	if parser.match(lexer.EQUAL) {
-		if _, ok := node.(*ast.Identifier); !ok {
-			report("Cannot assign to non-identifier")
+		if get, ok := node.(*ast.Get); ok {
+			return &ast.Set{Token: get.Token, Caller: get.Expr, Expr: parser.expr(outer)}
 		} else {
-			node = parser.variableAssign(outer, node.GetToken())
+			return parser.variableAssign(outer, node.GetToken())
 		}
 	}
 
