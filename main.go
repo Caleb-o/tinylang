@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"tiny/analysis"
 	"tiny/parser"
 	"tiny/runtime"
@@ -8,14 +10,23 @@ import (
 )
 
 func main() {
-	parser := parser.New(shared.ReadFile("./experimenting.tiny"))
-	program := parser.Parse()
-	analyser := analysis.NewAnalyser(false)
-
-	if !analyser.Run(program.Body) {
+	if len(os.Args) > 2 || len(os.Args) < 2 {
+		fmt.Println("usage: tiny script")
 		return
 	}
 
-	interpreter := runtime.New()
-	interpreter.Run(program)
+	if source, ok := shared.ReadFileErr(os.Args[1]); ok {
+		parser := parser.New(source)
+		program := parser.Parse()
+		analyser := analysis.NewAnalyser(false)
+
+		if !analyser.Run(program.Body) {
+			return
+		}
+
+		interpreter := runtime.New()
+		interpreter.Run(program)
+	} else {
+		shared.ReportErrFatal(fmt.Sprintf("File '%s' does not exist.", os.Args[1]))
+	}
 }

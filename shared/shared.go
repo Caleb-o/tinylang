@@ -14,6 +14,14 @@ func ReadFile(path string) string {
 	return string(src)
 }
 
+func ReadFileErr(path string) (string, bool) {
+	src, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	return string(src), true
+}
+
 func ReportErr(msg string) {
 	log.Printf("\u001b[31;1mError:\u001b[0m %s", msg)
 }
