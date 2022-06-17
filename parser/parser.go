@@ -33,7 +33,7 @@ func (parser *Parser) consume(expected lexer.TokenKind) {
 	if parser.current.Kind == expected {
 		parser.current = parser.lexer.Next()
 	} else {
-		report("Expected token kind '%s' but received '%s'", expected.Name(), parser.current.Lexeme)
+		report("Expected token kind '%s' but received '%s':%s", expected.Name(), parser.current.Lexeme, parser.current.Kind.Name())
 	}
 }
 

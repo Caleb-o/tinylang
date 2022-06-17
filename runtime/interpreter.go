@@ -90,6 +90,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
 	case *ast.BinaryOp:
 		return interpreter.visitBinaryOp(n)
+	case *ast.LogicalOp:
+		return interpreter.visitLogicalOp(n)
 	case *ast.Block:
 		return interpreter.visitBlock(n, true)
 	case *ast.Literal:
@@ -145,6 +147,20 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 
 	interpreter.report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
 	return nil
+}
+
+func (interpreter *Interpreter) visitLogicalOp(logical *ast.LogicalOp) Value {
+	left := interpreter.Visit(logical.Left)
+	right := interpreter.Visit(logical.Right)
+
+	interpreter.checkBoolOperand(logical.Left.GetToken(), left)
+	interpreter.checkBoolOperand(logical.Right.GetToken(), right)
+
+	if logical.Token.Kind == lexer.AND {
+		return &BoolVal{Value: left.(*BoolVal).Value && right.(*BoolVal).Value}
+	}
+
+	return &BoolVal{Value: left.(*BoolVal).Value || right.(*BoolVal).Value}
 }
 
 func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value {

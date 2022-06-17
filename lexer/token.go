@@ -128,6 +128,14 @@ func (kind TokenKind) Name() string {
 		return ":"
 	case SEMICOLON:
 		return ";"
+	case AMPERSAND:
+		return "AMPERSAND"
+	case PIPE:
+		return "PIPE"
+	case AND:
+		return "AND"
+	case OR:
+		return "OR"
 	default:
 		return "Unknown"
 	}

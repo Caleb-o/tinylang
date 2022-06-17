@@ -176,6 +176,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('&') {
 			kind = AND
 			size = 2
+			break
 		}
 		kind = AMPERSAND
 
@@ -183,6 +184,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('|') {
 			kind = OR
 			size = 2
+			break
 		}
 		kind = PIPE
 
@@ -190,6 +192,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('=') {
 			kind = EQUAL_EQUAL
 			size = 2
+			break
 		}
 		kind = EQUAL
 
@@ -197,6 +200,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('=') {
 			kind = NOT_EQUAL
 			size = 2
+			break
 		}
 		kind = BANG
 
@@ -204,6 +208,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('=') {
 			kind = GREATER_EQUAL
 			size = 2
+			break
 		}
 		kind = GREATER
 
@@ -211,6 +216,7 @@ func (lexer *Lexer) readChars() *Token {
 		if lexer.match('=') {
 			kind = LESS_EQUAL
 			size = 2
+			break
 		}
 		kind = LESS
 
