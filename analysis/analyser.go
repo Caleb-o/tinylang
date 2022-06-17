@@ -180,6 +180,12 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 }
 
 func (an *Analyser) visitCall(call *ast.Call) {
+	// This should help fix weird chains like func()()()()();
+	if _, ok := call.Callee.(*ast.Identifier); !ok {
+		an.reportT("Cannot call non-identifier '%s'.", call.GetToken(), call.GetToken().Lexeme)
+		return
+	}
+
 	an.visit(call.Callee)
 
 	symbol := an.lookup(call.GetToken().Lexeme, false)
