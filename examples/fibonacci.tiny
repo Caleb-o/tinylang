@@ -1,3 +1,4 @@
+# Recursive fibonacci
 function fib(n) {
 	if n > 1 {
 		return fib(n - 1) + fib(n - 2);
@@ -6,4 +7,4 @@ function fib(n) {
 	}
 }
 
-print(fib(24)); # 46368
+print(fib(30)); # 2178309
