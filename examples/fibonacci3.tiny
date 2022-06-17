@@ -1,0 +1,26 @@
+# Iterative fibonacci through the use of classes
+class Fibonacci {
+	function Fibonacci() {
+		self.old = 0;
+		self.value = 1;
+	}
+
+	function get() {
+		return self.value;
+	}
+
+	function next() {
+		let temp = self.old + self.value;
+		self.old = self.value;
+		self.value = temp;
+	}
+}
+
+var fib = Fibonacci();
+
+while var idx = 2; idx <= 32 {
+	idx = idx + 1;
+	fib.next();
+}
+
+print(fib.get()); # 2178309
