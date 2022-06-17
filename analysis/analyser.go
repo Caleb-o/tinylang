@@ -122,6 +122,8 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 	inFunc := an.inFunc
 	an.inFunc = true
 
+	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
+
 	// Must implement a block ourselves, so we don't mess up the current scope's symbols with params
 	an.table = append(an.table, NewTable(an.top()))
 
@@ -132,8 +134,6 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef) {
 	an.visitBlock(def.Body, false)
 
 	an.pop()
-
-	an.declare(def.GetToken(), &FunctionSymbol{identifier: def.GetToken().Lexeme, def: def})
 
 	an.inFunc = inFunc
 }
