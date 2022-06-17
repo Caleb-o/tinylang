@@ -8,6 +8,16 @@ const (
 	STAR
 	SLASH
 	EQUAL
+	BANG
+
+	NOT_EQUAL
+	EQUAL_EQUAL
+	GREATER
+	GREATER_EQUAL
+	LESS
+	LESS_EQUAL
+	AND
+	OR
 
 	COLON
 	SEMICOLON
@@ -29,6 +39,8 @@ const (
 
 	IF
 	ELSE
+	AMPERSAND
+	PIPE
 
 	IDENTIFIER
 	PRINT
@@ -63,24 +75,6 @@ var KeyWords = map[string]TokenKind{
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
-}
-
-var Characters = map[byte]TokenKind{
-	'+': PLUS,
-	'-': MINUS,
-	'*': STAR,
-	'/': SLASH,
-	'=': EQUAL,
-	':': COLON,
-	';': SEMICOLON,
-	'.': DOT,
-	',': COMMA,
-	'(': OPENPAREN,
-	')': CLOSEPAREN,
-	'{': OPENCURLY,
-	'}': CLOSECURLY,
-	'[': OPENSQUARE,
-	']': CLOSESQUARE,
 }
 
 // There has to be a nicer way of doing this

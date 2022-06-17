@@ -16,5 +16,9 @@ _Alt_Identifier22
 
 + - * / =
 , . : ;
+> < !
+>= <= !=
+& && | ||
 
-function class return
+function class
+return self

@@ -32,7 +32,7 @@ func (lexer *Lexer) Next() *Token {
 	}
 
 	// This is a fallthrough, which will return an error *Token otherwise
-	return lexer.readSingle()
+	return lexer.readChars()
 }
 
 // --- Private ---
@@ -53,6 +53,13 @@ func (lexer *Lexer) peek() byte {
 		return 0
 	}
 	return lexer.source[lexer.pos]
+}
+
+func (lexer *Lexer) peekNext() byte {
+	if lexer.pos+1 >= len(lexer.source) {
+		return 0
+	}
+	return lexer.source[lexer.pos+1]
 }
 
 func (lexer *Lexer) advance() {
@@ -86,6 +93,18 @@ func getKeyword(lexeme string) TokenKind {
 	}
 }
 
+func (lexer *Lexer) match(expected byte) bool {
+	if lexer.isAtEnd() {
+		return false
+	}
+	if lexer.peek() != expected {
+		return false
+	}
+
+	lexer.advance()
+	return true
+}
+
 func (lexer *Lexer) skipWhitespace() {
 	for !lexer.isAtEnd() {
 		switch lexer.peek() {
@@ -116,15 +135,90 @@ func (lexer *Lexer) skipWhitespace() {
 	}
 }
 
-func (lexer *Lexer) readSingle() *Token {
-	kind, ok := Characters[lexer.peek()]
+func (lexer *Lexer) readChars() *Token {
+	current := lexer.peek()
 	lexer.advance()
 
-	if !ok {
-		return lexer.makeError("Unknown character found '%q'", string(lexer.peek()))
-	} else {
-		return lexer.makeToken(kind, lexer.source[lexer.pos-1:lexer.pos], lexer.column-1)
+	size := 1
+	kind := ERROR
+
+	switch current {
+	case '+':
+		kind = PLUS
+	case '-':
+		kind = MINUS
+	case '*':
+		kind = STAR
+	case '/':
+		kind = SLASH
+	case '(':
+		kind = OPENPAREN
+	case ')':
+		kind = CLOSEPAREN
+	case '{':
+		kind = OPENCURLY
+	case '}':
+		kind = CLOSECURLY
+	case '[':
+		kind = OPENSQUARE
+	case ']':
+		kind = CLOSESQUARE
+	case ':':
+		kind = COLON
+	case ';':
+		kind = SEMICOLON
+	case '.':
+		kind = DOT
+	case ',':
+		kind = COMMA
+
+	case '&':
+		if lexer.match('&') {
+			kind = AND
+			size = 2
+		}
+		kind = AMPERSAND
+
+	case '|':
+		if lexer.match('|') {
+			kind = OR
+			size = 2
+		}
+		kind = PIPE
+
+	case '=':
+		if lexer.match('=') {
+			kind = EQUAL_EQUAL
+			size = 2
+		}
+		kind = EQUAL
+
+	case '!':
+		if lexer.match('=') {
+			kind = NOT_EQUAL
+			size = 2
+		}
+		kind = BANG
+
+	case '>':
+		if lexer.match('=') {
+			kind = GREATER_EQUAL
+			size = 2
+		}
+		kind = GREATER
+
+	case '<':
+		if lexer.match('=') {
+			kind = LESS_EQUAL
+			size = 2
+		}
+		kind = LESS
+
+	default:
+		return lexer.makeError("Unknown character found '%q'", string(current))
 	}
+
+	return lexer.makeToken(kind, lexer.source[lexer.pos-size:lexer.pos], lexer.column-size)
 }
 
 func (lexer *Lexer) readDigit() *Token {
