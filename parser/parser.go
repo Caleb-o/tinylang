@@ -123,16 +123,18 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 }
 
 func (parser *Parser) unary(outer *ast.Block) ast.Node {
-	node := parser.call(outer)
-	// TODO
-	return node
+	if operator, ok := parser.match(lexer.BANG, lexer.MINUS); ok {
+		return &ast.UnaryOp{Token: operator, Right: parser.unary(outer)}
+	}
+
+	return parser.call(outer)
 }
 
 func (parser *Parser) factor(outer *ast.Block) ast.Node {
 	node := parser.unary(outer)
 
 	for {
-		if operator, ok := parser.match(lexer.PLUS, lexer.MINUS); ok {
+		if operator, ok := parser.match(lexer.STAR, lexer.SLASH); ok {
 			node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.unary(outer)}
 		} else {
 			break

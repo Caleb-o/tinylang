@@ -1,10 +1,11 @@
 # Fibonacci using variable swaps instead of recursion
-function fib(nth: int): int {
-	var a = 0, b = 1, c = 0;
+function fib(nth) {
+	var a = 0;
+	var b = 1;
+	var c = 0;
 
 	if (nth == 0) {
-		result = nth;
-		return;
+		return nth;
 	}
 
 	while var i = 2; i <= nth {
@@ -15,7 +16,7 @@ function fib(nth: int): int {
 		b = c;
 	}
 
-	result = b;
+	return b;
 }
 
 print(fib(32)); # 2178309

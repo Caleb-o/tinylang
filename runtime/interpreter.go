@@ -38,6 +38,18 @@ func (interpreter *Interpreter) insert(identifier string, value Value) {
 	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
 }
 
+func (interpreter *Interpreter) set(identifier string, value Value) {
+	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
+		if _, ok := interpreter.env.variables[idx][identifier]; ok {
+			interpreter.env.variables[idx][identifier] = value
+			return
+		}
+	}
+
+	// Should not happen, but just to be safe
+	interpreter.report("Unknown identifier name in lookup '%s'", identifier)
+}
+
 func (interpreter *Interpreter) lookup(identifier string) Value {
 	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
 		if value, ok := interpreter.env.variables[idx][identifier]; ok {
@@ -90,6 +102,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
 	case *ast.BinaryOp:
 		return interpreter.visitBinaryOp(n)
+	case *ast.UnaryOp:
+		return interpreter.visitUnaryOp(n)
 	case *ast.LogicalOp:
 		return interpreter.visitLogicalOp(n)
 	case *ast.Block:
@@ -148,6 +162,26 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	}
 
 	interpreter.report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+	return nil
+}
+
+func (interpreter *Interpreter) visitUnaryOp(unary *ast.UnaryOp) Value {
+	right := interpreter.Visit(unary.Right)
+
+	switch unary.Token.Kind {
+	case lexer.BANG:
+		interpreter.checkBoolOperand(unary.Right.GetToken(), right)
+		return &BoolVal{Value: !right.(*BoolVal).Value}
+	case lexer.MINUS:
+		interpreter.checkNumericOperand(unary.Right.GetToken(), right)
+
+		if _, ok := right.(*IntVal); ok {
+			return &IntVal{Value: -right.(*IntVal).Value}
+		}
+		return &FloatVal{Value: -right.(*FloatVal).Value}
+	}
+
+	interpreter.report("Invalid unary operation '%s%s'", unary.GetToken().Lexeme, unary.Right.GetToken().Lexeme)
 	return nil
 }
 
@@ -274,7 +308,7 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 
 func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
 	value := interpreter.Visit(assign.Expr)
-	interpreter.insert(assign.GetToken().Lexeme, value)
+	interpreter.set(assign.GetToken().Lexeme, value)
 
 	return value
 }
