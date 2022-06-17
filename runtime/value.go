@@ -77,6 +77,7 @@ func (t *ClassInstanceType) GetName() string   { return "instance" }
 type Value interface {
 	GetType() Type
 	Inspect() string
+	Copy() Value
 }
 
 type UnitVal struct{}
@@ -110,7 +111,7 @@ type ReturnValue struct {
 type ClassDefValue struct {
 	identifier  string
 	constructor *FunctionValue
-	fields      map[string]Value
+	fields      []string
 	methods     map[string]*FunctionValue
 }
 
@@ -119,25 +120,32 @@ type ClassInstanceValue struct {
 	fields map[string]Value
 }
 
-func (u *UnitVal) GetType() Type   { return &UnitType{} }
-func (u *UnitVal) Inspect() string { return "()" }
+func (v *UnitVal) GetType() Type   { return &UnitType{} }
+func (v *UnitVal) Inspect() string { return "()" }
+func (v *UnitVal) Copy() Value     { return &UnitVal{} }
 
-func (i *IntVal) GetType() Type   { return &IntType{} }
-func (i *IntVal) Inspect() string { return fmt.Sprintf("%d", i.Value) }
+func (v *IntVal) GetType() Type   { return &IntType{} }
+func (v *IntVal) Inspect() string { return fmt.Sprintf("%d", v.Value) }
+func (v *IntVal) Copy() Value     { return &IntVal{Value: v.Value} }
 
-func (f *FloatVal) GetType() Type   { return &FloatType{} }
-func (f *FloatVal) Inspect() string { return fmt.Sprintf("%f", f.Value) }
+func (v *FloatVal) GetType() Type   { return &FloatType{} }
+func (v *FloatVal) Inspect() string { return fmt.Sprintf("%f", v.Value) }
+func (v *FloatVal) Copy() Value     { return &FloatVal{Value: v.Value} }
 
-func (b *BoolVal) GetType() Type   { return &BoolType{} }
-func (b *BoolVal) Inspect() string { return fmt.Sprintf("%t", b.Value) }
+func (v *BoolVal) GetType() Type   { return &BoolType{} }
+func (v *BoolVal) Inspect() string { return fmt.Sprintf("%t", v.Value) }
+func (v *BoolVal) Copy() Value     { return &BoolVal{Value: v.Value} }
 
-func (str *StringVal) GetType() Type   { return &StringType{} }
-func (str *StringVal) Inspect() string { return str.Value }
+func (v *StringVal) GetType() Type   { return &StringType{} }
+func (v *StringVal) Inspect() string { return v.Value }
+func (v *StringVal) Copy() Value     { return &StringVal{Value: v.Value} }
 
-func (fn *FunctionValue) GetType() Type { return &FunctionType{} }
-func (fn *FunctionValue) Inspect() string {
-	return fmt.Sprintf("<fn %s>", fn.definition.GetToken().Lexeme)
+func (v *FunctionValue) GetType() Type { return &FunctionType{} }
+func (v *FunctionValue) Inspect() string {
+	return fmt.Sprintf("<fn %s>", v.definition.GetToken().Lexeme)
 }
+func (v *FunctionValue) Copy() Value { return v }
+
 func (fn *FunctionValue) Arity() int { return len(fn.definition.Params) }
 
 func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
@@ -161,34 +169,45 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	return value
 }
 
-func (ret *ReturnValue) GetType() Type   { return &ReturnType{} }
-func (ret *ReturnValue) Inspect() string { return ret.inner.Inspect() }
+func (v *ReturnValue) GetType() Type   { return &ReturnType{} }
+func (v *ReturnValue) Inspect() string { return v.inner.Inspect() }
+func (v *ReturnValue) Copy() Value     { return &ReturnValue{inner: v.inner} }
 
-func (def *ClassDefValue) GetType() Type   { return &ClassDefType{} }
-func (def *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", def.identifier) }
+func (v *ClassDefValue) GetType() Type   { return &ClassDefType{} }
+func (v *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", v.identifier) }
+func (v *ClassDefValue) Copy() Value     { return v }
 
-func (def *ClassDefValue) Arity() int { return 0 }
+func (def *ClassDefValue) Arity() int {
+	if def.constructor != nil {
+		return len(def.constructor.definition.Params)
+	}
+	return 0
+}
+
 func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
-	instance := &ClassInstanceValue{def: def, fields: def.fields}
+	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+
+	for _, id := range def.fields {
+		instance.fields[id] = &UnitVal{}
+	}
 
 	// Run the constructor
 	if def.constructor != nil {
-		interpreter.push()
-		interpreter.insert("self", instance)
+		def.constructor.bound = instance
 		def.constructor.Call(interpreter, values)
-		interpreter.pop()
 	}
 	return instance
 }
 
-func (instance *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
-func (instance *ClassInstanceValue) Inspect() string {
-	return fmt.Sprintf("<instance %s>", instance.def.identifier)
+func (v *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
+func (v *ClassInstanceValue) Inspect() string {
+	return fmt.Sprintf("<instance %s : %p>", v.def.identifier, v)
 }
+func (v *ClassInstanceValue) Copy() Value { return v }
 
 func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 	if val, ok := instance.fields[identifier]; ok {
-		return val, true
+		return val.Copy(), true
 	}
 
 	if fn, ok := instance.def.methods[identifier]; ok {
@@ -204,7 +223,7 @@ func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, 
 		instance.fields[identifier] = value
 		return value, true
 	}
-	return value, false
+	return nil, false
 }
 
 func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) (Value, bool) {

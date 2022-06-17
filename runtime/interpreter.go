@@ -35,13 +35,13 @@ func (interpreter *Interpreter) Run(program *ast.Program) {
 }
 
 func (interpreter *Interpreter) insert(identifier string, value Value) {
-	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
+	interpreter.env.variables[interpreter.env.depth-1][identifier] = value.Copy()
 }
 
 func (interpreter *Interpreter) set(identifier string, value Value) {
 	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
 		if _, ok := interpreter.env.variables[idx][identifier]; ok {
-			interpreter.env.variables[idx][identifier] = value
+			interpreter.env.variables[idx][identifier] = value.Copy()
 			return
 		}
 	}
@@ -51,9 +51,9 @@ func (interpreter *Interpreter) set(identifier string, value Value) {
 }
 
 func (interpreter *Interpreter) lookup(identifier string) Value {
-	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
+	for idx := len(interpreter.env.variables) - 1; idx >= 0; idx -= 1 {
 		if value, ok := interpreter.env.variables[idx][identifier]; ok {
-			return value
+			return value.Copy()
 		}
 	}
 
@@ -272,25 +272,22 @@ func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert 
 }
 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
-	fields := make(map[string]Value, 0)
-	methods := make(map[string]*FunctionValue, 0)
-
-	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: fields, methods: methods}
+	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0), methods: make(map[string]*FunctionValue, 0)}
 
 	if def.Constructor != nil {
 		classDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
 	}
 
 	for id, val := range def.Methods {
-		methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
+		classDef.methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
 	}
 
 	for id := range def.Fields {
-		fields[id] = &UnitVal{}
+		classDef.fields = append(classDef.fields, id)
 	}
 
 	interpreter.insert(def.GetToken().Lexeme, classDef)
-	return &UnitVal{}
+	return nil
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
@@ -313,7 +310,7 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 
 func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
 	value := interpreter.Visit(assign.Expr)
-	interpreter.set(assign.GetToken().Lexeme, value)
+	interpreter.set(assign.GetToken().Lexeme, value.Copy())
 
 	return value
 }
@@ -335,8 +332,8 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
 	}
 
-	if value, ok := value.(*ClassInstanceValue).Get(get.GetToken().Lexeme); ok {
-		return value
+	if ret, ok := value.(*ClassInstanceValue).Get(get.GetToken().Lexeme); ok {
+		return ret
 	}
 
 	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, get.GetToken().Lexeme)
@@ -352,8 +349,8 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 		interpreter.report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
 	}
 
-	if value, ok := value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
-		return value
+	if ret, ok := value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+		return ret
 	}
 
 	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, set.GetToken().Lexeme)
