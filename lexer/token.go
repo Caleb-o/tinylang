@@ -37,6 +37,7 @@ const (
 	STRING
 	BOOL
 
+	WHILE
 	IF
 	ELSE
 	AMPERSAND
@@ -70,6 +71,7 @@ var KeyWords = map[string]TokenKind{
 	"self":     SELF,
 	"class":    CLASS,
 	"return":   RETURN,
+	"while":    WHILE,
 	"if":       IF,
 	"else":     ELSE,
 	// These will be temporary, they will become a value later?

@@ -42,6 +42,13 @@ type If struct {
 	FalseBody Node
 }
 
+type While struct {
+	Token     *lexer.Token
+	VarDec    *VariableDecl
+	Condition Node
+	Body      *Block
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -198,6 +205,27 @@ func (stmt *If) AsSExp() string {
 	if stmt.FalseBody != nil {
 		sb.WriteString(stmt.FalseBody.AsSExp())
 	}
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *While) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *While) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("while ")
+
+	if stmt.VarDec != nil {
+		sb.WriteString(stmt.VarDec.AsSExp())
+		sb.WriteString("; ")
+	}
+
+	sb.WriteString(stmt.Body.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()

@@ -137,6 +137,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitSelf(n)
 	case *ast.If:
 		an.visitIfStmt(n)
+	case *ast.While:
+		an.visitWhileStmt(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -297,4 +299,13 @@ func (an *Analyser) visitIfStmt(stmt *ast.If) {
 	if stmt.FalseBody != nil {
 		an.visit(stmt.FalseBody)
 	}
+}
+
+func (an *Analyser) visitWhileStmt(stmt *ast.While) {
+	if stmt.VarDec != nil {
+		an.visit(stmt.VarDec)
+	}
+
+	an.visit(stmt.Condition)
+	an.visit(stmt.Body)
 }

@@ -120,6 +120,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.lookup("self")
 	case *ast.If:
 		return interpreter.visitIfStmt(n)
+	case *ast.While:
+		return interpreter.visitWhileStmt(n)
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
@@ -324,6 +326,30 @@ func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
 		value = interpreter.visitBlock(stmt.TrueBody, false)
 	} else if stmt.FalseBody != nil {
 		value = interpreter.Visit(stmt.FalseBody)
+	}
+
+	interpreter.pop()
+	return value
+}
+
+func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
+	interpreter.push()
+
+	if stmt.VarDec != nil {
+		interpreter.visitVarDecl(stmt.VarDec)
+	}
+
+	condition := interpreter.Visit(stmt.Condition)
+	interpreter.checkBoolOperand(stmt.Condition.GetToken(), condition)
+
+	var value Value = &UnitVal{}
+	for condition.(*BoolVal).Value {
+		if ret, ok := interpreter.visitBlock(stmt.Body, false).(*ReturnValue); ok {
+			value = ret
+			break
+		}
+
+		condition = interpreter.Visit(stmt.Condition)
 	}
 
 	interpreter.pop()
