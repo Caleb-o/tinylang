@@ -1,5 +1,8 @@
 # Iterative fibonacci through the use of classes
 class Fibonacci {
+	var old;
+	var value;
+	
 	function Fibonacci() {
 		self.old = 0;
 		self.value = 1;

@@ -110,6 +110,7 @@ type ReturnValue struct {
 type ClassDefValue struct {
 	identifier  string
 	constructor *FunctionValue
+	fields      map[string]Value
 	methods     map[string]*FunctionValue
 }
 
@@ -168,7 +169,7 @@ func (def *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", de
 
 func (def *ClassDefValue) Arity() int { return 0 }
 func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
-	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+	instance := &ClassInstanceValue{def: def, fields: def.fields}
 
 	// Run the constructor
 	if def.constructor != nil {
@@ -185,23 +186,25 @@ func (instance *ClassInstanceValue) Inspect() string {
 	return fmt.Sprintf("<instance %s>", instance.def.identifier)
 }
 
-func (instance *ClassInstanceValue) Get(identifier string) Value {
+func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 	if val, ok := instance.fields[identifier]; ok {
-		return val
+		return val, true
 	}
 
 	if fn, ok := instance.def.methods[identifier]; ok {
 		fn.bound = instance
-		return fn
+		return fn, true
 	}
 
-	instance.fields[identifier] = &UnitVal{}
-	return instance.fields[identifier]
+	return nil, false
 }
 
-func (instance *ClassInstanceValue) Set(identifier string, value Value) Value {
-	instance.fields[identifier] = value
-	return value
+func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, bool) {
+	if _, ok := instance.fields[identifier]; ok {
+		instance.fields[identifier] = value
+		return value, true
+	}
+	return value, false
 }
 
 func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) (Value, bool) {

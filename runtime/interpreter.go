@@ -272,9 +272,10 @@ func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert 
 }
 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
+	fields := make(map[string]Value, 0)
 	methods := make(map[string]*FunctionValue, 0)
 
-	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, methods: methods}
+	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: fields, methods: methods}
 
 	if def.Constructor != nil {
 		classDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
@@ -282,6 +283,10 @@ func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 
 	for id, val := range def.Methods {
 		methods[id] = interpreter.visitFunctionDef(val, false).(*FunctionValue)
+	}
+
+	for id := range def.Fields {
+		fields[id] = &UnitVal{}
 	}
 
 	interpreter.insert(def.GetToken().Lexeme, classDef)
@@ -330,7 +335,12 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
 	}
 
-	return value.(*ClassInstanceValue).Get(get.GetToken().Lexeme)
+	if value, ok := value.(*ClassInstanceValue).Get(get.GetToken().Lexeme); ok {
+		return value
+	}
+
+	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, get.GetToken().Lexeme)
+	return nil
 }
 
 func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
@@ -342,7 +352,12 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 		interpreter.report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
 	}
 
-	return value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr))
+	if value, ok := value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+		return value
+	}
+
+	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, set.GetToken().Lexeme)
+	return nil
 }
 
 func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {

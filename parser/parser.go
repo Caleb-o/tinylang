@@ -33,7 +33,7 @@ func (parser *Parser) consume(expected lexer.TokenKind) {
 	if parser.current.Kind == expected {
 		parser.current = parser.lexer.Next()
 	} else {
-		report("Expected token kind '%s' but received '%s':%s", expected.Name(), parser.current.Lexeme, parser.current.Kind.Name())
+		report("Expected token kind '%s' but received '%s':%s [%d:%d]", expected.Name(), parser.current.Lexeme, parser.current.Kind.Name(), parser.current.Line, parser.current.Column)
 	}
 }
 
@@ -284,8 +284,9 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 
 			methods[fn.GetToken().Lexeme] = fn
 
-		case lexer.LET:
-			variable := parser.variableDecl(block, true)
+		case lexer.VAR:
+			parser.consume(lexer.VAR)
+			variable := parser.variableDeclEmpty(true)
 
 			if _, ok := fields[variable.GetToken().Lexeme]; ok {
 				shared.ReportErrFatal(fmt.Sprintf("Field with name '%s' already exists in class '%s'", variable.GetToken().Lexeme, identifier.Lexeme))
@@ -316,6 +317,13 @@ func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) *ast.Variable
 	expr := parser.expr(outer)
 
 	return ast.NewVarDecl(identifier, mutable, expr)
+}
+
+func (parser *Parser) variableDeclEmpty(mutable bool) *ast.VariableDecl {
+	identifier := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	return ast.NewVarDecl(identifier, mutable, nil)
 }
 
 func (parser *Parser) block() *ast.Block {

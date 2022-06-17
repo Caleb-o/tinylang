@@ -224,13 +224,6 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 }
 
 func (an *Analyser) visitCall(call *ast.Call) {
-	// FIXME: Allow Identifiers + Get
-	// This should help fix weird chains like func()()()()();
-	// if _, ok := call.Callee.(*ast.Identifier); !ok {
-	// 	an.reportT("Cannot call non-identifier '%s':%s.", call.GetToken(), call.GetToken().Lexeme, call.GetToken().Kind.Name())
-	// 	return
-	// }
-
 	an.visit(call.Callee)
 
 	symbol := an.lookup(call.Callee.GetToken().Lexeme, false)
