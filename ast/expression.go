@@ -10,6 +10,11 @@ type BinaryOp struct {
 	Left, Right Node
 }
 
+type LogicalOp struct {
+	Token       *lexer.Token
+	Left, Right Node
+}
+
 type UnaryOp struct {
 	Token *lexer.Token
 	Right Node
@@ -54,19 +59,37 @@ type Self struct {
 	Token *lexer.Token
 }
 
-func (bin *BinaryOp) GetToken() *lexer.Token {
-	return bin.Token
+func (expr *BinaryOp) GetToken() *lexer.Token {
+	return expr.Token
 }
 
-func (bin *BinaryOp) AsSExp() string {
+func (expr *BinaryOp) AsSExp() string {
 	var sb strings.Builder
 
 	sb.WriteByte('(')
-	sb.WriteString(bin.Token.Lexeme)
+	sb.WriteString(expr.Token.Lexeme)
 	sb.WriteByte(' ')
-	sb.WriteString(bin.Left.AsSExp())
+	sb.WriteString(expr.Left.AsSExp())
 	sb.WriteByte(' ')
-	sb.WriteString(bin.Right.AsSExp())
+	sb.WriteString(expr.Right.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (expr *LogicalOp) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *LogicalOp) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString(expr.Token.Lexeme)
+	sb.WriteByte(' ')
+	sb.WriteString(expr.Left.AsSExp())
+	sb.WriteByte(' ')
+	sb.WriteString(expr.Right.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()

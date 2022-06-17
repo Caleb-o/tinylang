@@ -117,6 +117,9 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitPrint(n)
 	case *ast.UnaryOp:
 		an.visit(n.Right)
+	case *ast.LogicalOp:
+		an.visit(n.Left)
+		an.visit(n.Right)
 	case *ast.BinaryOp:
 		an.visit(n.Left)
 		an.visit(n.Right)

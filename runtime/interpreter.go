@@ -134,12 +134,17 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 
 	switch left.(type) {
 	case *IntVal:
-		return IntBinop(binop.Token.Kind, left.(*IntVal), right.(*IntVal))
+		if value, ok := IntBinop(binop.Token.Kind, left.(*IntVal), right.(*IntVal)); ok {
+			return value
+		}
 	case *FloatVal:
-		return FloatBinop(binop.Token.Kind, left.(*FloatVal), right.(*FloatVal))
+		if value, ok := FloatBinop(binop.Token.Kind, left.(*FloatVal), right.(*FloatVal)); ok {
+			return value
+		}
 	}
 
-	return &UnitVal{}
+	interpreter.report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+	return nil
 }
 
 func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value {

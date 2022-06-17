@@ -38,15 +38,16 @@ func (parser *Parser) consume(expected lexer.TokenKind) {
 }
 
 // From crafting interpreters
-func (parser *Parser) match(expected ...lexer.TokenKind) bool {
+func (parser *Parser) match(expected ...lexer.TokenKind) (*lexer.Token, bool) {
 	for _, kind := range expected {
 		if parser.current.Kind == kind {
+			ftoken := parser.current
 			parser.consume(kind)
-			return true
+			return ftoken, true
 		}
 	}
 
-	return false
+	return nil, false
 }
 
 func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
@@ -106,9 +107,9 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 	node := parser.primary(outer)
 
 	for {
-		if parser.match(lexer.OPENPAREN) {
+		if _, ok := parser.match(lexer.OPENPAREN); ok {
 			node = parser.functionCall(outer, node)
-		} else if parser.match(lexer.DOT) {
+		} else if _, ok := parser.match(lexer.DOT); ok {
 			identifier := parser.current
 			parser.consume(lexer.IDENTIFIER)
 
@@ -130,10 +131,12 @@ func (parser *Parser) unary(outer *ast.Block) ast.Node {
 func (parser *Parser) factor(outer *ast.Block) ast.Node {
 	node := parser.unary(outer)
 
-	for parser.current.Kind == lexer.STAR || parser.current.Kind == lexer.SLASH {
-		operator := parser.current
-		parser.consume(operator.Kind)
-		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.unary(outer)}
+	for {
+		if operator, ok := parser.match(lexer.PLUS, lexer.MINUS); ok {
+			node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.unary(outer)}
+		} else {
+			break
+		}
 	}
 
 	return node
@@ -142,21 +145,79 @@ func (parser *Parser) factor(outer *ast.Block) ast.Node {
 func (parser *Parser) term(outer *ast.Block) ast.Node {
 	node := parser.factor(outer)
 
-	for parser.current.Kind == lexer.PLUS || parser.current.Kind == lexer.MINUS {
-		operator := parser.current
-		parser.consume(operator.Kind)
-		node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.factor(outer)}
+	for {
+		if operator, ok := parser.match(lexer.PLUS, lexer.MINUS); ok {
+			node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.factor(outer)}
+		} else {
+			break
+		}
+	}
+
+	return node
+}
+
+func (parser *Parser) comparison(outer *ast.Block) ast.Node {
+	node := parser.term(outer)
+
+	for {
+		if operator, ok := parser.match(lexer.LESS, lexer.LESS_EQUAL, lexer.GREATER, lexer.GREATER_EQUAL); ok {
+			node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.term(outer)}
+		} else {
+			break
+		}
+	}
+
+	return node
+}
+
+func (parser *Parser) equality(outer *ast.Block) ast.Node {
+	node := parser.comparison(outer)
+
+	for {
+		if operator, ok := parser.match(lexer.EQUAL_EQUAL, lexer.NOT_EQUAL); ok {
+			node = &ast.BinaryOp{Token: operator, Left: node, Right: parser.comparison(outer)}
+		} else {
+			break
+		}
+	}
+
+	return node
+}
+
+func (parser *Parser) and(outer *ast.Block) ast.Node {
+	node := parser.equality(outer)
+
+	for {
+		if operator, ok := parser.match(lexer.AND); ok {
+			node = &ast.LogicalOp{Token: operator, Left: node, Right: parser.equality(outer)}
+		} else {
+			break
+		}
+	}
+
+	return node
+}
+
+func (parser *Parser) or(outer *ast.Block) ast.Node {
+	node := parser.and(outer)
+
+	for {
+		if operator, ok := parser.match(lexer.OR); ok {
+			node = &ast.LogicalOp{Token: operator, Left: node, Right: parser.and(outer)}
+		} else {
+			break
+		}
 	}
 
 	return node
 }
 
 func (parser *Parser) assignment(outer *ast.Block) ast.Node {
-	node := parser.term(outer)
+	node := parser.or(outer)
 
-	if parser.match(lexer.EQUAL) {
+	if _, ok := parser.match(lexer.EQUAL); ok {
 		if get, ok := node.(*ast.Get); ok {
-			return &ast.Set{Token: get.Token, Caller: get.Expr, Expr: parser.expr(outer)}
+			return &ast.Set{Token: get.Token, Caller: get.Expr, Expr: parser.or(outer)}
 		} else {
 			return parser.variableAssign(outer, node.GetToken())
 		}
@@ -312,7 +373,7 @@ func (parser *Parser) ifstmt(outer *ast.Block) *ast.If {
 	trueBody := parser.block()
 	var falseBody ast.Node = nil
 
-	if parser.match(lexer.ELSE) {
+	if _, ok := parser.match(lexer.ELSE); ok {
 		if parser.current.Kind == lexer.IF {
 			falseBody = parser.ifstmt(outer)
 		} else {

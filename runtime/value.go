@@ -142,10 +142,6 @@ func (fn *FunctionValue) Arity() int { return len(fn.definition.Params) }
 func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	interpreter.push()
 
-	if fn.bound != nil {
-		// interpreter.insert("self", inte)
-	}
-
 	for idx, arg := range values {
 		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
 	}
@@ -200,34 +196,58 @@ func (instance *ClassInstanceValue) Set(identifier string, value Value) Value {
 	return value
 }
 
-func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) Value {
+func IntBinop(operator lexer.TokenKind, a *IntVal, b *IntVal) (Value, bool) {
 	switch operator {
 	case lexer.PLUS:
-		return &IntVal{Value: a.Value + b.Value}
+		return &IntVal{Value: a.Value + b.Value}, true
 	case lexer.MINUS:
-		return &IntVal{Value: a.Value - b.Value}
+		return &IntVal{Value: a.Value - b.Value}, true
 	case lexer.STAR:
-		return &IntVal{Value: a.Value * b.Value}
+		return &IntVal{Value: a.Value * b.Value}, true
 	case lexer.SLASH:
-		return &IntVal{Value: a.Value / b.Value}
+		return &IntVal{Value: a.Value / b.Value}, true
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: a.Value == b.Value}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: a.Value != b.Value}, true
+	case lexer.GREATER:
+		return &BoolVal{Value: a.Value > b.Value}, true
+	case lexer.GREATER_EQUAL:
+		return &BoolVal{Value: a.Value >= b.Value}, true
+	case lexer.LESS:
+		return &BoolVal{Value: a.Value < b.Value}, true
+	case lexer.LESS_EQUAL:
+		return &BoolVal{Value: a.Value <= b.Value}, true
 	}
 
 	// Unreachable
-	return nil
+	return nil, false
 }
 
-func FloatBinop(operator lexer.TokenKind, a *FloatVal, b *FloatVal) Value {
+func FloatBinop(operator lexer.TokenKind, a *FloatVal, b *FloatVal) (Value, bool) {
 	switch operator {
 	case lexer.PLUS:
-		return &FloatVal{Value: a.Value + b.Value}
+		return &FloatVal{Value: a.Value + b.Value}, true
 	case lexer.MINUS:
-		return &FloatVal{Value: a.Value - b.Value}
+		return &FloatVal{Value: a.Value - b.Value}, true
 	case lexer.STAR:
-		return &FloatVal{Value: a.Value * b.Value}
+		return &FloatVal{Value: a.Value * b.Value}, true
 	case lexer.SLASH:
-		return &FloatVal{Value: a.Value / b.Value}
+		return &FloatVal{Value: a.Value / b.Value}, true
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: a.Value == b.Value}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: a.Value != b.Value}, true
+	case lexer.GREATER:
+		return &BoolVal{Value: a.Value > b.Value}, true
+	case lexer.GREATER_EQUAL:
+		return &BoolVal{Value: a.Value >= b.Value}, true
+	case lexer.LESS:
+		return &BoolVal{Value: a.Value < b.Value}, true
+	case lexer.LESS_EQUAL:
+		return &BoolVal{Value: a.Value <= b.Value}, true
 	}
 
 	// Unreachable
-	return nil
+	return nil, false
 }
