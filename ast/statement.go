@@ -45,6 +45,7 @@ type If struct {
 type While struct {
 	Token     *lexer.Token
 	VarDec    *VariableDecl
+	Increment Node
 	Condition Node
 	Body      *Block
 }
@@ -226,6 +227,11 @@ func (stmt *While) AsSExp() string {
 	}
 
 	sb.WriteString(stmt.Body.AsSExp())
+
+	if stmt.Increment != nil {
+		sb.WriteString(" : ")
+		sb.WriteString(stmt.Increment.AsSExp())
+	}
 	sb.WriteByte(')')
 
 	return sb.String()

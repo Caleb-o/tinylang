@@ -396,6 +396,10 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 		}
 
 		condition = interpreter.Visit(stmt.Condition)
+
+		if stmt.Increment != nil {
+			interpreter.Visit(stmt.Increment)
+		}
 	}
 
 	interpreter.pop()

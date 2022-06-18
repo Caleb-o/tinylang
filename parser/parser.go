@@ -407,7 +407,14 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 		parser.consume(lexer.SEMICOLON)
 	}
 
-	return &ast.While{Token: ftoken, VarDec: varDecl, Condition: parser.expr(outer), Body: parser.block()}
+	condition := parser.expr(outer)
+
+	var increment ast.Node = nil
+	if _, ok := parser.match(lexer.SEMICOLON); ok {
+		increment = parser.expr(outer)
+	}
+
+	return &ast.While{Token: ftoken, VarDec: varDecl, Condition: condition, Increment: increment, Body: parser.block()}
 }
 
 // FIXME: Use a system similar to Lox so that parsing expression statements are simplified

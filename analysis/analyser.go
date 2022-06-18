@@ -300,5 +300,10 @@ func (an *Analyser) visitWhileStmt(stmt *ast.While) {
 	}
 
 	an.visit(stmt.Condition)
+
+	if stmt.Increment != nil {
+		an.visit(stmt.Increment)
+	}
+
 	an.visit(stmt.Body)
 }
