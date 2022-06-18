@@ -1,5 +1,0 @@
-import "experimenting";
-
-function hello() {
-	print("Hello");
-}
