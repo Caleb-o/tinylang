@@ -275,6 +275,15 @@ func (an *Analyser) visitCall(call *ast.Call) {
 
 func (an *Analyser) visitAssign(assign *ast.Assign) {
 	an.resolve(assign.GetToken())
+
+	if sym, ok := an.lookup(assign.GetToken().Lexeme, false).(*VarSymbol); ok {
+		if !sym.mutable {
+			an.reportT("Cannot assign to immutable value '%s'.", assign.GetToken(), assign.GetToken().Lexeme)
+		}
+	} else {
+		an.reportT("'%s' is not a variable, you cannot assign to it.", assign.GetToken(), assign.GetToken().Lexeme)
+	}
+
 	an.visit(assign.Expr)
 }
 
