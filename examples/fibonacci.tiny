@@ -1,9 +1,10 @@
-function fib(n: int): int {
+# Recursive fibonacci
+function fib(n) {
 	if n > 1 {
-		result = fib(n - 1) + fib(n - 2);
+		return fib(n - 1) + fib(n - 2);
 	} else {
-		result = n;
+		return n;
 	}
 }
 
-print(fib(24)); # 46368
+print(fib(30)); # 2178309

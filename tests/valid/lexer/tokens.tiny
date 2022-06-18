@@ -1,0 +1,25 @@
+let var
+
+1234 1.23 45.67
+true false
+"My String"
+"Multi
+line
+string"
+
+HelloThere
+An_Identifier_
+_Alt_Identifier22
+
+# Comment
+# Another comment
+
++ - * / =
++= -= *= /=
+, . : ;
+> < !
+>= <= !=
+& && | ||
+
+function class
+return self
