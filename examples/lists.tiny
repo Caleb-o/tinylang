@@ -1,9 +1,0 @@
-# Define a list of type int and add another int list
-var intlist = [1, 2, 3];
-intlist = intlist + [4, 5, 6];
-
-print(intlist);
-
-# Use a type annotation
-var floatlist: [float] = [1.2, 3.4, 5.6];
-print(floatlist);

@@ -1,7 +1,3 @@
-# Note: All variables will bind to their type
-# eg. var a = 10; a is now an integer and can 
-# only be reassigned with other integers
-
 # Mutable string value
 var hello = "Hello, World!";
 print(hello);
@@ -12,7 +8,3 @@ print(hello);
 # Immutable integer value
 let age = 22;
 print("I am ", age, " years old!");
-
-# Declare multiple variables at once
-let a = 10, b = 20;
-print(a, " ", b);

@@ -10,30 +10,36 @@ A small interpreted language to try and learn more about language design and dev
 * [Builtin Functions](#builtin-functions)
 
 ## TODO
-
-### Features
-* Member access/assignment for lists and struct instances
-	* list[0] / list[0] = 10
-	* instance.field / instance.field = 10
 * Imports - Imports a file in raw form (no wrapping in a namespace)
 * Namespaces - Define your own namespaces to contain code
 	* The main program may automatically use a Program namespace
-* Inject functions, structs and namespaces from C# code (for native libraries)
+* Native functions, structs and namespaces from Go code (for native libraries)
 * Builtin Data structures (with literals)
+	* Lists - [1, 2, 3]
 	* Dictionary - {"foo": 123, "bar": 456}
+
+### Features
+* Dynamic typing
+* Object Oriented systems
+* First-class and higher-order functions
+* Anonymous functions
+* Exception-like throw/catch
+	* Throw values and unwind until caught
+* Mutability
 
 ### Fixes / Modifications
 * Nothing of interest right now :^)
 
 ## Desirables
 * Bytecode interpreter
-* Transpilation - Python and/or C++
+* Transpilation - Python, JavaScript and/or C++
 
 ## Inspirations
 * Rust
 * Zig
 * Pascal
 * Python
+* Go
 
 ## Data Types
 * int
@@ -41,19 +47,18 @@ A small interpreted language to try and learn more about language design and dev
 * bool
 * string
 * unit (to signify no return)
-* list
-* struct
+* class
 
 ## Examples
 
 ### Hello, World!
-```julia
+```coffee
 # This is a keyword masked as a function, so it looks more natural. It accepts any amount of arguments.
 print("Hello, World!");
 ```
 
 ### Variables and Mutability
-```julia
+```coffee
 # A mutable variable (type is inferred)
 var foo = 10;
 foo = foo - 20;
@@ -63,34 +68,20 @@ let bar = foo * foo;
 
 # Error: Cannot mutate an immutable variable
 # bar = 20;
-
-# Using a type annotation
-var baz: int = 22;
 ```
 
 ### Functions
-```julia
+```coffee
 function simple() {
 	# unit is the assumed return type when the return type is omitted
 	print("Hello!");
 }
 
-function return_integer(): int {
-	# Notice there is no return statement here, as an implicit
-	# 'result' variable is made with the type int
-	# and will be returned on function exit
-	# The default value will be the default of a primitive,
-	# otherwise it's a unit
-}
-
 simple(); # Hello!
-let foo = return_integer();
-
-print(foo, " ", 1234); # 0 1234
 ```
 
 ### Nested Functions
-```julia
+```coffee
 # Functions can be defined and called within each other
 # They are scope based, so they can only be called from
 # its current scope
@@ -110,7 +101,7 @@ foo();
 ```
 
 ### Control Flow
-```julia
+```coffee
 let a = 10;
 
 # If statements
@@ -135,42 +126,36 @@ while var j = 0; j < 10 {
 	j = j + 1;
 	print(j);
 }
-
-# -- Do While loop
-i = 0;
-
-do {
-	i = i + 1;
-} while i < 2;
 ```
 
 ## Sample Scripts
 
-### [Fibonacci](./examples/fibonacci.tiny) (Recursive)
-```julia
+### [Fibonacci](./examples/fibonacci.tiny): Recursive
+```coffee
 # Recursive function to get the Nth value of the fibonacci sequence
-function fib(n: int): int {
+function fib(n) {
 	if n > 1 {
-		result = fib(n - 1) + fib(n - 2);
+		return fib(n - 1) + fib(n - 2);
 	} else {
-		result = n;
+		return n;
 	}
 }
 
 print(fib(24)); # 46368
 ```
 
-### [Fibonacci](./examples/fibonacci2.tiny) (Variable Swaps)
-```julia
+### [Fibonacci](./examples/fibonacci2.tiny): Variable Swaps
+```coffee
 # This approach improves on performance dramatically. We can get a higher
 # Nth value of the sequence, in a fraction of the time.
 # This has to do with the performance of recursion
-function fib(nth: int): int {
-	var a = 0, b = 1, c = 0;
+function fib(nth) {
+	var a = 0;
+	var b = 1;
+	var c = 0;
 
 	if (nth == 0) {
-		result = nth;
-		return;
+		return nth;
 	}
 
 	while var i = 2; i <= nth {
@@ -181,80 +166,44 @@ function fib(nth: int): int {
 		b = c;
 	}
 
-	result = b;
+	return b;
 }
 
 print(fib(32)); # 2178309
 ```
 
-# Builtin Functions
+### [Fibonacci](./examples/fibonacci3.tiny): Iterator-like with classes
+```coffee
+# Iterative fibonacci through the use of classes
+class Fibonacci {
+	var old;
+	var value;
+	
+	function Fibonacci() {
+		self.old = 0;
+		self.value = 1;
+	}
 
-## IO
+	function get() {
+		return self.value;
+	}
 
-### file_exists
-* Parameters: file_name (string)
-* Returns: bool
-
-```julia
-if file_exists("sample.txt") {
-	print("File Exists");
+	function next() {
+		let temp = self.old + self.value;
+		self.old = self.value;
+		self.value = temp;
+	}
 }
+
+var fib = Fibonacci();
+
+while var idx = 2; idx <= 32 {
+	idx = idx + 1;
+	fib.next();
+}
+
+print(fib.get()); # 2178309
 ```
 
-### file_read
-* Parameters: file_name (string)
-* Returns: string
-
-```julia
-let content = file_read("sample.txt");
-```
-
-### file_write
-* Parameters: file_name (string), content (string)
-* Returns: unit
-
-```julia
-file_write("sample.txt", "Hello, World!");
-```
-
-## Misc
-
-### eval
-* Parameters: source (string)
-* Returns: any
-
-```julia
-eval("result = 1 + 2;");
-```
-
-### types_match
-* Parameters: left (any), right (any)
-* Returns: bool
-
-```julia
-types_match(1, "string");
-```
-
-### type_of
-* Parameters: value (any)
-* Returns: string
-
-```julia
-type_of("string");
-```
-
-### assert
-* Parameters: condition (bool), message (string)
-* Returns: unit
-
-```julia
-assert(a == b, "A didn't equal b");
-```
-
-### assert_eq
-* Parameters: condition (bool), expected (bool), message (string)
-* Returns: unit
-
-```julia
-assert_eq(a == b, true, "A didn't equal b");
-```
+# Builtin Functions
+***N/A***

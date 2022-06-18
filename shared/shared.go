@@ -30,3 +30,24 @@ func ReportErrFatal(msg string) {
 	log.Printf("\u001b[31;1mError:\u001b[0m %s", msg)
 	os.Exit(0)
 }
+
+func same_file(path1 string, path2 string) bool {
+	h1, err := os.Open(path1)
+
+	if err != nil {
+		return false
+	}
+	defer h1.Close()
+
+	h2, err := os.Open(path2)
+
+	if err != nil {
+		return false
+	}
+	defer h2.Close()
+
+	s1, _ := h1.Stat()
+	s2, _ := h2.Stat()
+
+	return os.SameFile(s1, s2)
+}

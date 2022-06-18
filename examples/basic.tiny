@@ -1,7 +1,5 @@
 # This is function implicitly returns a unit, which is a 0-type 
-function say_hello(name: string, age: int) {
-	# Types will be inferred and then bound to the type
-	# X will now be an integer
+function say_hello(name, age) {
 	var x = 10 + age;
 	var y = x * x;
 
@@ -14,9 +12,9 @@ function say_hello(name: string, age: int) {
 	say_hello_again();
 }
 
-function bar(foo: bool) {
-	var x = -foo;
-	print(x, " ", foo, " ", -true, " ", -false);
+function bar(foo) {
+	var x = !foo;
+	print(x, " ", foo, " ", !true, " ", !false);
 }
 
 function baz() {
