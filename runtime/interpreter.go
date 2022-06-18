@@ -433,6 +433,7 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 }
 
 func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
+	interpreter.push()
 	value := interpreter.Visit(catch.Expr)
 
 	if thrown, ok := value.(*ThrowValue); ok {
@@ -444,5 +445,6 @@ func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
 		interpreter.pop()
 	}
 
+	interpreter.pop()
 	return value
 }

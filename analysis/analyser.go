@@ -332,7 +332,7 @@ func (an *Analyser) visitWhileStmt(stmt *ast.While) {
 }
 
 func (an *Analyser) visitThrow(throw *ast.Throw) {
-	if ClassType(an.currentFunction) == ClassType(FUNCTION_NONE) {
+	if an.currentFunction == FUNCTION_NONE {
 		an.report("Cannot use 'throw' outside of a function.")
 	}
 
@@ -340,16 +340,19 @@ func (an *Analyser) visitThrow(throw *ast.Throw) {
 }
 
 func (an *Analyser) visitCatch(catch *ast.Catch) {
-	an.visit(catch.Expr)
 	an.table = append(an.table, NewTable(an.top()))
-	an.top().Insert(catch.Var.Lexeme, &VarSymbol{identifier: catch.Var.Lexeme, mutable: false})
-
 	enclosing := an.currentFunction
 	an.currentFunction = FUNCTION_CATCH
 
+	// Give expression its own scope
+	an.table = append(an.table, NewTable(an.top()))
+	an.visit(catch.Expr)
+	an.pop()
+
+	an.top().Insert(catch.Var.Lexeme, &VarSymbol{identifier: catch.Var.Lexeme, mutable: false})
+
 	an.visitBlock(catch.Body, false)
 
-	an.currentFunction = enclosing
-
 	an.pop()
+	an.currentFunction = enclosing
 }
