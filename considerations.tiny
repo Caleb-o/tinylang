@@ -40,3 +40,11 @@ print(f == i);
 
 # -- Check type with builtin
 print(type_of(100) == @int);
+
+
+# Imports as Values for dynamic code loading
+let code = import "script";
+
+# -- Trigger code loading
+code();
+script_fn();
