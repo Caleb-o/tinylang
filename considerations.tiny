@@ -4,7 +4,12 @@ namespace Math {
 	struct PointF { x: float, y: float }
 	struct PointI { x: int , y: int }
 	
-	function min(x, y) {}
+	function min(x, y) {
+		if x > y {
+			return y;
+		}
+		return x;
+	}
 };
 
 let smaller = Math.min(1, 2);
@@ -20,3 +25,37 @@ function foo(flag: bool): int {
 catch foo(false) as err {
 	print(err);
 };
+
+# Match cases
+# Expressions will be evaluated and hashed, so they do not need to be
+# evaluated one-by-one every time match is called.
+match value {
+	10: { print("Value is 10"); }
+	100: { print("Value is 100"); }
+	else { print("Value is ", value); }
+}
+
+# -- Match expression
+let getter = match value {
+	20: { return value * 2; }
+	else { return value; }
+};
+
+# Ternary expr
+let val = (1 == 1) ? "Yes" : "No";
+
+# Anonymous functions
+let func = function(x, y) { return x + y; };
+do_work(10, 20, func);
+do_work(10, 20, function(a, b) {
+	return a + b;
+});
+
+# Type Values
+let i = @int;
+let f = @float;
+
+print(f == i);
+
+# -- Check type with builtin
+print(type_of(100) == @int);
