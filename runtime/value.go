@@ -2,82 +2,16 @@ package runtime
 
 import (
 	"fmt"
+	"reflect"
 	"tiny/ast"
 	"tiny/lexer"
 )
-
-type TypeKind uint8
-
-const (
-	TYPE_ANY TypeKind = iota
-	TYPE_UNIT
-	TYPE_INT
-	TYPE_FLOAT
-	TYPE_BOOL
-	TYPE_CHAR
-	TYPE_STRING
-	TYPE_LIST
-	TYPE_CLASS
-	TYPE_CLASS_INSTANCE
-	TYPE_FUNCTION
-	TYPE_NAMESPACE
-	TYPE_RETURN
-)
-
-type Type interface {
-	GetKind() TypeKind
-	GetName() string
-}
-
-type AnyType struct{}
-type UnitType struct{}
-type IntType struct{}
-type FloatType struct{}
-type CharType struct{}
-type BoolType struct{}
-type StringType struct{}
-type FunctionType struct{}
-type ReturnType struct{}
-type ClassDefType struct{}
-type ClassInstanceType struct{}
-
-func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
-func (t *AnyType) GetName() string   { return "any" }
-
-func (t *UnitType) GetKind() TypeKind { return TYPE_UNIT }
-func (t *UnitType) GetName() string   { return "unit" }
-
-func (t *IntType) GetKind() TypeKind { return TYPE_INT }
-func (t *IntType) GetName() string   { return "int" }
-
-func (t *FloatType) GetKind() TypeKind { return TYPE_FLOAT }
-func (t *FloatType) GetName() string   { return "float" }
-
-func (t *CharType) GetKind() TypeKind { return TYPE_CHAR }
-func (t *CharType) GetName() string   { return "char" }
-
-func (t *BoolType) GetKind() TypeKind { return TYPE_BOOL }
-func (t *BoolType) GetName() string   { return "bool" }
-
-func (t *StringType) GetKind() TypeKind { return TYPE_STRING }
-func (t *StringType) GetName() string   { return "string" }
-
-func (t *FunctionType) GetKind() TypeKind { return TYPE_FUNCTION }
-func (t *FunctionType) GetName() string   { return "function" }
-
-func (t *ReturnType) GetKind() TypeKind { return TYPE_RETURN }
-func (t *ReturnType) GetName() string   { return "return" }
-
-func (t *ClassDefType) GetKind() TypeKind { return TYPE_CLASS }
-func (t *ClassDefType) GetName() string   { return "class" }
-
-func (t *ClassInstanceType) GetKind() TypeKind { return TYPE_CLASS_INSTANCE }
-func (t *ClassInstanceType) GetName() string   { return "instance" }
 
 type Value interface {
 	GetType() Type
 	Inspect() string
 	Copy() Value
+	Modify(operation lexer.TokenKind, value Value) bool
 }
 
 type UnitVal struct{}
@@ -120,31 +54,88 @@ type ClassInstanceValue struct {
 	fields map[string]Value
 }
 
-func (v *UnitVal) GetType() Type   { return &UnitType{} }
-func (v *UnitVal) Inspect() string { return "()" }
-func (v *UnitVal) Copy() Value     { return &UnitVal{} }
+func (v *UnitVal) GetType() Type                                      { return &UnitType{} }
+func (v *UnitVal) Inspect() string                                    { return "()" }
+func (v *UnitVal) Copy() Value                                        { return &UnitVal{} }
+func (v *UnitVal) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (v *IntVal) GetType() Type   { return &IntType{} }
 func (v *IntVal) Inspect() string { return fmt.Sprintf("%d", v.Value) }
 func (v *IntVal) Copy() Value     { return &IntVal{Value: v.Value} }
+func (v *IntVal) Modify(operation lexer.TokenKind, other Value) bool {
+	if value, ok := other.(*IntVal); ok {
+		switch operation {
+		case lexer.PLUS_EQUAL:
+			v.Value += value.Value
+		case lexer.MINUS_EQUAL:
+			v.Value -= value.Value
+		case lexer.STAR_EQUAL:
+			v.Value *= value.Value
+		case lexer.SLASH_EQUAL:
+			v.Value /= value.Value
+		default:
+			return false
+		}
+
+		return true
+	}
+
+	return false
+}
 
 func (v *FloatVal) GetType() Type   { return &FloatType{} }
 func (v *FloatVal) Inspect() string { return fmt.Sprintf("%f", v.Value) }
 func (v *FloatVal) Copy() Value     { return &FloatVal{Value: v.Value} }
+func (v *FloatVal) Modify(operation lexer.TokenKind, other Value) bool {
+	if value, ok := other.(*FloatVal); ok {
+		switch operation {
+		case lexer.PLUS_EQUAL:
+			v.Value += value.Value
+		case lexer.MINUS_EQUAL:
+			v.Value -= value.Value
+		case lexer.STAR_EQUAL:
+			v.Value *= value.Value
+		case lexer.SLASH_EQUAL:
+			v.Value /= value.Value
+		default:
+			return false
+		}
 
-func (v *BoolVal) GetType() Type   { return &BoolType{} }
-func (v *BoolVal) Inspect() string { return fmt.Sprintf("%t", v.Value) }
-func (v *BoolVal) Copy() Value     { return &BoolVal{Value: v.Value} }
+		return true
+	}
+
+	return false
+}
+
+func (v *BoolVal) GetType() Type                                      { return &BoolType{} }
+func (v *BoolVal) Inspect() string                                    { return fmt.Sprintf("%t", v.Value) }
+func (v *BoolVal) Copy() Value                                        { return &BoolVal{Value: v.Value} }
+func (v *BoolVal) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (v *StringVal) GetType() Type   { return &StringType{} }
 func (v *StringVal) Inspect() string { return v.Value }
 func (v *StringVal) Copy() Value     { return &StringVal{Value: v.Value} }
+func (v *StringVal) Modify(operation lexer.TokenKind, other Value) bool {
+	if value, ok := other.(*StringVal); ok {
+		switch operation {
+		case lexer.PLUS_EQUAL:
+			v.Value += value.Value
+		default:
+			return false
+		}
+
+		return true
+	}
+
+	return false
+}
 
 func (v *FunctionValue) GetType() Type { return &FunctionType{} }
 func (v *FunctionValue) Inspect() string {
 	return fmt.Sprintf("<fn %s>", v.definition.GetToken().Lexeme)
 }
-func (v *FunctionValue) Copy() Value { return v }
+func (v *FunctionValue) Copy() Value                                        { return v }
+func (v *FunctionValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (fn *FunctionValue) Arity() int { return len(fn.definition.Params) }
 
@@ -169,13 +160,15 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	return value
 }
 
-func (v *ReturnValue) GetType() Type   { return &ReturnType{} }
-func (v *ReturnValue) Inspect() string { return v.inner.Inspect() }
-func (v *ReturnValue) Copy() Value     { return &ReturnValue{inner: v.inner} }
+func (v *ReturnValue) GetType() Type                                      { return &ReturnType{} }
+func (v *ReturnValue) Inspect() string                                    { return v.inner.Inspect() }
+func (v *ReturnValue) Copy() Value                                        { return &ReturnValue{inner: v.inner} }
+func (v *ReturnValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
-func (v *ClassDefValue) GetType() Type   { return &ClassDefType{} }
-func (v *ClassDefValue) Inspect() string { return fmt.Sprintf("<class %s>", v.identifier) }
-func (v *ClassDefValue) Copy() Value     { return v }
+func (v *ClassDefValue) GetType() Type                                      { return &ClassDefType{} }
+func (v *ClassDefValue) Inspect() string                                    { return fmt.Sprintf("<class %s>", v.identifier) }
+func (v *ClassDefValue) Copy() Value                                        { return v }
+func (v *ClassDefValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (def *ClassDefValue) Arity() int {
 	if def.constructor != nil {
@@ -203,7 +196,8 @@ func (v *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
 func (v *ClassInstanceValue) Inspect() string {
 	return fmt.Sprintf("<instance %s : %p>", v.def.identifier, v)
 }
-func (v *ClassInstanceValue) Copy() Value { return v }
+func (v *ClassInstanceValue) Copy() Value                                        { return v }
+func (v *ClassInstanceValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 	if val, ok := instance.fields[identifier]; ok {
@@ -252,4 +246,26 @@ func Binop(operator lexer.TokenKind, a float32, b float32) (Value, bool) {
 
 	// Unreachable
 	return nil, false
+}
+
+// Helpers
+
+func checkNumericOperand(interpreter *Interpreter, token *lexer.Token, operand Value) {
+	switch operand.(type) {
+	case *IntVal:
+		return
+	case *FloatVal:
+		return
+	default:
+		interpreter.report("Value '%s' is not a numeric value '%s':%s %d", token.Lexeme, operand.Inspect(), reflect.TypeOf(operand), token.Line)
+	}
+}
+
+func checkBoolOperand(interpreter *Interpreter, token *lexer.Token, operand Value) {
+	switch operand.(type) {
+	case *BoolVal:
+		return
+	default:
+		interpreter.report("Value '%s' is not a boolean value '%s'", token.Lexeme, operand.GetType())
+	}
 }

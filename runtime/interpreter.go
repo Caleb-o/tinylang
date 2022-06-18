@@ -35,13 +35,17 @@ func (interpreter *Interpreter) Run(program *ast.Program) {
 }
 
 func (interpreter *Interpreter) insert(identifier string, value Value) {
-	interpreter.env.variables[interpreter.env.depth-1][identifier] = value.Copy()
+	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
 }
 
-func (interpreter *Interpreter) set(identifier string, value Value) {
+func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind, value Value) {
 	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
 		if _, ok := interpreter.env.variables[idx][identifier]; ok {
-			interpreter.env.variables[idx][identifier] = value.Copy()
+			if operator == lexer.EQUAL {
+				interpreter.env.variables[idx][identifier] = value
+			} else {
+				interpreter.env.variables[idx][identifier].Modify(operator, value)
+			}
 			return
 		}
 	}
@@ -76,26 +80,6 @@ func (interpreter *Interpreter) pop() {
 func (interpreter *Interpreter) report(msg string, args ...any) {
 	res := fmt.Sprintf(msg, args...)
 	shared.ReportErrFatal("Runtime: " + res)
-}
-
-func (interpreter *Interpreter) checkNumericOperand(token *lexer.Token, operand Value) {
-	switch operand.(type) {
-	case *IntVal:
-		return
-	case *FloatVal:
-		return
-	default:
-		interpreter.report("Value '%s' is not a numeric value '%s':%s %d", token.Lexeme, operand.Inspect(), reflect.TypeOf(operand), token.Line)
-	}
-}
-
-func (interpreter *Interpreter) checkBoolOperand(token *lexer.Token, operand Value) {
-	switch operand.(type) {
-	case *BoolVal:
-		return
-	default:
-		interpreter.report("Value '%s' is not a boolean value '%s'", token.Lexeme, operand.GetType())
-	}
 }
 
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
@@ -147,8 +131,8 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	left := interpreter.Visit(binop.Left)
 	right := interpreter.Visit(binop.Right)
 
-	interpreter.checkNumericOperand(binop.Left.GetToken(), left)
-	interpreter.checkNumericOperand(binop.Right.GetToken(), right)
+	checkNumericOperand(interpreter, binop.Left.GetToken(), left)
+	checkNumericOperand(interpreter, binop.Right.GetToken(), right)
 
 	// HACK
 	var left_value float32 = 0.0
@@ -181,10 +165,10 @@ func (interpreter *Interpreter) visitUnaryOp(unary *ast.UnaryOp) Value {
 
 	switch unary.Token.Kind {
 	case lexer.BANG:
-		interpreter.checkBoolOperand(unary.Right.GetToken(), right)
+		checkBoolOperand(interpreter, unary.Right.GetToken(), right)
 		return &BoolVal{Value: !right.(*BoolVal).Value}
 	case lexer.MINUS:
-		interpreter.checkNumericOperand(unary.Right.GetToken(), right)
+		checkNumericOperand(interpreter, unary.Right.GetToken(), right)
 
 		if _, ok := right.(*IntVal); ok {
 			return &IntVal{Value: -right.(*IntVal).Value}
@@ -200,8 +184,8 @@ func (interpreter *Interpreter) visitLogicalOp(logical *ast.LogicalOp) Value {
 	left := interpreter.Visit(logical.Left)
 	right := interpreter.Visit(logical.Right)
 
-	interpreter.checkBoolOperand(logical.Left.GetToken(), left)
-	interpreter.checkBoolOperand(logical.Right.GetToken(), right)
+	checkBoolOperand(interpreter, logical.Left.GetToken(), left)
+	checkBoolOperand(interpreter, logical.Right.GetToken(), right)
 
 	if logical.Token.Kind == lexer.AND {
 		return &BoolVal{Value: left.(*BoolVal).Value && right.(*BoolVal).Value}
@@ -321,7 +305,7 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 
 func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
 	value := interpreter.Visit(assign.Expr)
-	interpreter.set(assign.GetToken().Lexeme, value.Copy())
+	interpreter.set(assign.GetToken().Lexeme, assign.Operator.Kind, value.Copy())
 
 	return value
 }
@@ -376,7 +360,7 @@ func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
 	}
 
 	condition := interpreter.Visit(stmt.Condition)
-	interpreter.checkBoolOperand(stmt.Condition.GetToken(), condition)
+	checkBoolOperand(interpreter, stmt.Condition.GetToken(), condition)
 
 	var value Value = nil
 	if condition.(*BoolVal).Value {
@@ -397,7 +381,7 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 	}
 
 	condition := interpreter.Visit(stmt.Condition)
-	interpreter.checkBoolOperand(stmt.Condition.GetToken(), condition)
+	checkBoolOperand(interpreter, stmt.Condition.GetToken(), condition)
 
 	var value Value = &UnitVal{}
 	for condition.(*BoolVal).Value {

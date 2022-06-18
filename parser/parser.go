@@ -217,11 +217,11 @@ func (parser *Parser) or(outer *ast.Block) ast.Node {
 func (parser *Parser) assignment(outer *ast.Block) ast.Node {
 	node := parser.or(outer)
 
-	if _, ok := parser.match(lexer.EQUAL); ok {
+	if operator, ok := parser.match(lexer.EQUAL, lexer.PLUS_EQUAL, lexer.MINUS_EQUAL, lexer.STAR_EQUAL, lexer.SLASH_EQUAL); ok {
 		if get, ok := node.(*ast.Get); ok {
 			return &ast.Set{Token: get.Token, Caller: get.Expr, Expr: parser.or(outer)}
 		} else {
-			return parser.variableAssign(outer, node.GetToken())
+			return parser.variableAssign(outer, node.GetToken(), operator)
 		}
 	}
 
@@ -305,8 +305,8 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	return &ast.ClassDef{Token: identifier, Constructor: nil, Fields: fields, Methods: methods}
 }
 
-func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token) *ast.Assign {
-	return &ast.Assign{Token: identifier, Expr: parser.expr(outer)}
+func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token, operator *lexer.Token) *ast.Assign {
+	return &ast.Assign{Token: identifier, Operator: operator, Expr: parser.expr(outer)}
 }
 
 func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) *ast.VariableDecl {

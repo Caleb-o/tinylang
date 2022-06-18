@@ -15,6 +15,7 @@ _Alt_Identifier22
 # Another comment
 
 + - * / =
++= -= *= /=
 , . : ;
 > < !
 >= <= !=

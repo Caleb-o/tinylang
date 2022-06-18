@@ -40,8 +40,9 @@ type Call struct {
 }
 
 type Assign struct {
-	Token *lexer.Token
-	Expr  Node
+	Token    *lexer.Token
+	Operator *lexer.Token
+	Expr     Node
 }
 
 type Get struct {
@@ -166,7 +167,7 @@ func (assign *Assign) AsSExp() string {
 	var sb strings.Builder
 
 	sb.WriteByte('(')
-	sb.WriteString(assign.Token.Lexeme + " = ")
+	sb.WriteString(assign.Token.Lexeme + " " + assign.Operator.Lexeme + " ")
 	sb.WriteString(assign.Expr.AsSExp())
 	sb.WriteByte(')')
 

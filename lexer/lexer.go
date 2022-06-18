@@ -55,13 +55,6 @@ func (lexer *Lexer) peek() byte {
 	return lexer.source[lexer.pos]
 }
 
-func (lexer *Lexer) peekNext() byte {
-	if lexer.pos+1 >= len(lexer.source) {
-		return 0
-	}
-	return lexer.source[lexer.pos+1]
-}
-
 func (lexer *Lexer) advance() {
 	lexer.column++
 	lexer.pos++
@@ -144,12 +137,32 @@ func (lexer *Lexer) readChars() *Token {
 
 	switch current {
 	case '+':
+		if lexer.match('=') {
+			kind = PLUS_EQUAL
+			size = 2
+			break
+		}
 		kind = PLUS
 	case '-':
+		if lexer.match('=') {
+			kind = MINUS_EQUAL
+			size = 2
+			break
+		}
 		kind = MINUS
 	case '*':
+		if lexer.match('=') {
+			kind = STAR_EQUAL
+			size = 2
+			break
+		}
 		kind = STAR
 	case '/':
+		if lexer.match('=') {
+			kind = SLASH_EQUAL
+			size = 2
+			break
+		}
 		kind = SLASH
 	case '(':
 		kind = OPENPAREN
