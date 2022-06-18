@@ -44,13 +44,6 @@ let getter = match value {
 # Ternary expr
 let val = (1 == 1) ? "Yes" : "No";
 
-# Anonymous functions
-let func = function(x, y) { return x + y; };
-do_work(10, 20, func);
-do_work(10, 20, function(a, b) {
-	return a + b;
-});
-
 # Type Values
 let i = @int;
 let f = @float;
