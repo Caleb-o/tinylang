@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"path/filepath"
 	"tiny/ast"
 	"tiny/lexer"
 	"tiny/shared"
@@ -22,7 +23,9 @@ type Parser struct {
 func New(source string, path string) *Parser {
 	lexer := lexer.New(source)
 	files := make([]string, 1)
-	files[0] = path
+
+	initPath, _ := filepath.Abs(path)
+	files[0] = initPath
 
 	return &Parser{lexer, lexer.Next(), make([]ParserState, 0), files}
 }
@@ -39,13 +42,12 @@ func report(msg string, args ...any) {
 	shared.ReportErrFatal(res)
 }
 
-func (parser *Parser) fileExists(source string) bool {
+func (parser *Parser) fileExists(path string) bool {
 	for _, file := range parser.files {
-		if shared.SameFile(file, source) {
+		if shared.SameFile(file, path) {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -66,7 +68,6 @@ func (parser *Parser) popState() {
 	parser.current = state.current
 
 	parser.stack = parser.stack[:len(parser.stack)-1]
-	parser.files = parser.files[:len(parser.files)-1]
 }
 
 func (parser *Parser) consume(expected lexer.TokenKind) {
@@ -340,7 +341,10 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 	file := parser.current
 	parser.consume(lexer.STRING)
 
-	fileName := file.Lexeme + ".tiny"
+	fileName, err := filepath.Abs(file.Lexeme + ".tiny")
+	if err != nil {
+		report("Could not resolve path '%s'", fileName)
+	}
 
 	// Skip the file if it's in the file stack
 	if !parser.fileExists(fileName) {
