@@ -60,6 +60,7 @@ const (
 	CLASS
 	NAMESPACE
 	RETURN
+	IMPORT
 
 	EOF
 	ERROR
@@ -84,6 +85,7 @@ var KeyWords = map[string]TokenKind{
 	"else":     ELSE,
 	"throw":    THROW,
 	"catch":    CATCH,
+	"import":   IMPORT,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
@@ -116,6 +118,8 @@ func (kind TokenKind) Name() string {
 		return "throw"
 	case CATCH:
 		return "catch"
+	case IMPORT:
+		return "import"
 	case OPENCURLY:
 		return "{"
 	case CLOSECURLY:

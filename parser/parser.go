@@ -7,14 +7,24 @@ import (
 	"tiny/shared"
 )
 
-type Parser struct {
+type ParserState struct {
 	lexer   *lexer.Lexer
 	current *lexer.Token
 }
 
-func New(source string) *Parser {
+type Parser struct {
+	lexer   *lexer.Lexer
+	current *lexer.Token
+	stack   []ParserState
+	files   []string
+}
+
+func New(source string, path string) *Parser {
 	lexer := lexer.New(source)
-	return &Parser{lexer, lexer.Next()}
+	files := make([]string, 1)
+	files[0] = path
+
+	return &Parser{lexer, lexer.Next(), make([]ParserState, 0), files}
 }
 
 func (parser *Parser) Parse() *ast.Program {
@@ -29,11 +39,41 @@ func report(msg string, args ...any) {
 	shared.ReportErrFatal(res)
 }
 
+func (parser *Parser) fileExists(source string) bool {
+	for _, file := range parser.files {
+		if shared.SameFile(file, source) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (parser *Parser) pushState(path string) {
+	parser.stack = append(parser.stack, ParserState{parser.lexer, parser.current})
+	parser.files = append(parser.files, path)
+
+	lexer := lexer.New(shared.ReadFile(path))
+
+	parser.lexer = lexer
+	parser.current = lexer.Next()
+}
+
+func (parser *Parser) popState() {
+	state := parser.stack[len(parser.stack)-1]
+
+	parser.lexer = state.lexer
+	parser.current = state.current
+
+	parser.stack = parser.stack[:len(parser.stack)-1]
+	parser.files = parser.files[:len(parser.files)-1]
+}
+
 func (parser *Parser) consume(expected lexer.TokenKind) {
 	if parser.current.Kind == expected {
 		parser.current = parser.lexer.Next()
 	} else {
-		report("Expected token kind '%s' but received '%s':%s [%d:%d]", expected.Name(), parser.current.Lexeme, parser.current.Kind.Name(), parser.current.Line, parser.current.Column)
+		report("Expected token kind '%s' but received '%s':%s [%d:%d] '%s'", expected.Name(), parser.current.Lexeme, parser.current.Kind.Name(), parser.current.Line, parser.current.Column, parser.files[len(parser.files)-1])
 	}
 }
 
@@ -294,6 +334,28 @@ func (parser *Parser) catch(outer *ast.Block) *ast.Catch {
 	return &ast.Catch{Token: ftoken, Expr: expr, Var: id, Body: parser.block()}
 }
 
+func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
+	parser.consume(lexer.IMPORT)
+
+	file := parser.current
+	parser.consume(lexer.STRING)
+
+	fileName := file.Lexeme + ".tiny"
+
+	// Skip the file if it's in the file stack
+	if !parser.fileExists(fileName) {
+		parser.pushState(fileName)
+
+		program := ast.New()
+		parser.statementList(program.Body, lexer.EOF)
+		outer.Statements = append(outer.Statements, program.Body.Statements...)
+
+		parser.popState()
+	}
+
+	return &ast.Import{Token: file}
+}
+
 func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	parser.consume(lexer.CLASS)
 
@@ -483,6 +545,9 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.CATCH:
 		outer.Statements = append(outer.Statements, parser.catch(outer))
 		return
+	case lexer.IMPORT:
+		outer.Statements = append(outer.Statements, parser.importFile(outer))
+
 	default:
 		// Expression assignment
 		outer.Statements = append(outer.Statements, parser.expr(outer))

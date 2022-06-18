@@ -133,6 +133,10 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitWhileStmt(n)
 	case *ast.Catch:
 		return interpreter.visitCatch(n)
+
+	// Ignore
+	case *ast.Import:
+		return nil
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)

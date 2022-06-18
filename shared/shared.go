@@ -31,7 +31,7 @@ func ReportErrFatal(msg string) {
 	os.Exit(0)
 }
 
-func same_file(path1 string, path2 string) bool {
+func SameFile(path1 string, path2 string) bool {
 	h1, err := os.Open(path1)
 
 	if err != nil {

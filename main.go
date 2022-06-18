@@ -27,7 +27,7 @@ func main() {
 
 	if source, ok := shared.ReadFileErr(script); ok {
 
-		parser := parser.New(source)
+		parser := parser.New(source, script)
 		program := parser.Parse()
 		analyser := analysis.NewAnalyser(false)
 

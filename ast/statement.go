@@ -55,6 +55,10 @@ type Throw struct {
 	Expr  Node
 }
 
+type Import struct {
+	Token *lexer.Token
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -252,6 +256,21 @@ func (expr *Throw) AsSExp() string {
 	sb.WriteByte('(')
 	sb.WriteString("throw ")
 	sb.WriteString(expr.Expr.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (expr *Import) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Import) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("import ")
+	sb.WriteString(expr.Token.Lexeme)
 	sb.WriteByte(')')
 
 	return sb.String()
