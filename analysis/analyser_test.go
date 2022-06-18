@@ -1,7 +1,6 @@
 package analysis
 
 import (
-	"fmt"
 	"testing"
 	"tiny/parser"
 	"tiny/shared"
@@ -35,8 +34,5 @@ func TestInvalidIdentifierLookup(t *testing.T) {
 	program := parser.New(source).Parse()
 	analyser := NewAnalyser(false)
 
-	result := analyser.Run(program.Body)
-	fmt.Println(result)
-
-	eq(t, result, false, "ID lookup failed")
+	eq(t, analyser.Run(program.Body), false, "ID lookup failed")
 }

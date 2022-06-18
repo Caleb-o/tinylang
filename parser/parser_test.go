@@ -89,3 +89,13 @@ func TestAssignment(t *testing.T) {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
+
+func TestAnonymousFunction(t *testing.T) {
+	source := shared.ReadFile("../tests/valid/parser/anonymous_functions.tiny")
+	parser := New(source)
+
+	result := parser.Parse().Body.AsSExp()
+	if !exprEq(result, "((function call (x, y, fn)((return fn(x, y))))(fn (anon function (a, b)((return (+ a b)))))(value1 call(10, 20, fn))(print(value1))(value2 call(30, 40, (anon function (a, b)((return (+ a b))))))(print(value2)))") {
+		t.Fatalf("Expression failed '%s'", result)
+	}
+}
