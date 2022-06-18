@@ -26,8 +26,6 @@ func main() {
 
 		interpreter := runtime.New()
 		interpreter.Run(program)
-
-		fmt.Println(program.Body.AsSExp())
 	} else {
 		shared.ReportErrFatal(fmt.Sprintf("File '%s' does not exist.", os.Args[1]))
 	}
