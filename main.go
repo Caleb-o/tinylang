@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"tiny/analysis"
@@ -10,12 +11,22 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 2 || len(os.Args) < 2 {
-		fmt.Println("usage: tiny script")
+	var (
+		checkOnly bool
+		script    string
+	)
+
+	flag.BoolVar(&checkOnly, "check", false, "Checks if code is valid and does not run")
+	flag.StringVar(&script, "script", "", "Script to run")
+	flag.Parse()
+
+	if len(script) == 0 {
+		fmt.Println("usage: tiny [-script][-check]")
 		return
 	}
 
-	if source, ok := shared.ReadFileErr(os.Args[1]); ok {
+	if source, ok := shared.ReadFileErr(script); ok {
+
 		parser := parser.New(source)
 		program := parser.Parse()
 		analyser := analysis.NewAnalyser(false)
@@ -24,8 +35,12 @@ func main() {
 			return
 		}
 
-		interpreter := runtime.New()
-		interpreter.Run(program)
+		if !checkOnly {
+			interpreter := runtime.New()
+			interpreter.Run(program)
+		} else {
+			fmt.Println("Good!")
+		}
 	} else {
 		shared.ReportErrFatal(fmt.Sprintf("File '%s' does not exist.", os.Args[1]))
 	}
