@@ -218,8 +218,7 @@ func (an *Analyser) visitVarDecl(decl *ast.VariableDecl) {
 }
 
 func (an *Analyser) visitIdentifier(id *ast.Identifier) {
-	// an.resolve(id.GetToken())
-	an.define(id.Token, &VarSymbol{identifier: id.Token.Lexeme, mutable: false})
+	an.resolve(id.GetToken())
 }
 
 func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {

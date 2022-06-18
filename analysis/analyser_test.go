@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"testing"
 	"tiny/parser"
 	"tiny/shared"
@@ -32,7 +33,10 @@ func TestFunctionScope(t *testing.T) {
 func TestInvalidIdentifierLookup(t *testing.T) {
 	source := shared.ReadFile("../tests/invalid/analyser/identifier_lookup_assign.tiny")
 	program := parser.New(source).Parse()
-	analyser := NewAnalyser(true)
+	analyser := NewAnalyser(false)
 
-	eq(t, analyser.Run(program.Body), false, "ID lookup failed")
+	result := analyser.Run(program.Body)
+	fmt.Println(result)
+
+	eq(t, result, false, "ID lookup failed")
 }
