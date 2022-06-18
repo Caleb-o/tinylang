@@ -229,7 +229,7 @@ func (stmt *While) AsSExp() string {
 	sb.WriteString(stmt.Body.AsSExp())
 
 	if stmt.Increment != nil {
-		sb.WriteString(" : ")
+		sb.WriteString("; ")
 		sb.WriteString(stmt.Increment.AsSExp())
 	}
 	sb.WriteByte(')')
