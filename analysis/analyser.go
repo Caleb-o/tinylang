@@ -230,14 +230,11 @@ func (an *Analyser) visitIdentifier(id *ast.Identifier) {
 func (an *Analyser) visitBlock(block *ast.Block, newTable bool) {
 	if newTable {
 		an.table = append(an.table, NewTable(an.top()))
+		defer an.pop()
 	}
 
 	for _, node := range block.Statements {
 		an.visit(node)
-	}
-
-	if newTable {
-		an.pop()
 	}
 }
 

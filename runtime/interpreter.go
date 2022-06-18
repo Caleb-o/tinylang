@@ -214,30 +214,16 @@ func (interpreter *Interpreter) visitLogicalOp(logical *ast.LogicalOp) Value {
 func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value {
 	if newEnv {
 		interpreter.push()
+		defer interpreter.pop()
 	}
 
 	for _, stmt := range block.Statements {
-		value := interpreter.Visit(stmt)
-
-		if val, ok := value.(*ReturnValue); ok {
-			if newEnv {
-				interpreter.pop()
-			}
-
-			return val
+		switch value := interpreter.Visit(stmt).(type) {
+		case *ReturnValue:
+			return value
+		case *ThrowValue:
+			return value
 		}
-
-		if val, ok := value.(*ThrowValue); ok {
-			if newEnv {
-				interpreter.pop()
-			}
-
-			return val
-		}
-	}
-
-	if newEnv {
-		interpreter.pop()
 	}
 
 	return &UnitVal{}
