@@ -50,6 +50,11 @@ type While struct {
 	Body      *Block
 }
 
+type Throw struct {
+	Token *lexer.Token
+	Expr  Node
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -232,6 +237,21 @@ func (stmt *While) AsSExp() string {
 		sb.WriteString("; ")
 		sb.WriteString(stmt.Increment.AsSExp())
 	}
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (expr *Throw) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Throw) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("throw ")
+	sb.WriteString(expr.Expr.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()

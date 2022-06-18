@@ -45,6 +45,10 @@ type ReturnValue struct {
 	inner Value
 }
 
+type ThrowValue struct {
+	inner Value
+}
+
 // TODO: Parent class
 type ClassDefValue struct {
 	identifier  string
@@ -160,6 +164,10 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 		value = ret.inner
 	}
 
+	if thrown, ok := value.(*ThrowValue); ok {
+		value = thrown
+	}
+
 	interpreter.pop()
 	return value
 }
@@ -184,6 +192,10 @@ func (fn *AnonFunctionValue) Call(interpreter *Interpreter, values []Value) Valu
 		value = ret.inner
 	}
 
+	if thrown, ok := value.(*ThrowValue); ok {
+		value = thrown
+	}
+
 	interpreter.pop()
 	return value
 }
@@ -192,6 +204,11 @@ func (v *ReturnValue) GetType() Type                                      { retu
 func (v *ReturnValue) Inspect() string                                    { return v.inner.Inspect() }
 func (v *ReturnValue) Copy() Value                                        { return &ReturnValue{inner: v.inner} }
 func (v *ReturnValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (v *ThrowValue) GetType() Type                                      { return &ThrowableType{} }
+func (v *ThrowValue) Inspect() string                                    { return v.inner.Inspect() }
+func (v *ThrowValue) Copy() Value                                        { return &ThrowValue{inner: v.inner} }
+func (v *ThrowValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (v *ClassDefValue) GetType() Type                                      { return &ClassDefType{} }
 func (v *ClassDefValue) Inspect() string                                    { return fmt.Sprintf("<class %s>", v.identifier) }

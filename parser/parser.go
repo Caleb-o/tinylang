@@ -100,6 +100,9 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 
 	case lexer.FUNCTION:
 		return parser.anonymousFunction(outer)
+
+	case lexer.CATCH:
+		return parser.catch(outer)
 	}
 
 	report("Unknown token found in expression '%s'", parser.current.Lexeme)
@@ -267,6 +270,25 @@ func (parser *Parser) anonymousFunction(outer *ast.Block) *ast.AnonymousFunction
 
 	// FIXME: Add function return type
 	return ast.NewAnonFn(ftoken, parser.collectParameters(), parser.block())
+}
+
+func (parser *Parser) throw(outer *ast.Block) *ast.Throw {
+	ftoken := parser.current
+	parser.consume(lexer.THROW)
+	return &ast.Throw{Token: ftoken, Expr: parser.expr(outer)}
+}
+
+func (parser *Parser) catch(outer *ast.Block) *ast.Catch {
+	ftoken := parser.current
+	parser.consume(lexer.CATCH)
+
+	expr := parser.expr(outer)
+	parser.consume(lexer.COLON)
+
+	id := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	return &ast.Catch{Token: ftoken, Expr: expr, Var: id, Body: parser.block()}
 }
 
 func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
@@ -452,6 +474,11 @@ func (parser *Parser) statement(outer *ast.Block) {
 		return
 	case lexer.WHILE:
 		outer.Statements = append(outer.Statements, parser.whilestmt(outer))
+		return
+	case lexer.THROW:
+		outer.Statements = append(outer.Statements, parser.throw(outer))
+	case lexer.CATCH:
+		outer.Statements = append(outer.Statements, parser.catch(outer))
 		return
 	default:
 		// Expression assignment

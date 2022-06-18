@@ -16,6 +16,7 @@ const (
 	TYPE_FUNCTION
 	TYPE_NAMESPACE
 	TYPE_RETURN
+	TYPE_THROWABLE
 )
 
 type Type interface {
@@ -32,6 +33,7 @@ type BoolType struct{}
 type StringType struct{}
 type FunctionType struct{}
 type ReturnType struct{}
+type ThrowableType struct{}
 type ClassDefType struct{}
 type ClassInstanceType struct{}
 
@@ -61,6 +63,9 @@ func (t *FunctionType) GetName() string   { return "function" }
 
 func (t *ReturnType) GetKind() TypeKind { return TYPE_RETURN }
 func (t *ReturnType) GetName() string   { return "return" }
+
+func (t *ThrowableType) GetKind() TypeKind { return TYPE_THROWABLE }
+func (t *ThrowableType) GetName() string   { return "throw" }
 
 func (t *ClassDefType) GetKind() TypeKind { return TYPE_CLASS }
 func (t *ClassDefType) GetName() string   { return "class" }

@@ -21,6 +21,7 @@ const (
 	FUNCTION_FUNCTION
 	FUNCTION_CONSTRUCTOR
 	FUNCTION_METHOD
+	FUNCTION_CATCH
 )
 
 type Analyser struct {
@@ -141,6 +142,10 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitIfStmt(n)
 	case *ast.While:
 		an.visitWhileStmt(n)
+	case *ast.Throw:
+		an.visitThrow(n)
+	case *ast.Catch:
+		an.visitCatch(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -324,4 +329,27 @@ func (an *Analyser) visitWhileStmt(stmt *ast.While) {
 	}
 
 	an.visit(stmt.Body)
+}
+
+func (an *Analyser) visitThrow(throw *ast.Throw) {
+	if ClassType(an.currentFunction) == ClassType(FUNCTION_NONE) {
+		an.report("Cannot use 'throw' outside of a function.")
+	}
+
+	an.visit(throw.Expr)
+}
+
+func (an *Analyser) visitCatch(catch *ast.Catch) {
+	an.visit(catch.Expr)
+	an.table = append(an.table, NewTable(an.top()))
+	an.top().Insert(catch.Var.Lexeme, &VarSymbol{identifier: catch.Var.Lexeme, mutable: false})
+
+	enclosing := an.currentFunction
+	an.currentFunction = FUNCTION_CATCH
+
+	an.visitBlock(catch.Body, false)
+
+	an.currentFunction = enclosing
+
+	an.pop()
 }

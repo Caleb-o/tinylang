@@ -66,6 +66,13 @@ type AnonymousFunction struct {
 	Body   *Block
 }
 
+type Catch struct {
+	Token *lexer.Token
+	Expr  Node
+	Var   *lexer.Token
+	Body  *Block
+}
+
 func NewAnonFn(token *lexer.Token, params []*Parameter, body *Block) *AnonymousFunction {
 	return &AnonymousFunction{token: token, Params: params, Body: body}
 }
@@ -244,6 +251,24 @@ func (expr *AnonymousFunction) AsSExp() string {
 	}
 
 	sb.WriteByte(')')
+	sb.WriteString(expr.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (expr *Catch) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Catch) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("catch ")
+	sb.WriteString(expr.Expr.AsSExp())
+	sb.WriteByte(':')
+	sb.WriteString(expr.Var.Lexeme)
 	sb.WriteString(expr.Body.AsSExp())
 	sb.WriteByte(')')
 

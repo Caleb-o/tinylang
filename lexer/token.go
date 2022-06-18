@@ -48,6 +48,9 @@ const (
 	AMPERSAND
 	PIPE
 
+	THROW
+	CATCH
+
 	IDENTIFIER
 	PRINT
 	VAR
@@ -79,6 +82,8 @@ var KeyWords = map[string]TokenKind{
 	"while":    WHILE,
 	"if":       IF,
 	"else":     ELSE,
+	"throw":    THROW,
+	"catch":    CATCH,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
@@ -107,6 +112,10 @@ func (kind TokenKind) Name() string {
 		return "class"
 	case IDENTIFIER:
 		return "identifier"
+	case THROW:
+		return "throw"
+	case CATCH:
+		return "catch"
 	case OPENCURLY:
 		return "{"
 	case CLOSECURLY:

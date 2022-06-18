@@ -31,7 +31,11 @@ func New() *Interpreter {
 
 func (interpreter *Interpreter) Run(program *ast.Program) {
 	// TODO: Might return a value to the caller of the interpreter run
-	_ = interpreter.visitBlock(program.Body, true)
+	result := interpreter.visitBlock(program.Body, true)
+
+	if res, ok := result.(*ThrowValue); ok {
+		interpreter.report("Uncaught value thrown '%s'", res.inner.Inspect())
+	}
 }
 
 func (interpreter *Interpreter) insert(identifier string, value Value) {
@@ -115,6 +119,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitAssign(n)
 	case *ast.Return:
 		return interpreter.visitReturn(n)
+	case *ast.Throw:
+		return interpreter.visitThrow(n)
 	case *ast.Get:
 		return interpreter.visitGet(n)
 	case *ast.Set:
@@ -125,6 +131,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitIfStmt(n)
 	case *ast.While:
 		return interpreter.visitWhileStmt(n)
+	case *ast.Catch:
+		return interpreter.visitCatch(n)
 	}
 
 	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
@@ -205,7 +213,17 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value 
 	}
 
 	for _, stmt := range block.Statements {
-		if val, ok := interpreter.Visit(stmt).(*ReturnValue); ok {
+		value := interpreter.Visit(stmt)
+
+		if val, ok := value.(*ReturnValue); ok {
+			if newEnv {
+				interpreter.pop()
+			}
+
+			return val
+		}
+
+		if val, ok := value.(*ThrowValue); ok {
 			if newEnv {
 				interpreter.pop()
 			}
@@ -327,6 +345,10 @@ func (interpreter *Interpreter) visitReturn(ret *ast.Return) Value {
 	return &ReturnValue{inner: &UnitVal{}}
 }
 
+func (interpreter *Interpreter) visitThrow(throw *ast.Throw) Value {
+	return &ThrowValue{inner: interpreter.Visit(throw.Expr)}
+}
+
 func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 	value := interpreter.Visit(get.Expr)
 
@@ -407,5 +429,20 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 	}
 
 	interpreter.pop()
+	return value
+}
+
+func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
+	value := interpreter.Visit(catch.Expr)
+
+	if thrown, ok := value.(*ThrowValue); ok {
+		interpreter.push()
+		interpreter.insert(catch.Var.Lexeme, thrown.inner)
+
+		value = interpreter.visitBlock(catch.Body, false)
+
+		interpreter.pop()
+	}
+
 	return value
 }

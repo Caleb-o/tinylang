@@ -14,18 +14,6 @@ namespace Math {
 
 let smaller = Math.min(1, 2);
 
-
-# Throwing and catching errors
-function foo(flag: bool): int {
-	if flag {
-		throw "Oh no!";
-	}
-};
-
-catch foo(false) as err {
-	print(err);
-};
-
 # Match cases
 # Expressions will be evaluated and hashed, so they do not need to be
 # evaluated one-by-one every time match is called.
