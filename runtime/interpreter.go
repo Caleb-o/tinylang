@@ -44,7 +44,10 @@ func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind,
 			if operator == lexer.EQUAL {
 				interpreter.env.variables[idx][identifier] = value
 			} else {
-				interpreter.env.variables[idx][identifier].Modify(operator, value)
+				if ok := interpreter.env.variables[idx][identifier].Modify(operator, value); !ok {
+					interpreter.report("Cannot use operation '%s' on '%s'", operator.Name(), identifier)
+					return
+				}
 			}
 			return
 		}
