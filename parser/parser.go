@@ -103,6 +103,9 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 
 	case lexer.CATCH:
 		return parser.catch(outer)
+
+	case lexer.OPENCURLY:
+		return parser.block()
 	}
 
 	report("Unknown token found in expression '%s'", parser.current.Lexeme)
