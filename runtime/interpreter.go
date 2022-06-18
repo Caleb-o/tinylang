@@ -105,6 +105,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitPrint(n)
 	case *ast.FunctionDef:
 		return interpreter.visitFunctionDef(n, true)
+	case *ast.AnonymousFunction:
+		return interpreter.visitAnonymousFunction(n)
 	case *ast.ClassDef:
 		return interpreter.visitClassDef(n)
 	case *ast.Call:
@@ -267,6 +269,10 @@ func (interpreter *Interpreter) visitFunctionDef(fndef *ast.FunctionDef, insert 
 		interpreter.insert(fndef.GetToken().Lexeme, def)
 	}
 	return def
+}
+
+func (interpreter *Interpreter) visitAnonymousFunction(fndef *ast.AnonymousFunction) Value {
+	return &AnonFunctionValue{definition: fndef}
 }
 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {

@@ -105,6 +105,8 @@ func (an *Analyser) visit(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.FunctionDef:
 		an.visitFunctionDef(n, FUNCTION_FUNCTION)
+	case *ast.AnonymousFunction:
+		an.visitAnonymousFn(n)
 	case *ast.ClassDef:
 		an.visitClassDef(n)
 	case *ast.VariableDecl:
@@ -164,6 +166,23 @@ func (an *Analyser) visitFunctionDef(def *ast.FunctionDef, fnType FunctionType) 
 	an.visitBlock(def.Body, false)
 
 	an.pop()
+	an.currentFunction = enclosing
+}
+
+func (an *Analyser) visitAnonymousFn(anon *ast.AnonymousFunction) {
+	enclosing := an.currentFunction
+	an.currentFunction = FUNCTION_FUNCTION
+
+	an.table = append(an.table, NewTable(an.top()))
+
+	for _, param := range anon.Params {
+		an.define(param.GetToken(), &VarSymbol{identifier: param.GetToken().Lexeme})
+	}
+
+	an.visitBlock(anon.Body, false)
+
+	an.pop()
+
 	an.currentFunction = enclosing
 }
 

@@ -97,6 +97,9 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		expr := parser.expr(outer)
 		parser.consume(lexer.CLOSEPAREN)
 		return expr
+
+	case lexer.FUNCTION:
+		return parser.anonymousFunction(outer)
 	}
 
 	report("Unknown token found in expression '%s'", parser.current.Lexeme)
@@ -256,6 +259,14 @@ func (parser *Parser) functionDef(outer *ast.Block) *ast.FunctionDef {
 
 	// FIXME: Add function return type
 	return ast.NewFnDef(identifier, parser.collectParameters(), parser.block())
+}
+
+func (parser *Parser) anonymousFunction(outer *ast.Block) *ast.AnonymousFunction {
+	ftoken := parser.current
+	parser.consume(lexer.FUNCTION)
+
+	// FIXME: Add function return type
+	return ast.NewAnonFn(ftoken, parser.collectParameters(), parser.block())
 }
 
 func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {

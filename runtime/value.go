@@ -37,6 +37,10 @@ type FunctionValue struct {
 	bound      *ClassInstanceValue
 }
 
+type AnonFunctionValue struct {
+	definition *ast.AnonymousFunction
+}
+
 type ReturnValue struct {
 	inner Value
 }
@@ -148,6 +152,30 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 
 	if fn.bound != nil {
 		interpreter.insert("self", fn.bound)
+	}
+
+	value := interpreter.Visit(fn.definition.Body)
+
+	if ret, ok := value.(*ReturnValue); ok {
+		value = ret.inner
+	}
+
+	interpreter.pop()
+	return value
+}
+
+func (v *AnonFunctionValue) GetType() Type                                      { return &FunctionType{} }
+func (v *AnonFunctionValue) Inspect() string                                    { return "<anon fn>" }
+func (v *AnonFunctionValue) Copy() Value                                        { return v }
+func (v *AnonFunctionValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (fn *AnonFunctionValue) Arity() int { return len(fn.definition.Params) }
+
+func (fn *AnonFunctionValue) Call(interpreter *Interpreter, values []Value) Value {
+	interpreter.push()
+
+	for idx, arg := range values {
+		interpreter.insert(fn.definition.Params[idx].Token.Lexeme, arg)
 	}
 
 	value := interpreter.Visit(fn.definition.Body)

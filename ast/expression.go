@@ -60,6 +60,16 @@ type Self struct {
 	Token *lexer.Token
 }
 
+type AnonymousFunction struct {
+	token  *lexer.Token
+	Params []*Parameter
+	Body   *Block
+}
+
+func NewAnonFn(token *lexer.Token, params []*Parameter, body *Block) *AnonymousFunction {
+	return &AnonymousFunction{token: token, Params: params, Body: body}
+}
+
 func (expr *BinaryOp) GetToken() *lexer.Token {
 	return expr.Token
 }
@@ -208,4 +218,34 @@ func (expr *Self) GetToken() *lexer.Token {
 
 func (expr *Self) AsSExp() string {
 	return "self"
+}
+
+func (expr *AnonymousFunction) GetToken() *lexer.Token {
+	return expr.token
+}
+
+func (expr *AnonymousFunction) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("anon function ")
+	sb.WriteByte('(')
+
+	for idx, param := range expr.Params {
+		if param.Mutable {
+			sb.WriteString("mut ")
+		}
+
+		sb.WriteString(param.AsSExp())
+
+		if idx < len(expr.Params)-1 {
+			sb.WriteString(", ")
+		}
+	}
+
+	sb.WriteByte(')')
+	sb.WriteString(expr.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
 }
