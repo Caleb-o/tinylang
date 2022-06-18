@@ -150,15 +150,26 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	interpreter.checkNumericOperand(binop.Left.GetToken(), left)
 	interpreter.checkNumericOperand(binop.Right.GetToken(), right)
 
-	switch left.(type) {
+	// HACK
+	var left_value float32 = 0.0
+	var right_value float32 = 0.0
+
+	switch ll := left.(type) {
 	case *IntVal:
-		if value, ok := IntBinop(binop.Token.Kind, left.(*IntVal), right.(*IntVal)); ok {
-			return value
-		}
+		left_value = float32(ll.Value)
 	case *FloatVal:
-		if value, ok := FloatBinop(binop.Token.Kind, left.(*FloatVal), right.(*FloatVal)); ok {
-			return value
-		}
+		left_value = ll.Value
+	}
+
+	switch rr := right.(type) {
+	case *IntVal:
+		right_value = float32(rr.Value)
+	case *FloatVal:
+		right_value = rr.Value
+	}
+
+	if value, ok := Binop(binop.GetToken().Kind, left_value, right_value); ok {
+		return value
 	}
 
 	interpreter.report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
