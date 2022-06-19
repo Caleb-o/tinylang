@@ -5,22 +5,20 @@ import (
 	"fmt"
 	"os"
 	"tiny/analysis"
-	"tiny/compiler"
 	"tiny/parser"
 	"tiny/runtime"
 	"tiny/shared"
-	"tiny/vm"
 )
 
 func main() {
 	var (
 		checkOnly bool
-		usevm     bool
-		script    string
+		// usevm     bool
+		script string
 	)
 
 	flag.BoolVar(&checkOnly, "check", false, "Checks if code is valid and does not run")
-	flag.BoolVar(&usevm, "vm", false, "Use the new interpreter to run code")
+	// flag.BoolVar(&usevm, "vm", false, "Use the new interpreter to run code")
 	flag.StringVar(&script, "script", "", "Script to run")
 	flag.Parse()
 
@@ -40,14 +38,8 @@ func main() {
 		}
 
 		if !checkOnly {
-			if !usevm {
-				interpreter := runtime.New()
-				interpreter.Run(program)
-			} else {
-				chunk := compiler.New().Compile(program)
-				machine := vm.New(chunk)
-				machine.Run()
-			}
+			interpreter := runtime.New()
+			interpreter.Run(program)
 		} else {
 			fmt.Println("Good!")
 		}
