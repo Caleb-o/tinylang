@@ -54,7 +54,6 @@ const (
 	IDENTIFIER
 	PRINT
 	VAR
-	LET
 	FUNCTION
 	SELF
 	CLASS
@@ -73,7 +72,6 @@ type Token struct {
 }
 
 var KeyWords = map[string]TokenKind{
-	"let":       LET,
 	"var":       VAR,
 	"print":     PRINT,
 	"function":  FUNCTION,
@@ -105,8 +103,6 @@ func (kind TokenKind) Name() string {
 		return "char"
 	case STRING:
 		return "string"
-	case LET:
-		return "let"
 	case VAR:
 		return "var"
 	case FUNCTION:

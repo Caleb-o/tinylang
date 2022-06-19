@@ -26,11 +26,6 @@ say_hello(name, 32);
 
 name = "Dave";
 
-# Immutability
-let foo = 10;
-# This would error, since we cannot redefine a let binding
-# foo = 20;
-
 bar(true);
 baz();
 

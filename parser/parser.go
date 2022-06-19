@@ -420,14 +420,14 @@ func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token, 
 	return &ast.Assign{Token: identifier, Operator: operator, Expr: parser.expr(outer)}
 }
 
-func (parser *Parser) variableDecl(outer *ast.Block, mutable bool) *ast.VariableDecl {
+func (parser *Parser) variableDecl(outer *ast.Block) *ast.VariableDecl {
 	identifier := parser.current
 	parser.consume(lexer.IDENTIFIER)
 
 	parser.consume(lexer.EQUAL)
 	expr := parser.expr(outer)
 
-	return ast.NewVarDecl(identifier, mutable, expr)
+	return ast.NewVarDecl(identifier, true, expr)
 }
 
 func (parser *Parser) variableDeclEmpty(mutable bool) *ast.VariableDecl {
@@ -482,11 +482,10 @@ func (parser *Parser) ifstmt(outer *ast.Block) *ast.If {
 	parser.consume(lexer.IF)
 
 	var varDecl *ast.VariableDecl = nil
-	if parser.current.Kind == lexer.LET || parser.current.Kind == lexer.VAR {
-		mutable := parser.current.Kind == lexer.VAR
-		parser.consume(parser.current.Kind)
+	if parser.current.Kind == lexer.VAR {
+		parser.consume(lexer.VAR)
 
-		varDecl = parser.variableDecl(outer, mutable)
+		varDecl = parser.variableDecl(outer)
 		parser.consume(lexer.SEMICOLON)
 	}
 
@@ -510,11 +509,10 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 	parser.consume(lexer.WHILE)
 
 	var varDecl *ast.VariableDecl = nil
-	if parser.current.Kind == lexer.LET || parser.current.Kind == lexer.VAR {
-		mutable := parser.current.Kind == lexer.VAR
-		parser.consume(parser.current.Kind)
+	if parser.current.Kind == lexer.VAR {
+		parser.consume(lexer.VAR)
 
-		varDecl = parser.variableDecl(outer, mutable)
+		varDecl = parser.variableDecl(outer)
 		parser.consume(lexer.SEMICOLON)
 	}
 
@@ -536,10 +534,7 @@ func (parser *Parser) statement(outer *ast.Block) {
 		return
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
-		outer.Statements = append(outer.Statements, parser.variableDecl(outer, true))
-	case lexer.LET:
-		parser.consume(lexer.LET)
-		outer.Statements = append(outer.Statements, parser.variableDecl(outer, false))
+		outer.Statements = append(outer.Statements, parser.variableDecl(outer))
 	case lexer.PRINT:
 		parser.print(outer)
 	case lexer.RETURN:
@@ -596,10 +591,7 @@ func (parser *Parser) namespaced() *ast.Block {
 
 		case lexer.VAR:
 			parser.consume(lexer.VAR)
-			block.Statements = append(block.Statements, parser.variableDecl(block, true))
-		case lexer.LET:
-			parser.consume(lexer.LET)
-			block.Statements = append(block.Statements, parser.variableDecl(block, false))
+			block.Statements = append(block.Statements, parser.variableDecl(block))
 
 		default:
 			report("Unexpected item in namespace definition '%s'", parser.current.Lexeme)

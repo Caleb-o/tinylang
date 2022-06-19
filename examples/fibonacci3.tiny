@@ -13,7 +13,7 @@ class Fibonacci {
 	}
 
 	function next() {
-		let temp = self.old + self.value;
+		var temp = self.old + self.value;
 		self.old = self.value;
 		self.value = temp;
 	}

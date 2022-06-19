@@ -54,19 +54,8 @@ func TestFunctionDefinitionNested(t *testing.T) {
 	}
 }
 
-func TestImmutableVariableDeclaration(t *testing.T) {
-	path := "../tests/valid/parser/immutable_variable_declaration.tiny"
-	source := shared.ReadFile(path)
-	parser := New(source, path)
-
-	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((foo (+ 1 2)))") {
-		t.Fatalf("Expression failed '%s'", result)
-	}
-}
-
-func TestMutableVariableDeclaration(t *testing.T) {
-	path := "../tests/valid/parser/mutable_variable_declaration.tiny"
+func TestVariableDeclaration(t *testing.T) {
+	path := "../tests/valid/parser/variable_declaration.tiny"
 	source := shared.ReadFile(path)
 	parser := New(source, path)
 
@@ -104,7 +93,7 @@ func TestAnonymousFunction(t *testing.T) {
 	parser := New(source, path)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function call (x, y, fn)((return fn(x, y))))(fn (anon function (a, b)((return (+ a b)))))(value1 call(10, 20, fn))(print(value1))(value2 call(30, 40, (anon function (a, b)((return (+ a b))))))(print(value2)))") {
+	if !exprEq(result, "((function call (x, y, fn)((return fn(x, y))))(mut fn (anon function (a, b)((return (+ a b)))))(mut value1 call(10, 20, fn))(print(value1))(mut value2 call(30, 40, (anon function (a, b)((return (+ a b))))))(print(value2)))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }

@@ -25,7 +25,6 @@ A small interpreted language to try and learn more about language design and dev
 * Anonymous functions
 * Exception-like throw/catch
 	* Throw values and unwind until caught
-* Mutability
 
 ### Fixes / Modifications
 * Nothing of interest right now :^)
@@ -57,17 +56,11 @@ A small interpreted language to try and learn more about language design and dev
 print("Hello, World!");
 ```
 
-### Variables and Mutability
+### Variables
 ```coffee
-# A mutable variable (type is inferred)
+# A variable
 var foo = 10;
 foo = foo - 20;
-
-# An immutable variable
-let bar = foo * foo;
-
-# Error: Cannot mutate an immutable variable
-# bar = 20;
 ```
 
 ### Functions
@@ -102,7 +95,7 @@ foo();
 
 ### Control Flow
 ```coffee
-let a = 10;
+var a = 10;
 
 # If statements
 if a > 20 {
@@ -189,7 +182,7 @@ class Fibonacci {
 	}
 
 	function next() {
-		let temp = self.old + self.value;
+		var temp = self.old + self.value;
 		self.old = self.value;
 		self.value = temp;
 	}

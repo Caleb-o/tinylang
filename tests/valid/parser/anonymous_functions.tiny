@@ -2,11 +2,11 @@ function call(x, y, fn) {
 	return fn(x, y);
 }
 
-let fn = function(a, b) { return a + b; };
-let value1 = call(10, 20, fn);
+var fn = function(a, b) { return a + b; };
+var value1 = call(10, 20, fn);
 print(value1);
 
-let value2 = call(30, 40, function(a, b) {
+var value2 = call(30, 40, function(a, b) {
 	return a + b;
 });
 print(value2);

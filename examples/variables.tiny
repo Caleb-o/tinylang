@@ -4,7 +4,3 @@ print(hello);
 
 hello = "Hello, Me!";
 print(hello);
-
-# Immutable integer value
-let age = 22;
-print("I am ", age, " years old!");
