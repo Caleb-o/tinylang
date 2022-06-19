@@ -73,19 +73,20 @@ type Token struct {
 }
 
 var KeyWords = map[string]TokenKind{
-	"let":      LET,
-	"var":      VAR,
-	"print":    PRINT,
-	"function": FUNCTION,
-	"self":     SELF,
-	"class":    CLASS,
-	"return":   RETURN,
-	"while":    WHILE,
-	"if":       IF,
-	"else":     ELSE,
-	"throw":    THROW,
-	"catch":    CATCH,
-	"import":   IMPORT,
+	"let":       LET,
+	"var":       VAR,
+	"print":     PRINT,
+	"function":  FUNCTION,
+	"self":      SELF,
+	"class":     CLASS,
+	"return":    RETURN,
+	"while":     WHILE,
+	"if":        IF,
+	"else":      ELSE,
+	"throw":     THROW,
+	"catch":     CATCH,
+	"import":    IMPORT,
+	"namespace": NAMESPACE,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
@@ -120,6 +121,10 @@ func (kind TokenKind) Name() string {
 		return "catch"
 	case IMPORT:
 		return "import"
+	case IF:
+		return "if"
+	case ELSE:
+		return "else"
 	case OPENCURLY:
 		return "{"
 	case CLOSECURLY:

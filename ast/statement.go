@@ -59,6 +59,11 @@ type Import struct {
 	Token *lexer.Token
 }
 
+type NameSpace struct {
+	Token *lexer.Token
+	Body  *Block
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -246,31 +251,47 @@ func (stmt *While) AsSExp() string {
 	return sb.String()
 }
 
-func (expr *Throw) GetToken() *lexer.Token {
-	return expr.Token
+func (stmt *Throw) GetToken() *lexer.Token {
+	return stmt.Token
 }
 
-func (expr *Throw) AsSExp() string {
+func (stmt *Throw) AsSExp() string {
 	var sb strings.Builder
 
 	sb.WriteByte('(')
 	sb.WriteString("throw ")
-	sb.WriteString(expr.Expr.AsSExp())
+	sb.WriteString(stmt.Expr.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()
 }
 
-func (expr *Import) GetToken() *lexer.Token {
-	return expr.Token
+func (stmt *Import) GetToken() *lexer.Token {
+	return stmt.Token
 }
 
-func (expr *Import) AsSExp() string {
+func (stmt *Import) AsSExp() string {
 	var sb strings.Builder
 
 	sb.WriteByte('(')
 	sb.WriteString("import ")
-	sb.WriteString(expr.Token.Lexeme)
+	sb.WriteString(stmt.Token.Lexeme)
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *NameSpace) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *NameSpace) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("namespace ")
+	sb.WriteString(stmt.Token.Lexeme)
+	sb.WriteString(stmt.Body.AsSExp())
 	sb.WriteByte(')')
 
 	return sb.String()

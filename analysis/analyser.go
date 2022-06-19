@@ -146,6 +146,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitThrow(n)
 	case *ast.Catch:
 		an.visitCatch(n)
+	case *ast.NameSpace:
+		an.visitNamespace(n)
 
 	// Ignore
 	case *ast.Literal:
@@ -362,4 +364,9 @@ func (an *Analyser) visitCatch(catch *ast.Catch) {
 
 	an.pop()
 	an.currentFunction = enclosing
+}
+
+func (an *Analyser) visitNamespace(ns *ast.NameSpace) {
+	an.declare(ns.Token, &NameSpaceSymbol{identifier: ns.Token.Lexeme})
+	an.visitBlock(ns.Body, true)
 }

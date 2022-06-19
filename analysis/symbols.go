@@ -21,6 +21,10 @@ type ClassDefSymbol struct {
 	def        *ast.ClassDef
 }
 
+type NameSpaceSymbol struct {
+	identifier string
+}
+
 func (s *VarSymbol) GetName() string {
 	return s.identifier
 }
@@ -30,5 +34,9 @@ func (s *FunctionSymbol) GetName() string {
 }
 
 func (s *ClassDefSymbol) GetName() string {
+	return s.identifier
+}
+
+func (s *NameSpaceSymbol) GetName() string {
 	return s.identifier
 }

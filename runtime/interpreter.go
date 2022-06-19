@@ -113,6 +113,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitAnonymousFunction(n)
 	case *ast.ClassDef:
 		return interpreter.visitClassDef(n)
+	case *ast.NameSpace:
+		return interpreter.visitNamespace(n)
 	case *ast.Call:
 		return interpreter.visitCall(n)
 	case *ast.Assign:
@@ -299,7 +301,18 @@ func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 	}
 
 	interpreter.insert(def.GetToken().Lexeme, classDef)
-	return nil
+	return classDef
+}
+
+func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
+	namespace := &NameSpaceValue{identifier: ns.Token.Lexeme, members: make(map[string]Value)}
+
+	for _, stmt := range ns.Body.Statements {
+		namespace.members[stmt.GetToken().Lexeme] = interpreter.Visit(stmt)
+	}
+
+	interpreter.insert(ns.Token.Lexeme, namespace)
+	return &UnitVal{}
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
@@ -342,14 +355,17 @@ func (interpreter *Interpreter) visitThrow(throw *ast.Throw) Value {
 func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 	value := interpreter.Visit(get.Expr)
 
-	switch value.(type) {
+	switch inner := value.(type) {
 	case *ClassInstanceValue:
+		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
+			return ret
+		}
+	case *NameSpaceValue:
+		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
+			return ret
+		}
 	default:
 		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
-	}
-
-	if ret, ok := value.(*ClassInstanceValue).Get(get.GetToken().Lexeme); ok {
-		return ret
 	}
 
 	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, get.GetToken().Lexeme)

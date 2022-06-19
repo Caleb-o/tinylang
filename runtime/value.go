@@ -62,6 +62,11 @@ type ClassInstanceValue struct {
 	fields map[string]Value
 }
 
+type NameSpaceValue struct {
+	identifier string
+	members    map[string]Value
+}
+
 func (v *UnitVal) GetType() Type                                      { return &UnitType{} }
 func (v *UnitVal) Inspect() string                                    { return "()" }
 func (v *UnitVal) Copy() Value                                        { return &UnitVal{} }
@@ -262,6 +267,21 @@ func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, 
 		instance.fields[identifier] = value
 		return value, true
 	}
+	return nil, false
+}
+
+func (v *NameSpaceValue) GetType() Type { return &NameSpaceType{} }
+func (v *NameSpaceValue) Inspect() string {
+	return fmt.Sprintf("<namespace %s>", v.identifier)
+}
+func (v *NameSpaceValue) Copy() Value                                        { return v }
+func (v *NameSpaceValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
+	if val, ok := v.members[identifier]; ok {
+		return val.Copy(), true
+	}
+
 	return nil, false
 }
 

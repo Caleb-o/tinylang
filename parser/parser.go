@@ -32,7 +32,7 @@ func New(source string, path string) *Parser {
 
 func (parser *Parser) Parse() *ast.Program {
 	program := ast.New()
-	parser.statementList(program.Body, lexer.EOF)
+	parser.outerStatements(program.Body)
 	return program
 }
 
@@ -149,7 +149,7 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		return parser.block()
 	}
 
-	report("Unknown token found in expression '%s'", parser.current.Lexeme)
+	report("Unexpected token found in expression '%s'", parser.current.Lexeme)
 	return nil
 }
 
@@ -360,6 +360,15 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 	return &ast.Import{Token: file}
 }
 
+func (parser *Parser) namespace(outer *ast.Block) *ast.NameSpace {
+	parser.consume(lexer.NAMESPACE)
+
+	identifer := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	return &ast.NameSpace{Token: identifer, Body: parser.namespaced()}
+}
+
 func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	parser.consume(lexer.CLASS)
 
@@ -398,7 +407,7 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 			parser.consume(lexer.SEMICOLON)
 
 		default:
-			shared.ReportErrFatal(fmt.Sprintf("Unknown item in class definition '%s'", parser.current.Lexeme))
+			shared.ReportErrFatal(fmt.Sprintf("Unexpected item in class definition '%s'", parser.current.Lexeme))
 		}
 	}
 
@@ -525,9 +534,6 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.FUNCTION:
 		outer.Statements = append(outer.Statements, parser.functionDef(outer))
 		return
-	case lexer.CLASS:
-		outer.Statements = append(outer.Statements, parser.classDef(outer))
-		return
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
 		outer.Statements = append(outer.Statements, parser.variableDecl(outer, true))
@@ -549,8 +555,12 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.CATCH:
 		outer.Statements = append(outer.Statements, parser.catch(outer))
 		return
-	case lexer.IMPORT:
-		outer.Statements = append(outer.Statements, parser.importFile(outer))
+	case lexer.CLASS:
+		outer.Statements = append(outer.Statements, parser.classDef(outer))
+		return
+	case lexer.NAMESPACE:
+		outer.Statements = append(outer.Statements, parser.namespace(outer))
+		return
 
 	default:
 		// Expression assignment
@@ -563,5 +573,54 @@ func (parser *Parser) statement(outer *ast.Block) {
 func (parser *Parser) statementList(outer *ast.Block, endType lexer.TokenKind) {
 	for parser.current.Kind != endType {
 		parser.statement(outer)
+	}
+}
+
+func (parser *Parser) namespaced() *ast.Block {
+	start_token := parser.current
+	parser.consume(lexer.OPENCURLY)
+
+	block := ast.NewBlock(start_token)
+
+	for parser.current.Kind != lexer.CLOSECURLY {
+		switch parser.current.Kind {
+		case lexer.CLASS:
+			block.Statements = append(block.Statements, parser.classDef(block))
+			continue
+		case lexer.NAMESPACE:
+			block.Statements = append(block.Statements, parser.namespace(block))
+			continue
+		case lexer.FUNCTION:
+			block.Statements = append(block.Statements, parser.functionDef(block))
+			continue
+
+		case lexer.VAR:
+			parser.consume(lexer.VAR)
+			block.Statements = append(block.Statements, parser.variableDecl(block, true))
+		case lexer.LET:
+			parser.consume(lexer.LET)
+			block.Statements = append(block.Statements, parser.variableDecl(block, false))
+
+		default:
+			report("Unexpected item in namespace definition '%s'", parser.current.Lexeme)
+		}
+
+		parser.consume(lexer.SEMICOLON)
+	}
+
+	parser.consume(lexer.CLOSECURLY)
+
+	return block
+}
+
+func (parser *Parser) outerStatements(block *ast.Block) {
+	for parser.current.Kind != lexer.EOF {
+		switch parser.current.Kind {
+		case lexer.IMPORT:
+			block.Statements = append(block.Statements, parser.importFile(block))
+
+		default:
+			parser.statement(block)
+		}
 	}
 }

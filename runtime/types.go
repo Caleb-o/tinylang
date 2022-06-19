@@ -36,6 +36,7 @@ type ReturnType struct{}
 type ThrowableType struct{}
 type ClassDefType struct{}
 type ClassInstanceType struct{}
+type NameSpaceType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
@@ -72,3 +73,6 @@ func (t *ClassDefType) GetName() string   { return "class" }
 
 func (t *ClassInstanceType) GetKind() TypeKind { return TYPE_CLASS_INSTANCE }
 func (t *ClassInstanceType) GetName() string   { return "instance" }
+
+func (t *NameSpaceType) GetKind() TypeKind { return TYPE_NAMESPACE }
+func (t *NameSpaceType) GetName() string   { return "namespace" }
