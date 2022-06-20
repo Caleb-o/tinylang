@@ -26,16 +26,24 @@ type TinyCallable interface {
 }
 
 func New() *Interpreter {
-	return &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}}
+	interpreter := &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}}
+	interpreter.push()
+
+	return interpreter
 }
 
 func (interpreter *Interpreter) Run(program *ast.Program) {
 	// TODO: Might return a value to the caller of the interpreter run
-	result := interpreter.visitBlock(program.Body, true)
+	result := interpreter.visitBlock(program.Body, false)
+	interpreter.pop()
 
 	if res, ok := result.(*ThrowValue); ok {
-		interpreter.report("Uncaught value thrown '%s'", res.inner.Inspect())
+		interpreter.Report("Uncaught value thrown '%s'", res.inner.Inspect())
 	}
+}
+
+func (interpreter *Interpreter) Import(identifier string, value Value) {
+	interpreter.env.variables[interpreter.env.depth-1][identifier] = value
 }
 
 func (interpreter *Interpreter) insert(identifier string, value Value) {
@@ -49,7 +57,7 @@ func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind,
 				interpreter.env.variables[idx][identifier] = value.Copy()
 			} else {
 				if ok := interpreter.env.variables[idx][identifier].Modify(operator, value); !ok {
-					interpreter.report("Cannot use operation '%s' on '%s'", operator.Name(), identifier)
+					interpreter.Report("Cannot use operation '%s' on '%s'", operator.Name(), identifier)
 					return
 				}
 			}
@@ -58,7 +66,7 @@ func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind,
 	}
 
 	// Should not happen, but just to be safe
-	interpreter.report("Unknown identifier name in lookup '%s'", identifier)
+	interpreter.Report("Unknown identifier name in lookup '%s'", identifier)
 }
 
 func (interpreter *Interpreter) lookup(identifier string) Value {
@@ -69,7 +77,7 @@ func (interpreter *Interpreter) lookup(identifier string) Value {
 	}
 
 	// Should not happen, but just to be safe
-	interpreter.report("Unknown identifier name in lookup '%s'", identifier)
+	interpreter.Report("Unknown identifier name in lookup '%s'", identifier)
 	return nil
 }
 
@@ -84,7 +92,7 @@ func (interpreter *Interpreter) pop() {
 }
 
 // --- Private ---
-func (interpreter *Interpreter) report(msg string, args ...any) {
+func (interpreter *Interpreter) Report(msg string, args ...any) {
 	res := fmt.Sprintf(msg, args...)
 	shared.ReportErrFatal("Runtime: " + res)
 }
@@ -143,7 +151,7 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return nil
 	}
 
-	interpreter.report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
+	interpreter.Report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
 	return nil
 }
 
@@ -177,7 +185,7 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 		return value
 	}
 
-	interpreter.report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+	interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
 	return nil
 }
 
@@ -197,7 +205,7 @@ func (interpreter *Interpreter) visitUnaryOp(unary *ast.UnaryOp) Value {
 		return &FloatVal{Value: -right.(*FloatVal).Value}
 	}
 
-	interpreter.report("Invalid unary operation '%s%s'", unary.GetToken().Lexeme, unary.Right.GetToken().Lexeme)
+	interpreter.Report("Invalid unary operation '%s%s'", unary.GetToken().Lexeme, unary.Right.GetToken().Lexeme)
 	return nil
 }
 
@@ -251,7 +259,7 @@ func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) Value {
 		return &StringVal{Value: lit.GetToken().Lexeme}
 	}
 
-	interpreter.report("Unknown literal type found '%s'", lit.GetToken().Lexeme)
+	interpreter.Report("Unknown literal type found '%s'", lit.GetToken().Lexeme)
 	return &UnitVal{}
 }
 
@@ -336,7 +344,7 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	caller := interpreter.Visit(call.Callee)
 
 	if _, ok := caller.(TinyCallable); !ok {
-		interpreter.report("'%s' is not callable.", caller.Inspect())
+		interpreter.Report("'%s' is not callable.", caller.Inspect())
 	}
 
 	callable := caller.(TinyCallable)
@@ -386,7 +394,7 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 			return ret.Copy()
 		}
 	default:
-		interpreter.report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
+		interpreter.Report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
 	}
 
 	return nil
@@ -405,7 +413,7 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 			return ret.Copy()
 		}
 	default:
-		interpreter.report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
+		interpreter.Report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
 	}
 
 	return nil

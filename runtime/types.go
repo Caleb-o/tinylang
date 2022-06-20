@@ -16,6 +16,7 @@ const (
 	TYPE_STRUCT
 	TYPE_STRUCT_INSTANCE
 	TYPE_FUNCTION
+	TYPE_NATIVE_FUNCTION
 	TYPE_NAMESPACE
 	TYPE_RETURN
 	TYPE_THROWABLE
@@ -34,6 +35,7 @@ type CharType struct{}
 type BoolType struct{}
 type StringType struct{}
 type FunctionType struct{}
+type NativeFunctionType struct{}
 type ReturnType struct{}
 type ThrowableType struct{}
 type ClassDefType struct{}
@@ -65,6 +67,9 @@ func (t *StringType) GetName() string   { return "string" }
 
 func (t *FunctionType) GetKind() TypeKind { return TYPE_FUNCTION }
 func (t *FunctionType) GetName() string   { return "function" }
+
+func (t *NativeFunctionType) GetKind() TypeKind { return TYPE_NATIVE_FUNCTION }
+func (t *NativeFunctionType) GetName() string   { return "native fn" }
 
 func (t *ReturnType) GetKind() TypeKind { return TYPE_RETURN }
 func (t *ReturnType) GetName() string   { return "return" }

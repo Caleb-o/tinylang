@@ -46,6 +46,15 @@ func (an *Analyser) Run(root ast.Node) bool {
 	return !an.hadErr
 }
 
+func (an *Analyser) DeclareNativeFn(identifier string, params []string) {
+	if an.lookup(identifier, true) != nil {
+		an.report("Item with name '%s' already exists in the current scope.", identifier)
+		return
+	}
+
+	an.top().Insert(identifier, &NativeFunctionSymbol{identifier, params})
+}
+
 // --- Private ---
 func (an *Analyser) report(msg string, args ...any) {
 	an.hadErr = true
@@ -273,9 +282,14 @@ func (an *Analyser) visitCall(call *ast.Call) {
 	symbol := an.lookup(call.Callee.GetToken().Lexeme, false)
 
 	switch sym := symbol.(type) {
+	case *NativeFunctionSymbol:
+		if len(sym.params) != len(call.Arguments) {
+			an.reportT("Native function '%s' expected %d argument(s) but received %d", call.Token,
+				call.Token.Lexeme, len(sym.params), len(call.Arguments))
+		}
 	case *FunctionSymbol:
 		if len(sym.def.Params) != len(call.Arguments) {
-			an.reportT("Function '%s' expected %d arguments but received %d", call.Token,
+			an.reportT("Function '%s' expected %d argument(s) but received %d", call.Token,
 				call.Token.Lexeme, len(sym.def.Params), len(call.Arguments))
 		}
 	case *ClassDefSymbol:
@@ -283,7 +297,7 @@ func (an *Analyser) visitCall(call *ast.Call) {
 			cons := sym.def.Constructor
 
 			if len(cons.Params) != len(call.Arguments) {
-				an.reportT("Constuctor '%s' expected %d arguments but received %d", call.Token,
+				an.reportT("Constuctor '%s' expected %d argument(s) but received %d", call.Token,
 					call.Token.Lexeme, len(cons.Params), len(call.Arguments))
 			}
 		}

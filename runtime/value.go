@@ -7,6 +7,8 @@ import (
 	"tiny/lexer"
 )
 
+type NativeFn func(interpreter *Interpreter, values []Value) Value
+
 type Value interface {
 	GetType() Type
 	Inspect() string
@@ -35,6 +37,16 @@ type StringVal struct {
 type FunctionValue struct {
 	definition *ast.FunctionDef
 	bound      Value
+}
+
+type NativeFunctionValue struct {
+	Identifier string
+	Params     []string
+	Fn         NativeFn
+}
+
+func NewFnValue(identifier string, params []string, fn NativeFn) *NativeFunctionValue {
+	return &NativeFunctionValue{identifier, params, fn}
 }
 
 type AnonFunctionValue struct {
@@ -186,6 +198,19 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 
 	interpreter.pop()
 	return value
+}
+
+func (v *NativeFunctionValue) GetType() Type { return &NativeFunctionType{} }
+func (v *NativeFunctionValue) Inspect() string {
+	return fmt.Sprintf("<native fn %s>", v.Identifier)
+}
+func (v *NativeFunctionValue) Copy() Value                                        { return v }
+func (v *NativeFunctionValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (v *NativeFunctionValue) Arity() int { return len(v.Params) }
+
+func (v *NativeFunctionValue) Call(interpreter *Interpreter, values []Value) Value {
+	return v.Fn(interpreter, values)
 }
 
 func (v *AnonFunctionValue) GetType() Type                                      { return &FunctionType{} }
@@ -393,7 +418,7 @@ func checkNumericOperand(interpreter *Interpreter, token *lexer.Token, operand V
 	case *FloatVal:
 		return
 	default:
-		interpreter.report("Value '%s' is not a numeric value '%s':%s %d", token.Lexeme, operand.Inspect(), reflect.TypeOf(operand), token.Line)
+		interpreter.Report("Value '%s' is not a numeric value '%s':%s %d", token.Lexeme, operand.Inspect(), reflect.TypeOf(operand), token.Line)
 	}
 }
 
@@ -402,6 +427,6 @@ func checkBoolOperand(interpreter *Interpreter, token *lexer.Token, operand Valu
 	case *BoolVal:
 		return
 	default:
-		interpreter.report("Value '%s' is not a boolean value '%s'", token.Lexeme, operand.GetType())
+		interpreter.Report("Value '%s' is not a boolean value '%s'", token.Lexeme, operand.GetType())
 	}
 }
