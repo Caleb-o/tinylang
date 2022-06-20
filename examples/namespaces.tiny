@@ -1,0 +1,43 @@
+# Namespaces can be created to contain code, which mitigates naming collisions
+namespace Foo {
+	# Structs, Classes, Functions, Variables and Namespaces are allowed
+	function hello() {
+		print("Hello from Foo!");
+	}
+}
+
+namespace Bar {
+	# We can use the same name here in the Bar namespace
+	function hello() {
+		print("Hello from Bar!");
+	}
+}
+
+# Call functions within the namespaces
+Foo.hello();
+Bar.hello();
+
+
+# Nesting namespaces
+namespace Top {
+	namespace Middle {
+		namespace Bottom {
+			function hello() {
+				print("Hello from nested bottom!");
+			}
+		}
+
+		function hello() {
+			print("Hello from nested middle!");
+		}
+	}
+
+	function hello() {
+		print("Hello from nested top!");
+	}
+}
+
+# Call our nested functions
+Top.Middle.Bottom.hello();
+Top.Middle.hello();
+Top.hello();
