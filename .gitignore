@@ -1,5 +1,7 @@
-ref/
 experimenting.tiny
+test.tiny
+temp/
+*.txt
 
 # Binaries for programs and plugins
 *.exe

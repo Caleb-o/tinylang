@@ -149,7 +149,7 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		return parser.block()
 	}
 
-	report("Unexpected token found in expression '%s'", parser.current.Lexeme)
+	report("Unexpected token found in expression '%s':%d", parser.current.Lexeme, parser.current.Line)
 	return nil
 }
 
@@ -347,6 +347,8 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 	}
 
 	// Skip the file if it's in the file stack
+	// FIXME: Queue the file rather than parsing now
+	// 		  This will also allow for tracking unused imports
 	if !parser.fileExists(fileName) {
 		parser.pushState(fileName)
 
@@ -669,6 +671,7 @@ func (parser *Parser) outerStatements(block *ast.Block) {
 		switch parser.current.Kind {
 		case lexer.IMPORT:
 			block.Statements = append(block.Statements, parser.importFile(block))
+			parser.consume(lexer.SEMICOLON)
 
 		default:
 			parser.statement(block)
