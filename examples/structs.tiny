@@ -1,0 +1,36 @@
+# Define a struct with the struct keyword
+# Define Foo with the field value
+struct Foo {
+	var value;
+}
+
+# Create another struct
+struct Bar {
+	var x;
+	var y;
+
+	# This is the constructor
+	# This is the only function a struct allows
+	# No implicit constructor is defined if omitted
+	function Bar(x, y) {
+		self.x = x;
+		self.y = y;
+	}
+}
+
+# Instantiate foo
+var f1 = Foo();
+print(f1.value); # Unit since value wasn't set
+f1.value = 10; # Set value
+print(f1.value); # 10
+
+# Instantiate Bar
+var b1 = Bar(10, 20);
+print(b1.x, " ", b1.y); # 10 20
+
+var b2 = b1; # Copy of b1
+b2.x = 30;
+
+# Print values of b1 and b2
+print(b1.x, " ", b1.y); # 10 20
+print(b2.x, " ", b2.y); # 30 20
