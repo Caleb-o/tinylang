@@ -1,0 +1,28 @@
+# Create a class definition with the class keyword
+class Foo {
+	var x;
+	var y;
+
+	# Assign a constructor (Not required)
+	function Foo(x, y) {
+		# Self is the reference to the current instance/object caller
+		self.x = x;
+		self.y = y;
+	}
+
+	# Create a method for the class Foo
+	function print_xy() {
+		print("X: ", self.x, ", Y: ", self.y);
+	}
+}
+
+# Instantiate Foo
+var f1 = Foo(10, 20);
+# Use the print method on the instance
+f1.print_xy(); # X: 10, Y: 20
+
+var f2 = f1; # Copy reference (Both f1 and f2 are the same)
+f2.x = 30;
+
+# Print f1 to see the values changed from f2
+f1.print_xy(); # X: 30, Y: 20
