@@ -23,13 +23,13 @@ func (tiny *Tiny) AddFn(identifier string, params []string, fn runtime.NativeFn)
 }
 
 func (tiny *Tiny) createBuiltins() {
-	tiny.AddFn("test", []string{"foo"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
-		if _, ok := values[0].(*runtime.StringVal); !ok {
-			interpreter.Report("Expected string")
+	tiny.AddFn("read_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if fileName, ok := values[0].(*runtime.StringVal); !ok {
+			interpreter.Report("Expected string as filename")
 			return nil
+		} else {
+			return &runtime.StringVal{Value: shared.ReadFile(fileName.Value)}
 		}
-		fmt.Println(values[0].Inspect())
-		return &runtime.UnitVal{}
 	})
 }
 
