@@ -46,7 +46,7 @@ func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind,
 	for idx := interpreter.env.depth - 1; idx >= 0; idx -= 1 {
 		if _, ok := interpreter.env.variables[idx][identifier]; ok {
 			if operator == lexer.EQUAL {
-				interpreter.env.variables[idx][identifier] = value
+				interpreter.env.variables[idx][identifier] = value.Copy()
 			} else {
 				if ok := interpreter.env.variables[idx][identifier].Modify(operator, value); !ok {
 					interpreter.report("Cannot use operation '%s' on '%s'", operator.Name(), identifier)
@@ -64,7 +64,7 @@ func (interpreter *Interpreter) set(identifier string, operator lexer.TokenKind,
 func (interpreter *Interpreter) lookup(identifier string) Value {
 	for idx := len(interpreter.env.variables) - 1; idx >= 0; idx -= 1 {
 		if value, ok := interpreter.env.variables[idx][identifier]; ok {
-			return value.Copy()
+			return value
 		}
 	}
 
@@ -113,6 +113,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitAnonymousFunction(n)
 	case *ast.ClassDef:
 		return interpreter.visitClassDef(n)
+	case *ast.StructDef:
+		return interpreter.visitStructDef(n)
 	case *ast.NameSpace:
 		return interpreter.visitNamespace(n)
 	case *ast.Call:
@@ -258,7 +260,7 @@ func (interpreter *Interpreter) visitIdentifier(id *ast.Identifier) Value {
 }
 
 func (interpreter *Interpreter) visitVarDecl(decl *ast.VariableDecl) Value {
-	interpreter.insert(decl.GetToken().Lexeme, interpreter.Visit(decl.Expr))
+	interpreter.insert(decl.GetToken().Lexeme, interpreter.Visit(decl.Expr).Copy())
 	return &UnitVal{}
 }
 
@@ -286,7 +288,7 @@ func (interpreter *Interpreter) visitAnonymousFunction(fndef *ast.AnonymousFunct
 }
 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
-	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0), methods: make(map[string]*FunctionValue, 0)}
+	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0, len(def.Fields)), methods: make(map[string]*FunctionValue, len(def.Methods))}
 
 	if def.Constructor != nil {
 		classDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
@@ -302,6 +304,21 @@ func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
 
 	interpreter.insert(def.GetToken().Lexeme, classDef)
 	return classDef
+}
+
+func (interpreter *Interpreter) visitStructDef(def *ast.StructDef) Value {
+	structDef := &StructDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0, len(def.Fields))}
+
+	if def.Constructor != nil {
+		structDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
+	}
+
+	for id := range def.Fields {
+		structDef.fields = append(structDef.fields, id)
+	}
+
+	interpreter.insert(def.GetToken().Lexeme, structDef)
+	return structDef
 }
 
 func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
@@ -327,29 +344,29 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	arguments := make([]Value, 0, len(call.Arguments))
 
 	for _, arg := range call.Arguments {
-		arguments = append(arguments, interpreter.Visit(arg))
+		arguments = append(arguments, interpreter.Visit(arg).Copy())
 	}
 
 	return callable.Call(interpreter, arguments)
 }
 
 func (interpreter *Interpreter) visitAssign(assign *ast.Assign) Value {
-	value := interpreter.Visit(assign.Expr)
-	interpreter.set(assign.GetToken().Lexeme, assign.Operator.Kind, value.Copy())
+	value := interpreter.Visit(assign.Expr).Copy()
+	interpreter.set(assign.GetToken().Lexeme, assign.Operator.Kind, value)
 
 	return value
 }
 
 func (interpreter *Interpreter) visitReturn(ret *ast.Return) Value {
 	if ret.Expr != nil {
-		return &ReturnValue{inner: interpreter.Visit(ret.Expr)}
+		return &ReturnValue{inner: interpreter.Visit(ret.Expr).Copy()}
 	}
 
 	return &ReturnValue{inner: &UnitVal{}}
 }
 
 func (interpreter *Interpreter) visitThrow(throw *ast.Throw) Value {
-	return &ThrowValue{inner: interpreter.Visit(throw.Expr)}
+	return &ThrowValue{inner: interpreter.Visit(throw.Expr).Copy()}
 }
 
 func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
@@ -358,34 +375,39 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 	switch inner := value.(type) {
 	case *ClassInstanceValue:
 		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
-			return ret
+			return ret.Copy()
+		}
+	case *StructInstanceValue:
+		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
+			return ret.Copy()
 		}
 	case *NameSpaceValue:
 		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
-			return ret
+			return ret.Copy()
 		}
 	default:
 		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
 	}
 
-	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, get.GetToken().Lexeme)
 	return nil
 }
 
 func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 	value := interpreter.Visit(set.Caller)
 
-	switch value.(type) {
+	switch t := value.(type) {
 	case *ClassInstanceValue:
+		if ret, ok := t.Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+			return ret.Copy()
+		}
+	case *StructInstanceValue:
+		if ret, ok := t.Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+			return ret.Copy()
+		}
 	default:
 		interpreter.report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
 	}
 
-	if ret, ok := value.(*ClassInstanceValue).Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
-		return ret
-	}
-
-	interpreter.report("'%s' does not contain field '%s'", value.(*ClassInstanceValue).def.identifier, set.GetToken().Lexeme)
 	return nil
 }
 

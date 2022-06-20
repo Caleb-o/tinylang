@@ -14,6 +14,7 @@ const (
 	CLASS_NONE ClassType = iota
 	CLASS_CLASS
 	CLASS_SUBCLASS
+	CLASS_STRUCT
 )
 
 const (
@@ -110,6 +111,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitAnonymousFn(n)
 	case *ast.ClassDef:
 		an.visitClassDef(n)
+	case *ast.StructDef:
+		an.visitStructDef(n)
 	case *ast.VariableDecl:
 		an.visitVarDecl(n)
 	case *ast.Identifier:
@@ -216,6 +219,24 @@ func (an *Analyser) visitClassDef(def *ast.ClassDef) {
 	}
 
 	an.pop()
+
+	an.currentClass = enclosing
+}
+
+func (an *Analyser) visitStructDef(def *ast.StructDef) {
+	enclosing := an.currentClass
+	an.currentClass = CLASS_STRUCT
+
+	an.declare(def.Token, &StructDefSymbol{def: def})
+
+	if def.Constructor != nil {
+		an.table = append(an.table, NewTable(an.top()))
+		an.top().Insert("self", &VarSymbol{identifier: "self", mutable: false})
+
+		an.visitFunctionDef(def.Constructor, FUNCTION_CONSTRUCTOR)
+
+		an.pop()
+	}
 
 	an.currentClass = enclosing
 }

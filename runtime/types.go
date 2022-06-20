@@ -13,6 +13,8 @@ const (
 	TYPE_LIST
 	TYPE_CLASS
 	TYPE_CLASS_INSTANCE
+	TYPE_STRUCT
+	TYPE_STRUCT_INSTANCE
 	TYPE_FUNCTION
 	TYPE_NAMESPACE
 	TYPE_RETURN
@@ -35,7 +37,9 @@ type FunctionType struct{}
 type ReturnType struct{}
 type ThrowableType struct{}
 type ClassDefType struct{}
+type StructDefType struct{}
 type ClassInstanceType struct{}
+type StructInstanceType struct{}
 type NameSpaceType struct{}
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
@@ -72,7 +76,13 @@ func (t *ClassDefType) GetKind() TypeKind { return TYPE_CLASS }
 func (t *ClassDefType) GetName() string   { return "class" }
 
 func (t *ClassInstanceType) GetKind() TypeKind { return TYPE_CLASS_INSTANCE }
-func (t *ClassInstanceType) GetName() string   { return "instance" }
+func (t *ClassInstanceType) GetName() string   { return "class instance" }
+
+func (t *StructDefType) GetKind() TypeKind { return TYPE_STRUCT }
+func (t *StructDefType) GetName() string   { return "struct" }
+
+func (t *StructInstanceType) GetKind() TypeKind { return TYPE_STRUCT_INSTANCE }
+func (t *StructInstanceType) GetName() string   { return "struct instance" }
 
 func (t *NameSpaceType) GetKind() TypeKind { return TYPE_NAMESPACE }
 func (t *NameSpaceType) GetName() string   { return "namespace" }

@@ -29,6 +29,12 @@ type ClassDef struct {
 	Methods     map[string]*FunctionDef
 }
 
+type StructDef struct {
+	Token       *lexer.Token
+	Constructor *FunctionDef
+	Fields      map[string]*VariableDecl
+}
+
 type Return struct {
 	Token *lexer.Token
 	Expr  Node
@@ -174,6 +180,34 @@ func (klass *ClassDef) AsSExp() string {
 
 	for _, value := range klass.Methods {
 		sb.WriteString(value.AsSExp())
+	}
+
+	sb.WriteByte(')')
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *StructDef) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *StructDef) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString(stmt.Token.Lexeme)
+	sb.WriteByte('(')
+
+	idx := 0
+	for _, value := range stmt.Fields {
+		sb.WriteString(value.AsSExp())
+
+		if idx < len(stmt.Fields)-1 {
+			sb.WriteString(", ")
+		}
+
+		idx += 1
 	}
 
 	sb.WriteByte(')')

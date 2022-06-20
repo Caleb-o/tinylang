@@ -57,6 +57,7 @@ const (
 	FUNCTION
 	SELF
 	CLASS
+	STRUCT
 	NAMESPACE
 	RETURN
 	IMPORT
@@ -77,6 +78,7 @@ var KeyWords = map[string]TokenKind{
 	"function":  FUNCTION,
 	"self":      SELF,
 	"class":     CLASS,
+	"struct":    STRUCT,
 	"return":    RETURN,
 	"while":     WHILE,
 	"if":        IF,
@@ -109,6 +111,8 @@ func (kind TokenKind) Name() string {
 		return "function"
 	case CLASS:
 		return "class"
+	case STRUCT:
+		return "struct"
 	case IDENTIFIER:
 		return "identifier"
 	case THROW:

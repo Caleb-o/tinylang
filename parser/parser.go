@@ -416,6 +416,59 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	return &ast.ClassDef{Token: identifier, Constructor: nil, Fields: fields, Methods: methods}
 }
 
+func (parser *Parser) structDef(outer *ast.Block) *ast.StructDef {
+	parser.consume(lexer.STRUCT)
+
+	identifier := parser.current
+	parser.consume(lexer.IDENTIFIER)
+
+	// TODO: identifier for inheritance
+	curly := parser.current
+	parser.consume(lexer.OPENCURLY)
+
+	block := ast.NewBlock(curly)
+
+	fields := make(map[string]*ast.VariableDecl, 0)
+	var constructor *ast.FunctionDef = nil
+
+	for parser.current.Kind != lexer.CLOSECURLY {
+		switch parser.current.Kind {
+		case lexer.FUNCTION:
+			fn := parser.functionDef(block)
+
+			// Must use struct name as constructor
+			if fn.GetToken().Lexeme != identifier.Lexeme {
+				shared.ReportErrFatal(fmt.Sprintf("Struct '%s' constructor must be '%s' not '%s'.", identifier.Lexeme, identifier.Lexeme, fn.GetToken().Lexeme))
+			}
+
+			// Constructor already defined
+			if constructor != nil {
+				shared.ReportErrFatal(fmt.Sprintf("Constructor exists in struct '%s'.", identifier.Lexeme))
+			}
+
+			constructor = fn
+
+		case lexer.VAR:
+			parser.consume(lexer.VAR)
+			variable := parser.variableDeclEmpty(true)
+
+			if _, ok := fields[variable.GetToken().Lexeme]; ok {
+				shared.ReportErrFatal(fmt.Sprintf("Field with name '%s' already exists in struct '%s'", variable.GetToken().Lexeme, identifier.Lexeme))
+			}
+
+			fields[variable.GetToken().Lexeme] = variable
+			parser.consume(lexer.SEMICOLON)
+
+		default:
+			shared.ReportErrFatal(fmt.Sprintf("Unexpected item in struct definition '%s'", parser.current.Lexeme))
+		}
+	}
+
+	parser.consume(lexer.CLOSECURLY)
+
+	return &ast.StructDef{Token: identifier, Constructor: constructor, Fields: fields}
+}
+
 func (parser *Parser) variableAssign(outer *ast.Block, identifier *lexer.Token, operator *lexer.Token) *ast.Assign {
 	return &ast.Assign{Token: identifier, Operator: operator, Expr: parser.expr(outer)}
 }
@@ -553,6 +606,9 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.CLASS:
 		outer.Statements = append(outer.Statements, parser.classDef(outer))
 		return
+	case lexer.STRUCT:
+		outer.Statements = append(outer.Statements, parser.structDef(outer))
+		return
 	case lexer.NAMESPACE:
 		outer.Statements = append(outer.Statements, parser.namespace(outer))
 		return
@@ -581,6 +637,9 @@ func (parser *Parser) namespaced() *ast.Block {
 		switch parser.current.Kind {
 		case lexer.CLASS:
 			block.Statements = append(block.Statements, parser.classDef(block))
+			continue
+		case lexer.STRUCT:
+			block.Statements = append(block.Statements, parser.structDef(block))
 			continue
 		case lexer.NAMESPACE:
 			block.Statements = append(block.Statements, parser.namespace(block))

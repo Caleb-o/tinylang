@@ -34,7 +34,7 @@ type StringVal struct {
 
 type FunctionValue struct {
 	definition *ast.FunctionDef
-	bound      *ClassInstanceValue
+	bound      Value
 }
 
 type AnonFunctionValue struct {
@@ -59,6 +59,17 @@ type ClassDefValue struct {
 
 type ClassInstanceValue struct {
 	def    *ClassDefValue
+	fields map[string]Value
+}
+
+type StructDefValue struct {
+	identifier  string
+	constructor *FunctionValue
+	fields      []string
+}
+
+type StructInstanceValue struct {
+	def    *StructDefValue
 	fields map[string]Value
 }
 
@@ -251,7 +262,7 @@ func (v *ClassInstanceValue) Modify(operation lexer.TokenKind, other Value) bool
 
 func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 	if val, ok := instance.fields[identifier]; ok {
-		return val.Copy(), true
+		return val, true
 	}
 
 	if fn, ok := instance.def.methods[identifier]; ok {
@@ -263,6 +274,66 @@ func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 }
 
 func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, bool) {
+	if _, ok := instance.fields[identifier]; ok {
+		instance.fields[identifier] = value
+		return value, true
+	}
+	return nil, false
+}
+
+func (v *StructDefValue) GetType() Type                                      { return &StructDefType{} }
+func (v *StructDefValue) Inspect() string                                    { return fmt.Sprintf("<struct %s>", v.identifier) }
+func (v *StructDefValue) Copy() Value                                        { return v }
+func (v *StructDefValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (def *StructDefValue) Arity() int {
+	if def.constructor != nil {
+		return len(def.constructor.definition.Params)
+	}
+	return 0
+}
+
+func (def *StructDefValue) Call(interpreter *Interpreter, values []Value) Value {
+	instance := &StructInstanceValue{def: def, fields: make(map[string]Value, len(def.fields))}
+
+	for _, id := range def.fields {
+		instance.fields[id] = &UnitVal{}
+	}
+
+	// Run the constructor
+	if def.constructor != nil {
+		def.constructor.bound = instance
+		def.constructor.Call(interpreter, values)
+	}
+	return instance
+}
+
+func (v *StructInstanceValue) GetType() Type { return &StructInstanceType{} }
+func (v *StructInstanceValue) Inspect() string {
+	return fmt.Sprintf("<struct instance %s : %p>", v.def.identifier, v)
+}
+
+// Copy semantics on structs
+func (v *StructInstanceValue) Copy() Value {
+	new := &StructInstanceValue{def: v.def, fields: make(map[string]Value, len(v.fields))}
+
+	for key, value := range v.fields {
+		new.fields[key] = value.Copy()
+	}
+
+	return new
+}
+func (v *StructInstanceValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (instance *StructInstanceValue) Get(identifier string) (Value, bool) {
+	if val, ok := instance.fields[identifier]; ok {
+		return val, true
+	}
+
+	return nil, false
+}
+
+func (instance *StructInstanceValue) Set(identifier string, value Value) (Value, bool) {
 	if _, ok := instance.fields[identifier]; ok {
 		instance.fields[identifier] = value
 		return value, true
