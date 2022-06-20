@@ -605,15 +605,6 @@ func (parser *Parser) statement(outer *ast.Block) {
 	case lexer.CATCH:
 		outer.Statements = append(outer.Statements, parser.catch(outer))
 		return
-	case lexer.CLASS:
-		outer.Statements = append(outer.Statements, parser.classDef(outer))
-		return
-	case lexer.STRUCT:
-		outer.Statements = append(outer.Statements, parser.structDef(outer))
-		return
-	case lexer.NAMESPACE:
-		outer.Statements = append(outer.Statements, parser.namespace(outer))
-		return
 
 	default:
 		// Expression assignment
@@ -672,6 +663,15 @@ func (parser *Parser) outerStatements(block *ast.Block) {
 		case lexer.IMPORT:
 			block.Statements = append(block.Statements, parser.importFile(block))
 			parser.consume(lexer.SEMICOLON)
+
+		case lexer.CLASS:
+			block.Statements = append(block.Statements, parser.classDef(block))
+
+		case lexer.STRUCT:
+			block.Statements = append(block.Statements, parser.structDef(block))
+
+		case lexer.NAMESPACE:
+			block.Statements = append(block.Statements, parser.namespace(block))
 
 		default:
 			parser.statement(block)
