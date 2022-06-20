@@ -329,7 +329,7 @@ func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
 	}
 
 	interpreter.insert(ns.Token.Lexeme, namespace)
-	return &UnitVal{}
+	return namespace
 }
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
@@ -386,7 +386,7 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 			return ret.Copy()
 		}
 	default:
-		interpreter.report("Cannot use getter on non-instance values '%s'", get.Expr.GetToken().Lexeme)
+		interpreter.report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
 	}
 
 	return nil
