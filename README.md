@@ -10,9 +10,12 @@ A small interpreted language to try and learn more about language design and dev
 * [Builtin Functions](#builtin-functions)
 
 ## TODO
-* Imports - Imports a file in raw form (no wrapping in a namespace)
-* Namespaces - Define your own namespaces to contain code
-	* The main program may automatically use a Program namespace
+* Imports
+	* Import files into their own namespaces
+	* Store result of imported file into a new representation
+	* Analyse each new file seperately (index ASTs for analysis)
+* Analysis
+	* Resolve identifiers that aren't yet defined to allow calls before definitions
 * Native functions, structs and namespaces from Go code (for native libraries)
 * Builtin Data structures (with literals)
 	* Lists - [1, 2, 3]
