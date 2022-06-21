@@ -4,6 +4,7 @@ temp/
 *.txt
 
 # Binaries for programs and plugins
+tiny
 *.exe
 *.exe~
 *.dll
