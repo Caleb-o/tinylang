@@ -46,6 +46,15 @@ func (an *Analyser) Run(root ast.Node) bool {
 	return !an.hadErr
 }
 
+func (an *Analyser) DeclareNativeNs() {
+	if an.lookup("builtins", true) != nil {
+		an.report("Item with name 'builtins' already exists in the current scope.")
+		return
+	}
+
+	an.top().Insert("builtins", &NameSpaceSymbol{identifier: "builtins"})
+}
+
 func (an *Analyser) DeclareNativeFn(identifier string, params []string) {
 	if an.lookup(identifier, true) != nil {
 		an.report("Item with name '%s' already exists in the current scope.", identifier)

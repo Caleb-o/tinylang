@@ -11,15 +11,15 @@ import (
 )
 
 type Tiny struct {
-	nativeFns []*runtime.NativeFunctionValue
+	builtins *runtime.NameSpaceValue
 }
 
 func New() *Tiny {
-	return &Tiny{nativeFns: make([]*runtime.NativeFunctionValue, 0)}
+	return &Tiny{builtins: &runtime.NameSpaceValue{"builtins", make(map[string]runtime.Value)}}
 }
 
 func (tiny *Tiny) AddFn(identifier string, params []string, fn runtime.NativeFn) {
-	tiny.nativeFns = append(tiny.nativeFns, runtime.NewFnValue(identifier, params, fn))
+	tiny.builtins.Members[identifier] = runtime.NewFnValue(identifier, params, fn)
 }
 
 func (tiny *Tiny) createBuiltins() {
@@ -58,8 +58,13 @@ func (tiny *Tiny) Run() {
 		tiny.createBuiltins()
 
 		// Import functions into analyser
-		for _, fn := range tiny.nativeFns {
-			analyser.DeclareNativeFn(fn.Identifier, fn.Params)
+		analyser.DeclareNativeNs()
+
+		for _, builtin := range tiny.builtins.Members {
+			switch t := builtin.(type) {
+			case *runtime.NativeFunctionValue:
+				analyser.DeclareNativeFn(t.Identifier, t.Params)
+			}
 		}
 
 		if !analyser.Run(program.Body) {
@@ -69,10 +74,8 @@ func (tiny *Tiny) Run() {
 		if !checkOnly {
 			interpreter := runtime.New()
 
-			// Import functions into interpreter
-			for _, fn := range tiny.nativeFns {
-				interpreter.Import(fn.Identifier, fn)
-			}
+			// Import native namespace into interpreter
+			interpreter.Import("builtins", tiny.builtins)
 
 			interpreter.Run(program)
 		} else {

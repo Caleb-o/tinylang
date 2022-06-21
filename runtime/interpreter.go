@@ -330,10 +330,10 @@ func (interpreter *Interpreter) visitStructDef(def *ast.StructDef) Value {
 }
 
 func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
-	namespace := &NameSpaceValue{identifier: ns.Token.Lexeme, members: make(map[string]Value)}
+	namespace := &NameSpaceValue{Identifier: ns.Token.Lexeme, Members: make(map[string]Value)}
 
 	for _, stmt := range ns.Body.Statements {
-		namespace.members[stmt.GetToken().Lexeme] = interpreter.Visit(stmt)
+		namespace.Members[stmt.GetToken().Lexeme] = interpreter.Visit(stmt)
 	}
 
 	interpreter.insert(ns.Token.Lexeme, namespace)
@@ -342,6 +342,10 @@ func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
 
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	caller := interpreter.Visit(call.Callee)
+
+	if caller == nil {
+		interpreter.Report("'%s' does not exist.", call.Callee.GetToken().Lexeme)
+	}
 
 	if _, ok := caller.(TinyCallable); !ok {
 		interpreter.Report("'%s' is not callable.", caller.Inspect())

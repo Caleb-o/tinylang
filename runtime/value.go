@@ -86,8 +86,8 @@ type StructInstanceValue struct {
 }
 
 type NameSpaceValue struct {
-	identifier string
-	members    map[string]Value
+	Identifier string
+	Members    map[string]Value
 }
 
 func (v *UnitVal) GetType() Type                                      { return &UnitType{} }
@@ -368,13 +368,13 @@ func (instance *StructInstanceValue) Set(identifier string, value Value) (Value,
 
 func (v *NameSpaceValue) GetType() Type { return &NameSpaceType{} }
 func (v *NameSpaceValue) Inspect() string {
-	return fmt.Sprintf("<namespace %s>", v.identifier)
+	return fmt.Sprintf("<namespace %s>", v.Identifier)
 }
 func (v *NameSpaceValue) Copy() Value                                        { return v }
 func (v *NameSpaceValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
-	if val, ok := v.members[identifier]; ok {
+	if val, ok := v.Members[identifier]; ok {
 		return val.Copy(), true
 	}
 
