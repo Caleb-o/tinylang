@@ -226,6 +226,9 @@ func (v *NativeFunctionValue) Modify(operation lexer.TokenKind, other Value) boo
 func (v *NativeFunctionValue) Arity() int { return len(v.Params) }
 
 func (v *NativeFunctionValue) Call(interpreter *Interpreter, values []Value) Value {
+	if len(values) != len(v.Params) {
+		interpreter.Report("Native function '%s' expected %d arguments but received %d.", v.Identifier, len(v.Params), len(values))
+	}
 	return v.Fn(interpreter, values)
 }
 
@@ -278,6 +281,10 @@ func (def *NativeClassDefValue) Arity() int {
 
 func (def *NativeClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
 	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+
+	if len(values) != len(def.Fields) {
+		interpreter.Report("Native class constructor '%s' expected %d arguments but received %d.", def.Identifier, len(def.Fields), len(values))
+	}
 
 	for idx, id := range def.Fields {
 		instance.fields[id] = values[idx]
