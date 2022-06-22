@@ -135,6 +135,11 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 
 	case lexer.OPENPAREN:
 		parser.consume(lexer.OPENPAREN)
+
+		if _, ok := parser.match(lexer.CLOSEPAREN); ok {
+			return &ast.Unit{Token: ftoken}
+		}
+
 		expr := parser.expr(outer)
 		parser.consume(lexer.CLOSEPAREN)
 		return expr

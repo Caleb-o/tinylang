@@ -110,6 +110,10 @@ type ClassInstanceValue struct {
 	fields map[string]Value
 }
 
+func (klass *ClassInstanceValue) Definition() string {
+	return klass.Def.(*ClassDefValue).identifier
+}
+
 type StructDefValue struct {
 	identifier  string
 	constructor *FunctionValue
@@ -128,6 +132,10 @@ func (str *StructDefValue) HasField(field string) bool {
 type StructInstanceValue struct {
 	def    *StructDefValue
 	fields map[string]Value
+}
+
+func (str *StructInstanceValue) Definition() string {
+	return str.def.identifier
 }
 
 func (str *StructInstanceValue) HasField(field string) bool {

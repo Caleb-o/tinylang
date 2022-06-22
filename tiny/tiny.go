@@ -158,6 +158,41 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.IntVal{Value: 0}
 	})
 
+	tiny.addBuiltinFn("type_name", []string{"object"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch obj := values[0].(type) {
+		case *runtime.UnitVal:
+			return &runtime.StringVal{Value: "unit"}
+		case *runtime.IntVal:
+			return &runtime.StringVal{Value: "int"}
+		case *runtime.FloatVal:
+			return &runtime.StringVal{Value: "float"}
+		case *runtime.BoolVal:
+			return &runtime.StringVal{Value: "bool"}
+		case *runtime.StringVal:
+			return &runtime.StringVal{Value: "string"}
+		case *runtime.FunctionValue:
+			return &runtime.StringVal{Value: "function"}
+		case *runtime.AnonFunctionValue:
+			return &runtime.StringVal{Value: "anon fn"}
+		case *runtime.NativeFunctionValue:
+			return &runtime.StringVal{Value: "native fn"}
+		case *runtime.NativeClassDefValue:
+			return &runtime.StringVal{Value: "native class"}
+		case *runtime.ClassDefValue:
+			return &runtime.StringVal{Value: "class"}
+		case *runtime.ClassInstanceValue:
+			return &runtime.StringVal{Value: obj.Definition()}
+		case *runtime.StructDefValue:
+			return &runtime.StringVal{Value: "struct"}
+		case *runtime.StructInstanceValue:
+			return &runtime.StringVal{Value: obj.Definition()}
+		case *runtime.NameSpaceValue:
+			return &runtime.StringVal{Value: obj.Identifier}
+		}
+
+		return &runtime.StringVal{Value: "unknown"}
+	})
+
 	tiny.addBuiltinFn("is_callable", []string{"object"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(runtime.TinyCallable); ok {
 			return &runtime.BoolVal{Value: true}

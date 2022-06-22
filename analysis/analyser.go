@@ -174,6 +174,7 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitNamespace(n)
 
 	// Ignore
+	case *ast.Unit:
 	case *ast.Literal:
 	case *ast.Import:
 

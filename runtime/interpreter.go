@@ -107,6 +107,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitLogicalOp(n)
 	case *ast.Block:
 		return interpreter.visitBlock(n, true)
+	case *ast.Unit:
+		return &UnitVal{}
 	case *ast.Literal:
 		return interpreter.visitLiteral(n)
 	case *ast.Identifier:
@@ -406,14 +408,15 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 
 func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 	value := interpreter.Visit(set.Caller)
+	obj := interpreter.Visit(set.Expr)
 
 	switch t := value.(type) {
 	case *ClassInstanceValue:
-		if ret, ok := t.Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
 			return ret.Copy()
 		}
 	case *StructInstanceValue:
-		if ret, ok := t.Set(set.GetToken().Lexeme, interpreter.Visit(set.Expr)); ok {
+		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
 			return ret.Copy()
 		}
 	default:

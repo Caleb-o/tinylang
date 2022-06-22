@@ -29,6 +29,10 @@ type Parameter struct {
 	Mutable bool
 }
 
+type Unit struct {
+	Token *lexer.Token
+}
+
 type Literal struct {
 	Token *lexer.Token
 }
@@ -143,6 +147,14 @@ func (param *Parameter) GetToken() *lexer.Token {
 
 func (param *Parameter) AsSExp() string {
 	return param.Token.Lexeme
+}
+
+func (unit *Unit) GetToken() *lexer.Token {
+	return unit.Token
+}
+
+func (unit *Unit) AsSExp() string {
+	return "(unit)"
 }
 
 func (lit *Literal) GetToken() *lexer.Token {
