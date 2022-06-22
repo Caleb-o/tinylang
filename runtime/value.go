@@ -80,6 +80,7 @@ func NewClassDefValue(identifier string, fields []string, methods map[string]*Na
 // TODO: Parent class
 type ClassDefValue struct {
 	identifier  string
+	base        *ClassDefValue
 	constructor *FunctionValue
 	fields      []string
 	methods     map[string]Value
@@ -87,6 +88,7 @@ type ClassDefValue struct {
 
 type ClassInstanceValue struct {
 	def    Value
+	base   *ClassInstanceValue
 	fields map[string]Value
 }
 
@@ -358,6 +360,12 @@ func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 		return fn, true
 	}
 
+	if def, ok := instance.def.(*ClassDefValue); ok {
+		if def.base != nil {
+			return instance.base.Get(identifier)
+		}
+	}
+
 	return nil, false
 }
 
@@ -366,6 +374,13 @@ func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, 
 		instance.fields[identifier] = value
 		return value, true
 	}
+
+	if def, ok := instance.def.(*ClassDefValue); ok {
+		if def.base != nil {
+			return instance.base.Set(identifier, value)
+		}
+	}
+
 	return nil, false
 }
 

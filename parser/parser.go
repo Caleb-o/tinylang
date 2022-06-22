@@ -377,6 +377,12 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	identifier := parser.current
 	parser.consume(lexer.IDENTIFIER)
 
+	var baseClass ast.Node = nil
+	if _, ok := parser.match(lexer.COLON); ok {
+		// Skip some process, since they are not relevant in this context
+		baseClass = parser.call(outer)
+	}
+
 	// TODO: identifier for inheritance
 	curly := parser.current
 	parser.consume(lexer.OPENCURLY)
@@ -415,7 +421,7 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 
 	parser.consume(lexer.CLOSECURLY)
 
-	return &ast.ClassDef{Token: identifier, Constructor: nil, Fields: fields, Methods: methods}
+	return &ast.ClassDef{Token: identifier, Base: baseClass, Constructor: nil, Fields: fields, Methods: methods}
 }
 
 func (parser *Parser) structDef(outer *ast.Block) *ast.StructDef {

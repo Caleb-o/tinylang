@@ -24,6 +24,7 @@ type Print struct {
 
 type ClassDef struct {
 	Token       *lexer.Token
+	Base        Node
 	Constructor *FunctionDef
 	Fields      map[string]*VariableDecl
 	Methods     map[string]*FunctionDef
@@ -162,6 +163,12 @@ func (klass *ClassDef) AsSExp() string {
 
 	sb.WriteByte('(')
 	sb.WriteString(klass.Token.Lexeme)
+
+	if klass.Base != nil {
+		sb.WriteString(" : ")
+		sb.WriteString(klass.Base.AsSExp())
+		sb.WriteByte(' ')
+	}
 	sb.WriteByte('(')
 
 	idx := 0

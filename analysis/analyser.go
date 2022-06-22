@@ -224,6 +224,17 @@ func (an *Analyser) visitClassDef(def *ast.ClassDef) {
 
 	an.declare(def.Token, &ClassDefSymbol{def: def})
 
+	if def.Base != nil {
+		switch def.Base.(type) {
+		case *ast.Identifier:
+		case *ast.Get:
+		default:
+			an.reportT("Invalid symbol in class base '%s'\n", def.Token, def.Token.Lexeme)
+		}
+
+		an.visit(def.Base)
+	}
+
 	an.table = append(an.table, NewTable(an.top()))
 	an.top().Insert("self", &VarSymbol{identifier: "self", mutable: false})
 
