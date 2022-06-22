@@ -382,7 +382,14 @@ func (interpreter *Interpreter) visitReturn(ret *ast.Return) Value {
 }
 
 func (interpreter *Interpreter) visitThrow(throw *ast.Throw) Value {
-	return &ThrowValue{inner: interpreter.Visit(throw.Expr).Copy()}
+	innerValue := interpreter.Visit(throw.Expr)
+
+	// Re-throw the value if it is already a throw
+	if inner, ok := innerValue.(*ThrowValue); ok {
+		return inner.Copy()
+	}
+
+	return &ThrowValue{inner: innerValue.Copy()}
 }
 
 func (interpreter *Interpreter) visitGet(get *ast.Get) Value {

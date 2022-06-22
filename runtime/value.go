@@ -61,6 +61,14 @@ type ThrowValue struct {
 	inner Value
 }
 
+func NewThrow(inner Value) *ThrowValue {
+	return &ThrowValue{inner}
+}
+
+func (throw *ThrowValue) GetInner() Value {
+	return throw.inner
+}
+
 type NativeClassDefValue struct {
 	Identifier string
 	Fields     []string

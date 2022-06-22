@@ -294,11 +294,16 @@ func (tiny *Tiny) createBuiltins() {
 			return &runtime.IntVal{Value: out}
 
 		case *runtime.StringVal:
-			number, _ := strconv.ParseInt(value.Value, 10, 32)
+			number, err := strconv.ParseInt(value.Value, 10, 32)
+
+			if err != nil {
+				return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to int", values[0].Inspect())})
+			}
+
 			return &runtime.IntVal{Value: int(number)}
 		}
 
-		return &runtime.IntVal{Value: 0}
+		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to int", values[0].Inspect())})
 	})
 
 	tiny.addBuiltinFn("to_float", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
@@ -317,11 +322,14 @@ func (tiny *Tiny) createBuiltins() {
 			return &runtime.FloatVal{Value: out}
 
 		case *runtime.StringVal:
-			number, _ := strconv.ParseFloat(value.Value, 32)
+			number, err := strconv.ParseFloat(value.Value, 32)
+			if err != nil {
+				return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to float", values[0].Inspect())})
+			}
 			return &runtime.FloatVal{Value: float32(number)}
 		}
 
-		return &runtime.FloatVal{Value: 0.0}
+		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to float", values[0].Inspect())})
 	})
 
 	tiny.addBuiltinFn("to_string", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
@@ -336,10 +344,22 @@ func (tiny *Tiny) createBuiltins() {
 			return value
 		}
 
-		return &runtime.StringVal{Value: ""}
+		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to string", values[0].Inspect())})
 	})
 
 	// --- Misc
+	tiny.addBuiltinFn("is_err", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		_, ok := values[0].(*runtime.ThrowValue)
+		return &runtime.BoolVal{Value: ok}
+	})
+
+	tiny.addBuiltinFn("get_err", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if err, ok := values[0].(*runtime.ThrowValue); ok {
+			return err.GetInner()
+		}
+		return &runtime.UnitVal{}
+	})
+
 	tiny.addBuiltinFn("str_len", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if value, ok := values[0].(*runtime.StringVal); ok {
 			return &runtime.IntVal{Value: len(value.Value)}
