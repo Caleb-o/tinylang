@@ -12,10 +12,29 @@ import (
 
 type Tiny struct {
 	builtins *runtime.NameSpaceValue
+	imported map[string]*runtime.NameSpaceValue
 }
 
 func New() *Tiny {
-	return &Tiny{builtins: &runtime.NameSpaceValue{"builtins", make(map[string]runtime.Value)}}
+	return &Tiny{builtins: &runtime.NameSpaceValue{"builtins", make(map[string]runtime.Value)}, imported: make(map[string]*runtime.NameSpaceValue)}
+}
+
+func (tiny *Tiny) AddNamespace(identifier string) {
+	if _, ok := tiny.imported[identifier]; ok {
+		shared.ReportErrFatal(fmt.Sprintf("Namespace '%s' already exists.", identifier))
+	}
+
+	tiny.imported[identifier] = &runtime.NameSpaceValue{identifier, make(map[string]runtime.Value)}
+}
+
+func (tiny *Tiny) AddClass(namespace string, identifier string, fields []string, methods map[string]*runtime.NativeFunctionValue) {
+	tiny.checkId(namespace, identifier)
+	tiny.imported[namespace].Members[identifier] = runtime.NewClassDefValue(identifier, fields, methods)
+}
+
+func (tiny *Tiny) AddFunction(namespace string, identifier string, params []string, fn runtime.NativeFn) {
+	tiny.checkId(namespace, identifier)
+	tiny.imported[namespace].Members[identifier] = runtime.NewFnValue(identifier, params, fn)
 }
 
 func (tiny *Tiny) Run() {
@@ -43,7 +62,11 @@ func (tiny *Tiny) Run() {
 		tiny.createBuiltins()
 
 		// Import functions into analyser
-		analyser.DeclareNativeNs()
+		analyser.DeclareNativeNs("builtins")
+
+		for _, ns := range tiny.imported {
+			analyser.DeclareNativeNs(ns.Identifier)
+		}
 
 		if !analyser.Run(program.Body) {
 			return
@@ -55,6 +78,10 @@ func (tiny *Tiny) Run() {
 			// Import native namespace into interpreter
 			interpreter.Import("builtins", tiny.builtins)
 
+			for _, ns := range tiny.imported {
+				interpreter.Import(ns.Identifier, ns)
+			}
+
 			interpreter.Run(program)
 		} else {
 			fmt.Println("Good!")
@@ -65,19 +92,29 @@ func (tiny *Tiny) Run() {
 }
 
 // --- Private ---
-func (tiny *Tiny) checkId(identifier string) {
+func (tiny *Tiny) checkId(namespace string, identifier string) {
+	if _, ok := tiny.imported[namespace]; !ok {
+		shared.ReportErrFatal(fmt.Sprintf("Trying to add '%s' to unknown namespace '%s'", identifier, namespace))
+	}
+
+	if _, ok := tiny.imported[namespace].Members[identifier]; ok {
+		shared.ReportErrFatal(fmt.Sprintf("Namespace '%s' already contains an item with identifier '%s'", namespace, identifier))
+	}
+}
+
+func (tiny *Tiny) checkBuiltinId(identifier string) {
 	if _, ok := tiny.builtins.Members[identifier]; ok {
 		shared.ReportErrFatal(fmt.Sprintf("Identifier '%s' already exists in builtin namespace.", identifier))
 	}
 }
 
 func (tiny *Tiny) addBuiltinClass(identifier string, fields []string, methods map[string]*runtime.NativeFunctionValue) {
-	tiny.checkId(identifier)
+	tiny.checkBuiltinId(identifier)
 	tiny.builtins.Members[identifier] = runtime.NewClassDefValue(identifier, fields, methods)
 }
 
 func (tiny *Tiny) addBuiltinFn(identifier string, params []string, fn runtime.NativeFn) {
-	tiny.checkId(identifier)
+	tiny.checkBuiltinId(identifier)
 	tiny.builtins.Members[identifier] = runtime.NewFnValue(identifier, params, fn)
 }
 

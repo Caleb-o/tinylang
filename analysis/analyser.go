@@ -46,13 +46,13 @@ func (an *Analyser) Run(root ast.Node) bool {
 	return !an.hadErr
 }
 
-func (an *Analyser) DeclareNativeNs() {
-	if an.lookup("builtins", true) != nil {
-		an.report("Item with name 'builtins' already exists in the current scope.")
+func (an *Analyser) DeclareNativeNs(identifier string) {
+	if an.lookup(identifier, true) != nil {
+		an.report(fmt.Sprintf("Item with name '%s' already exists in the current scope.", identifier))
 		return
 	}
 
-	an.top().Insert("builtins", &NameSpaceSymbol{identifier: "builtins"})
+	an.top().Insert(identifier, &NameSpaceSymbol{identifier})
 }
 
 func (an *Analyser) DeclareNativeClass(identifier string, fields []string) {
