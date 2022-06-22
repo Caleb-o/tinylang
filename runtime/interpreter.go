@@ -162,29 +162,26 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	left := interpreter.Visit(binop.Left)
 	right := interpreter.Visit(binop.Right)
 
-	checkNumericOperand(interpreter, binop.Left.GetToken(), left)
-	checkNumericOperand(interpreter, binop.Right.GetToken(), right)
-
-	// HACK
-	var left_value float32 = 0.0
-	var right_value float32 = 0.0
-
-	switch ll := left.(type) {
-	case *IntVal:
-		left_value = float32(ll.Value)
-	case *FloatVal:
-		left_value = ll.Value
+	if reflect.TypeOf(left) != reflect.TypeOf(right) {
+		interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+		return nil
 	}
 
-	switch rr := right.(type) {
+	switch left.(type) {
 	case *IntVal:
-		right_value = float32(rr.Value)
-	case *FloatVal:
-		right_value = rr.Value
-	}
+		if value, ok := BinopI(binop.GetToken().Kind, left.(*IntVal).Value, right.(*IntVal).Value); ok {
+			return value
+		}
 
-	if value, ok := Binop(binop.GetToken().Kind, left_value, right_value); ok {
-		return value
+	case *FloatVal:
+		if value, ok := BinopF(binop.GetToken().Kind, left.(*FloatVal).Value, right.(*FloatVal).Value); ok {
+			return value
+		}
+
+	case *StringVal:
+		if value, ok := BinopS(binop.GetToken().Kind, left.(*StringVal).Value, right.(*StringVal).Value); ok {
+			return value
+		}
 	}
 
 	interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)

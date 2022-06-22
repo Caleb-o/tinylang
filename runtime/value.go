@@ -499,7 +499,57 @@ func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
 	return nil, false
 }
 
-func Binop(operator lexer.TokenKind, a float32, b float32) (Value, bool) {
+func BinopS(operator lexer.TokenKind, a string, b string) (Value, bool) {
+	switch operator {
+	case lexer.PLUS:
+		return &StringVal{Value: a + b}, true
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: a == b}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: a != b}, true
+	case lexer.GREATER:
+		return &BoolVal{Value: a > b}, true
+	case lexer.GREATER_EQUAL:
+		return &BoolVal{Value: a >= b}, true
+	case lexer.LESS:
+		return &BoolVal{Value: a < b}, true
+	case lexer.LESS_EQUAL:
+		return &BoolVal{Value: a <= b}, true
+	}
+
+	// Unreachable
+	return nil, false
+}
+
+func BinopI(operator lexer.TokenKind, a int, b int) (Value, bool) {
+	switch operator {
+	case lexer.PLUS:
+		return &IntVal{Value: a + b}, true
+	case lexer.MINUS:
+		return &IntVal{Value: a - b}, true
+	case lexer.STAR:
+		return &IntVal{Value: a * b}, true
+	case lexer.SLASH:
+		return &IntVal{Value: a / b}, true
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: a == b}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: a != b}, true
+	case lexer.GREATER:
+		return &BoolVal{Value: a > b}, true
+	case lexer.GREATER_EQUAL:
+		return &BoolVal{Value: a >= b}, true
+	case lexer.LESS:
+		return &BoolVal{Value: a < b}, true
+	case lexer.LESS_EQUAL:
+		return &BoolVal{Value: a <= b}, true
+	}
+
+	// Unreachable
+	return nil, false
+}
+
+func BinopF(operator lexer.TokenKind, a float32, b float32) (Value, bool) {
 	switch operator {
 	case lexer.PLUS:
 		return &FloatVal{Value: a + b}, true
