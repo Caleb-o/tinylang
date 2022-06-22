@@ -350,6 +350,36 @@ func (tiny *Tiny) createBuiltins() {
 	})
 
 	// --- Misc
+	tiny.addBuiltinFn("append", []string{"list", "value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.ListVal); !ok {
+			interpreter.Report("Cannot append to non-list")
+			return nil
+		}
+
+		list := values[0].(*runtime.ListVal)
+		list.Values = append(list.Values, values[1].Copy())
+
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("pop", []string{"list"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.ListVal); !ok {
+			interpreter.Report("Cannot pop non-list")
+			return nil
+		}
+
+		list := values[0].(*runtime.ListVal)
+
+		if len(list.Values) == 0 {
+			return &runtime.UnitVal{}
+		}
+
+		value := list.Values[len(list.Values)-1].Copy()
+		list.Values = list.Values[:len(list.Values)-1]
+
+		return value
+	})
+
 	tiny.addBuiltinFn("is_err", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		_, ok := values[0].(*runtime.ThrowValue)
 		return &runtime.BoolVal{Value: ok}

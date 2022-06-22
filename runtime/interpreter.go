@@ -520,11 +520,11 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 			break
 		}
 
-		condition = interpreter.Visit(stmt.Condition)
-
 		if stmt.Increment != nil {
 			interpreter.Visit(stmt.Increment)
 		}
+
+		condition = interpreter.Visit(stmt.Condition)
 	}
 
 	interpreter.pop()

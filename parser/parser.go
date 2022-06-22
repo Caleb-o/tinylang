@@ -568,8 +568,6 @@ func (parser *Parser) ifstmt(outer *ast.Block) *ast.If {
 
 	var varDecl *ast.VariableDecl = nil
 	if token, ok := parser.match(lexer.VAR, lexer.LET); ok {
-		parser.consume(token.Kind)
-
 		varDecl = parser.variableDecl(outer, token.Kind == lexer.VAR)
 		parser.consume(lexer.SEMICOLON)
 	}
@@ -595,8 +593,6 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 
 	var varDecl *ast.VariableDecl = nil
 	if token, ok := parser.match(lexer.VAR, lexer.LET); ok {
-		parser.consume(token.Kind)
-
 		varDecl = parser.variableDecl(outer, token.Kind == lexer.VAR)
 		parser.consume(lexer.SEMICOLON)
 	}

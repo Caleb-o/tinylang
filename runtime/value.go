@@ -528,16 +528,7 @@ func (v *ListVal) Inspect() string {
 
 	return sb.String()
 }
-func (v *ListVal) Copy() Value {
-	// TODO: Figure out if copy-semantics is good for lists or if it should be passed by ref
-	values := make([]Value, len(v.Values))
-
-	for idx, value := range v.Values {
-		values[idx] = value.Copy()
-	}
-
-	return &ListVal{Values: values}
-}
+func (v *ListVal) Copy() Value { return v }
 func (v *ListVal) Modify(operation lexer.TokenKind, other Value) bool {
 	if value, ok := other.(*ListVal); ok {
 		switch operation {
