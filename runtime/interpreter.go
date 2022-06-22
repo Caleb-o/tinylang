@@ -178,6 +178,11 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 			return value
 		}
 
+	case *BoolVal:
+		if value, ok := BinopB(binop.GetToken().Kind, left.(*BoolVal).Value, right.(*BoolVal).Value); ok {
+			return value
+		}
+
 	case *StringVal:
 		if value, ok := BinopS(binop.GetToken().Kind, left.(*StringVal).Value, right.(*StringVal).Value); ok {
 			return value

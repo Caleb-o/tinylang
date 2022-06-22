@@ -521,6 +521,18 @@ func BinopS(operator lexer.TokenKind, a string, b string) (Value, bool) {
 	return nil, false
 }
 
+func BinopB(operator lexer.TokenKind, a bool, b bool) (Value, bool) {
+	switch operator {
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: a == b}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: a != b}, true
+	}
+
+	// Unreachable
+	return nil, false
+}
+
 func BinopI(operator lexer.TokenKind, a int, b int) (Value, bool) {
 	switch operator {
 	case lexer.PLUS:
