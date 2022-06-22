@@ -192,7 +192,7 @@ func (tiny *Tiny) createBuiltins() {
 			return &runtime.StringVal{Value: obj.Definition()}
 		case *runtime.NameSpaceValue:
 			return &runtime.StringVal{Value: obj.Identifier}
-		case *runtime.ListValue:
+		case *runtime.ListVal:
 			return &runtime.StringVal{Value: "list"}
 		}
 
@@ -366,7 +366,7 @@ func (tiny *Tiny) createBuiltins() {
 		switch value := values[0].(type) {
 		case *runtime.StringVal:
 			return &runtime.IntVal{Value: len(value.Value)}
-		case *runtime.ListValue:
+		case *runtime.ListVal:
 			return &runtime.IntVal{Value: len(value.Values)}
 		}
 

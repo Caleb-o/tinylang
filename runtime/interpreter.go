@@ -191,6 +191,11 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 		if value, ok := BinopS(binop.GetToken().Kind, left.(*StringVal).Value, right.(*StringVal).Value); ok {
 			return value
 		}
+
+	case *ListVal:
+		if value, ok := BinopL(binop.GetToken().Kind, left.(*ListVal).Values, right.(*ListVal).Values); ok {
+			return value
+		}
 	}
 
 	interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
@@ -256,7 +261,7 @@ func (interpreter *Interpreter) visitList(lit *ast.ListLiteral) Value {
 		values[idx] = interpreter.Visit(value)
 	}
 
-	return &ListValue{values}
+	return &ListVal{values}
 }
 
 func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) Value {
@@ -459,7 +464,7 @@ func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
 	indexer_int := indexer.(*IntVal).Value
 
 	switch t := caller.(type) {
-	case *ListValue:
+	case *ListVal:
 		if indexer_int < 0 || indexer_int >= len(t.Values) {
 			interpreter.Report("Index %d is out of list range 0-%d", indexer_int, len(t.Values))
 		}

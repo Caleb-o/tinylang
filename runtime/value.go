@@ -46,7 +46,7 @@ type NativeFunctionValue struct {
 	Fn         NativeFn
 }
 
-type ListValue struct {
+type ListVal struct {
 	Values []Value
 }
 
@@ -512,8 +512,8 @@ func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
 	return nil, false
 }
 
-func (v *ListValue) GetType() Type { return &ListType{} }
-func (v *ListValue) Inspect() string {
+func (v *ListVal) GetType() Type { return &ListType{} }
+func (v *ListVal) Inspect() string {
 	var sb strings.Builder
 
 	sb.WriteByte('[')
@@ -528,7 +528,7 @@ func (v *ListValue) Inspect() string {
 
 	return sb.String()
 }
-func (v *ListValue) Copy() Value {
+func (v *ListVal) Copy() Value {
 	// TODO: Figure out if copy-semantics is good for lists or if it should be passed by ref
 	values := make([]Value, len(v.Values))
 
@@ -536,10 +536,10 @@ func (v *ListValue) Copy() Value {
 		values[idx] = value.Copy()
 	}
 
-	return &ListValue{Values: values}
+	return &ListVal{Values: values}
 }
-func (v *ListValue) Modify(operation lexer.TokenKind, other Value) bool {
-	if value, ok := other.(*ListValue); ok {
+func (v *ListVal) Modify(operation lexer.TokenKind, other Value) bool {
+	if value, ok := other.(*ListVal); ok {
 		switch operation {
 		case lexer.PLUS_EQUAL:
 			for _, item := range value.Values {
@@ -549,6 +549,31 @@ func (v *ListValue) Modify(operation lexer.TokenKind, other Value) bool {
 	}
 
 	return false
+}
+
+func BinopL(operator lexer.TokenKind, a []Value, b []Value) (Value, bool) {
+	switch operator {
+	case lexer.PLUS:
+		list := make([]Value, 0)
+
+		for _, value := range a {
+			list = append(list, value.Copy())
+		}
+
+		for _, value := range b {
+			list = append(list, value.Copy())
+		}
+
+		return &ListVal{list}, true
+	// FIXME: Better equality checks
+	case lexer.EQUAL_EQUAL:
+		return &BoolVal{Value: len(a) == len(b)}, true
+	case lexer.NOT_EQUAL:
+		return &BoolVal{Value: len(a) != len(b)}, true
+	}
+
+	// Unreachable
+	return nil, false
 }
 
 func BinopS(operator lexer.TokenKind, a string, b string) (Value, bool) {
