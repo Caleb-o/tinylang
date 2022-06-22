@@ -427,10 +427,9 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 		if ret, ok := inner.Get(get.GetToken().Lexeme); ok {
 			return ret.Copy()
 		}
-	default:
-		interpreter.Report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
 	}
 
+	interpreter.Report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
 	return nil
 }
 

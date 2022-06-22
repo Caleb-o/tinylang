@@ -34,7 +34,8 @@ A small interpreted language to try and learn more about language design and dev
 	* Note: Stricter mutability may come later
 
 ### Fixes / Modifications
-* Nothing of interest right now :^)
+* Analysis does not understand namespaces and cannot correctly resolve identifiers
+	* Namespace symbols and others need to be richer to resolve correctly
 
 ## Desirables
 * Bytecode interpreter
