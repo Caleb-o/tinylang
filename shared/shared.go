@@ -1,10 +1,15 @@
 package shared
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 )
+
+func WriteFile(path string, contents string) bool {
+	return ioutil.WriteFile(path, []byte(contents), fs.ModeAppend) == nil
+}
 
 func ReadFile(path string) string {
 	src, err := ioutil.ReadFile(path)

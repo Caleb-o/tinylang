@@ -100,4 +100,19 @@ func (tiny *Tiny) createBuiltins() {
 			return &runtime.StringVal{Value: shared.ReadFile(fileName.Value)}
 		}
 	})
+
+	tiny.AddBuiltinFn("write_file", []string{"fileName", "content"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.StringVal); !ok {
+			interpreter.Report("Expected string as filename")
+			return nil
+		}
+
+		if _, ok := values[1].(*runtime.StringVal); !ok {
+			interpreter.Report("Expected string as file contents")
+			return nil
+		}
+
+		status := shared.WriteFile(values[0].(*runtime.StringVal).Value, values[1].(*runtime.StringVal).Value)
+		return &runtime.BoolVal{Value: status}
+	})
 }
