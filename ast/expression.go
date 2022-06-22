@@ -65,6 +65,12 @@ type Set struct {
 	Expr   Node
 }
 
+type Index struct {
+	Token  *lexer.Token
+	Caller Node
+	Expr   Node
+}
+
 type Self struct {
 	Token *lexer.Token
 }
@@ -252,6 +258,21 @@ func (expr *Set) AsSExp() string {
 	sb.WriteString(expr.Token.Lexeme)
 	sb.WriteByte('.')
 	sb.WriteString(expr.Expr.AsSExp())
+
+	return sb.String()
+}
+
+func (expr *Index) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *Index) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(expr.Caller.AsSExp())
+	sb.WriteByte('[')
+	sb.WriteString(expr.Expr.AsSExp())
+	sb.WriteByte(']')
 
 	return sb.String()
 }

@@ -176,7 +176,13 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 
 	for {
 		if _, ok := parser.match(lexer.OPENPAREN); ok {
-			node = parser.functionCall(outer, node)
+			return parser.functionCall(outer, node)
+		} else if token, ok := parser.match(lexer.OPENSQUARE); ok {
+			expr := parser.expr(outer)
+			parser.consume(lexer.CLOSESQUARE)
+
+			// TODO: Allow multi-dimensional
+			return &ast.Index{Token: token, Caller: node, Expr: expr}
 		} else if _, ok := parser.match(lexer.DOT); ok {
 			identifier := parser.current
 			parser.consume(lexer.IDENTIFIER)

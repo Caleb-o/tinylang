@@ -141,6 +141,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitGet(n)
 	case *ast.Set:
 		return interpreter.visitSet(n)
+	case *ast.Index:
+		return interpreter.visitIndex(n)
 	case *ast.Self:
 		return interpreter.lookup("self")
 	case *ast.If:
@@ -428,10 +430,10 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 }
 
 func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
-	value := interpreter.Visit(set.Caller)
+	caller := interpreter.Visit(set.Caller)
 	obj := interpreter.Visit(set.Expr)
 
-	switch t := value.(type) {
+	switch t := caller.(type) {
 	case *ClassInstanceValue:
 		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
 			return ret.Copy()
@@ -440,10 +442,38 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
 			return ret.Copy()
 		}
-	default:
-		interpreter.Report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(value))
 	}
 
+	interpreter.Report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(caller))
+	return nil
+}
+
+func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
+	caller := interpreter.Visit(index.Caller)
+	indexer := interpreter.Visit(index.Expr)
+
+	if _, ok := indexer.(*IntVal); !ok {
+		interpreter.Report("Index must use an integer value but received '%d'", indexer.Inspect())
+	}
+
+	indexer_int := indexer.(*IntVal).Value
+
+	switch t := caller.(type) {
+	case *ListValue:
+		if indexer_int < 0 || indexer_int >= len(t.Values) {
+			interpreter.Report("Index %d is out of list range 0-%d", indexer_int, len(t.Values))
+		}
+		return t.Values[indexer_int]
+	case *StringVal:
+		if indexer_int < 0 || indexer_int >= len(t.Value) {
+			interpreter.Report("Index %d is out of string range 0-%d", indexer_int, len(t.Value))
+		}
+
+		// FIXME: Replace with char type
+		return &StringVal{Value: string(t.Value[indexer_int])}
+	}
+
+	interpreter.Report("Cannot use index on type '%s'", reflect.TypeOf(caller))
 	return nil
 }
 
