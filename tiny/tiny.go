@@ -250,6 +250,15 @@ func (tiny *Tiny) createBuiltins() {
 		}
 	})
 
+	tiny.addBuiltinFn("delete_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if fileName, ok := values[0].(*runtime.StringVal); !ok {
+			interpreter.Report("Expected string as filename")
+			return nil
+		} else {
+			return &runtime.BoolVal{Value: shared.DeleteFile(fileName.Value)}
+		}
+	})
+
 	tiny.addBuiltinFn("write_file", []string{"fileName", "content"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.StringVal); !ok {
 			interpreter.Report("Expected string as filename")

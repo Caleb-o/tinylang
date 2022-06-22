@@ -11,6 +11,10 @@ func WriteFile(path string, contents string) bool {
 	return ioutil.WriteFile(path, []byte(contents), fs.ModeAppend) == nil
 }
 
+func DeleteFile(path string) bool {
+	return os.Remove(path) == nil
+}
+
 func ReadFile(path string) string {
 	src, err := ioutil.ReadFile(path)
 	if err != nil {

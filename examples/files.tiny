@@ -1,0 +1,12 @@
+# Write to file 'test.txt' and cache if the process succeeded
+var ok = builtin.write_file("test.txt", "Hello, World!");
+
+# If the write worked:
+if ok {
+	# Read and print the contents
+	var content = builtin.read_file("test.txt");
+	print(content);
+
+	# Remove the file
+	builtin.delete_file("test.txt");
+}
