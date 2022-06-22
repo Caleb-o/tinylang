@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 	"tiny/analysis"
 	"tiny/parser"
 	"tiny/runtime"
@@ -287,5 +289,34 @@ func (tiny *Tiny) createBuiltins() {
 		}
 
 		return &runtime.IntVal{Value: values[0].(*runtime.IntVal).Value % values[1].(*runtime.IntVal).Value}
+	})
+
+	// Set the seed
+	rand.Seed(time.Now().UnixNano())
+
+	tiny.addBuiltinFn("rand_int", []string{"max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as max")
+			return nil
+		}
+
+		return &runtime.IntVal{Value: rand.Intn(values[0].(*runtime.IntVal).Value)}
+	})
+
+	tiny.addBuiltinFn("rand_int_range", []string{"min", "max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as min")
+			return nil
+		}
+
+		if _, ok := values[1].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as max")
+			return nil
+		}
+
+		min := values[0].(*runtime.IntVal).Value
+		max := values[1].(*runtime.IntVal).Value
+
+		return &runtime.IntVal{Value: rand.Intn(max-min+1) + min}
 	})
 }
