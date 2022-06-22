@@ -144,6 +144,19 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		parser.consume(lexer.CLOSEPAREN)
 		return expr
 
+	case lexer.OPENSQUARE:
+		parser.consume(lexer.OPENSQUARE)
+
+		exprs := make([]ast.Node, 0)
+
+		for parser.current.Kind != lexer.CLOSESQUARE {
+			exprs = append(exprs, parser.expr(outer))
+			parser.consumeIfExists(lexer.COMMA)
+		}
+
+		parser.consume(lexer.CLOSESQUARE)
+		return &ast.ListLiteral{Token: ftoken, Exprs: exprs}
+
 	case lexer.FUNCTION:
 		return parser.anonymousFunction(outer)
 

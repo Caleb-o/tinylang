@@ -109,6 +109,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitBlock(n, true)
 	case *ast.Unit:
 		return &UnitVal{}
+	case *ast.ListLiteral:
+		return interpreter.visitList(n)
 	case *ast.Literal:
 		return interpreter.visitLiteral(n)
 	case *ast.Identifier:
@@ -243,6 +245,16 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value 
 	}
 
 	return &UnitVal{}
+}
+
+func (interpreter *Interpreter) visitList(lit *ast.ListLiteral) Value {
+	values := make([]Value, len(lit.Exprs))
+
+	for idx, value := range lit.Exprs {
+		values[idx] = interpreter.Visit(value)
+	}
+
+	return &ListValue{values}
 }
 
 func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) Value {

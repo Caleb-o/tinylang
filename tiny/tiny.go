@@ -192,6 +192,8 @@ func (tiny *Tiny) createBuiltins() {
 			return &runtime.StringVal{Value: obj.Definition()}
 		case *runtime.NameSpaceValue:
 			return &runtime.StringVal{Value: obj.Identifier}
+		case *runtime.ListValue:
+			return &runtime.StringVal{Value: "list"}
 		}
 
 		return &runtime.StringVal{Value: "unknown"}
@@ -360,9 +362,12 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.UnitVal{}
 	})
 
-	tiny.addBuiltinFn("str_len", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
-		if value, ok := values[0].(*runtime.StringVal); ok {
+	tiny.addBuiltinFn("len", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.StringVal:
 			return &runtime.IntVal{Value: len(value.Value)}
+		case *runtime.ListValue:
+			return &runtime.IntVal{Value: len(value.Values)}
 		}
 
 		return &runtime.IntVal{Value: 0}

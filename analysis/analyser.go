@@ -172,6 +172,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitCatch(n)
 	case *ast.NameSpace:
 		an.visitNamespace(n)
+	case *ast.ListLiteral:
+		an.visitList(n)
 
 	// Ignore
 	case *ast.Unit:
@@ -433,4 +435,10 @@ func (an *Analyser) visitCatch(catch *ast.Catch) {
 func (an *Analyser) visitNamespace(ns *ast.NameSpace) {
 	an.declare(ns.Token, &NameSpaceSymbol{identifier: ns.Token.Lexeme})
 	an.visitBlock(ns.Body, true)
+}
+
+func (an *Analyser) visitList(list *ast.ListLiteral) {
+	for _, value := range list.Exprs {
+		an.visit(value)
+	}
 }

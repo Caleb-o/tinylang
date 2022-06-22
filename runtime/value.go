@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"tiny/ast"
 	"tiny/lexer"
 )
@@ -43,6 +44,10 @@ type NativeFunctionValue struct {
 	Identifier string
 	Params     []string
 	Fn         NativeFn
+}
+
+type ListValue struct {
+	Values []Value
 }
 
 func NewFnValue(identifier string, params []string, fn NativeFn) *NativeFunctionValue {
@@ -505,6 +510,45 @@ func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
 	}
 
 	return nil, false
+}
+
+func (v *ListValue) GetType() Type { return &ListType{} }
+func (v *ListValue) Inspect() string {
+	var sb strings.Builder
+
+	sb.WriteByte('[')
+	for idx, value := range v.Values {
+		sb.WriteString(value.Inspect())
+
+		if idx < len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(']')
+
+	return sb.String()
+}
+func (v *ListValue) Copy() Value {
+	// TODO: Figure out if copy-semantics is good for lists or if it should be passed by ref
+	values := make([]Value, len(v.Values))
+
+	for idx, value := range v.Values {
+		values[idx] = value.Copy()
+	}
+
+	return &ListValue{Values: values}
+}
+func (v *ListValue) Modify(operation lexer.TokenKind, other Value) bool {
+	if value, ok := other.(*ListValue); ok {
+		switch operation {
+		case lexer.PLUS_EQUAL:
+			for _, item := range value.Values {
+				v.Values = append(v.Values, item.Copy())
+			}
+		}
+	}
+
+	return false
 }
 
 func BinopS(operator lexer.TokenKind, a string, b string) (Value, bool) {

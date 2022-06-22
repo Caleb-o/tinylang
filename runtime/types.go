@@ -43,6 +43,7 @@ type StructDefType struct{}
 type ClassInstanceType struct{}
 type StructInstanceType struct{}
 type NameSpaceType struct{}
+type ListType struct{} // FIXME: Only allow a single type within, lists can be the exception to dynamic rules
 
 func (t *AnyType) GetKind() TypeKind { return TYPE_ANY }
 func (t *AnyType) GetName() string   { return "any" }
@@ -91,3 +92,6 @@ func (t *StructInstanceType) GetName() string   { return "struct instance" }
 
 func (t *NameSpaceType) GetKind() TypeKind { return TYPE_NAMESPACE }
 func (t *NameSpaceType) GetName() string   { return "namespace" }
+
+func (t *ListType) GetKind() TypeKind { return TYPE_LIST }
+func (t *ListType) GetName() string   { return "list" }

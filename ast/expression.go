@@ -37,6 +37,11 @@ type Literal struct {
 	Token *lexer.Token
 }
 
+type ListLiteral struct {
+	Token *lexer.Token
+	Exprs []Node
+}
+
 type Call struct {
 	Token     *lexer.Token
 	Callee    Node
@@ -163,6 +168,26 @@ func (lit *Literal) GetToken() *lexer.Token {
 
 func (lit *Literal) AsSExp() string {
 	return lit.Token.Lexeme
+}
+
+func (list *ListLiteral) GetToken() *lexer.Token {
+	return list.Token
+}
+
+func (list *ListLiteral) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('[')
+	for idx, value := range list.Exprs {
+		sb.WriteString(value.AsSExp())
+
+		if idx < len(list.Exprs)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(']')
+
+	return sb.String()
 }
 
 func (call *Call) GetToken() *lexer.Token {
