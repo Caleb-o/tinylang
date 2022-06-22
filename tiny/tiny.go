@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"tiny/analysis"
@@ -276,7 +277,77 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.BoolVal{Value: status}
 	})
 
+	// --- Converters
+	tiny.addBuiltinFn("to_int", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.IntVal:
+			return value
+		case *runtime.FloatVal:
+			return &runtime.IntVal{Value: int(value.Value)}
+		case *runtime.BoolVal:
+			out := 0
+
+			if value.Value {
+				out = 1
+			}
+
+			return &runtime.IntVal{Value: out}
+
+		case *runtime.StringVal:
+			number, _ := strconv.ParseInt(value.Value, 10, 32)
+			return &runtime.IntVal{Value: int(number)}
+		}
+
+		return &runtime.IntVal{Value: 0}
+	})
+
+	tiny.addBuiltinFn("to_float", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.IntVal:
+			return &runtime.FloatVal{Value: float32(value.Value)}
+		case *runtime.FloatVal:
+			return value
+		case *runtime.BoolVal:
+			var out float32 = 0.0
+
+			if value.Value {
+				out = 1.0
+			}
+
+			return &runtime.FloatVal{Value: out}
+
+		case *runtime.StringVal:
+			number, _ := strconv.ParseFloat(value.Value, 32)
+			return &runtime.FloatVal{Value: float32(number)}
+		}
+
+		return &runtime.FloatVal{Value: 0.0}
+	})
+
+	tiny.addBuiltinFn("to_string", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.IntVal:
+			return &runtime.StringVal{Value: value.Inspect()}
+		case *runtime.FloatVal:
+			return &runtime.StringVal{Value: value.Inspect()}
+		case *runtime.BoolVal:
+			return &runtime.StringVal{Value: value.Inspect()}
+		case *runtime.StringVal:
+			return value
+		}
+
+		return &runtime.StringVal{Value: ""}
+	})
+
 	// --- Misc
+	tiny.addBuiltinFn("str_len", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if value, ok := values[0].(*runtime.StringVal); ok {
+			return &runtime.IntVal{Value: len(value.Value)}
+		}
+
+		return &runtime.IntVal{Value: 0}
+	})
+
 	tiny.addBuiltinFn("mod", []string{"x", "y"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.IntVal); !ok {
 			interpreter.Report("Expected int as dividend")
@@ -294,7 +365,7 @@ func (tiny *Tiny) createBuiltins() {
 	// Set the seed
 	rand.Seed(time.Now().UnixNano())
 
-	tiny.addBuiltinFn("rand_int", []string{"max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+	tiny.addBuiltinFn("rand", []string{"max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.IntVal); !ok {
 			interpreter.Report("Expected int as max")
 			return nil
@@ -303,7 +374,7 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.IntVal{Value: rand.Intn(values[0].(*runtime.IntVal).Value)}
 	})
 
-	tiny.addBuiltinFn("rand_int_range", []string{"min", "max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+	tiny.addBuiltinFn("rand_range", []string{"min", "max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.IntVal); !ok {
 			interpreter.Report("Expected int as min")
 			return nil
