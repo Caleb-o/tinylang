@@ -1,6 +1,7 @@
 package tiny
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -16,7 +17,7 @@ type Tiny struct {
 }
 
 func New() *Tiny {
-	return &Tiny{builtins: &runtime.NameSpaceValue{"builtins", make(map[string]runtime.Value)}, imported: make(map[string]*runtime.NameSpaceValue)}
+	return &Tiny{builtins: &runtime.NameSpaceValue{"builtin", make(map[string]runtime.Value)}, imported: make(map[string]*runtime.NameSpaceValue)}
 }
 
 func (tiny *Tiny) AddNamespace(identifier string) {
@@ -62,7 +63,7 @@ func (tiny *Tiny) Run() {
 		tiny.createBuiltins()
 
 		// Import functions into analyser
-		analyser.DeclareNativeNs("builtins")
+		analyser.DeclareNativeNs(tiny.builtins.Identifier)
 
 		for _, ns := range tiny.imported {
 			analyser.DeclareNativeNs(ns.Identifier)
@@ -76,7 +77,7 @@ func (tiny *Tiny) Run() {
 			interpreter := runtime.New()
 
 			// Import native namespace into interpreter
-			interpreter.Import("builtins", tiny.builtins)
+			interpreter.Import(tiny.builtins.Identifier, tiny.builtins)
 
 			for _, ns := range tiny.imported {
 				interpreter.Import(ns.Identifier, ns)
@@ -119,14 +120,89 @@ func (tiny *Tiny) addBuiltinFn(identifier string, params []string, fn runtime.Na
 }
 
 func (tiny *Tiny) createBuiltins() {
-	tiny.addBuiltinClass("test", []string{"x", "y"}, map[string]*runtime.NativeFunctionValue{
-		"method": runtime.NewFnValue("method", []string{"a"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
-			if len(values) == 1 {
-				fmt.Printf("Test method %s\n", values[0].Inspect())
+	// --- Error Handling
+	tiny.addBuiltinFn("assert", []string{"expr"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if value, ok := values[0].(*runtime.BoolVal); ok {
+			if !value.Value {
+				interpreter.Report("Assertion failed")
 			}
+		} else {
+			interpreter.Report("assert expected an expression resulting in a boolean, as the first argument.")
+		}
 
-			return &runtime.UnitVal{}
-		}),
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("assertm", []string{"expr", "message"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[1].(*runtime.StringVal); !ok {
+			interpreter.Report("assertm expected a message as the second argument.")
+		}
+
+		if value, ok := values[0].(*runtime.BoolVal); ok {
+			if !value.Value {
+				interpreter.Report("Assertion failed: '%s'", values[1].(*runtime.StringVal).Value)
+			}
+		} else {
+			interpreter.Report("assertm expected an expression resulting in a boolean, as the first argument.")
+		}
+
+		return &runtime.UnitVal{}
+	})
+
+	// --- Inspection
+	tiny.addBuiltinFn("arg_count", []string{"object"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if value, ok := values[0].(runtime.TinyCallable); ok {
+			return &runtime.IntVal{Value: value.Arity()}
+		}
+
+		return &runtime.IntVal{Value: 0}
+	})
+
+	tiny.addBuiltinFn("is_callable", []string{"object"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(runtime.TinyCallable); ok {
+			return &runtime.BoolVal{Value: true}
+		}
+		return &runtime.BoolVal{Value: false}
+	})
+
+	tiny.addBuiltinFn("has_field", []string{"object", "fieldName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		var str string
+
+		if value, ok := values[1].(*runtime.StringVal); !ok {
+			interpreter.Report("Expected property name to be string")
+			return nil
+		} else {
+			str = value.Value
+		}
+
+		switch obj := values[0].(type) {
+		case *runtime.ClassDefValue:
+			return &runtime.BoolVal{Value: obj.HasField(str)}
+		case *runtime.StructDefValue:
+			return &runtime.BoolVal{Value: obj.HasField(str)}
+		case *runtime.ClassInstanceValue:
+			if def, ok := obj.Def.(*runtime.ClassDefValue); ok {
+				return &runtime.BoolVal{Value: def.HasField(str)}
+			} else if def, ok := obj.Def.(*runtime.NativeClassDefValue); ok {
+				return &runtime.BoolVal{Value: def.HasField(str)}
+			}
+		case *runtime.StructInstanceValue:
+			return &runtime.BoolVal{Value: obj.HasField(str)}
+		}
+
+		return &runtime.BoolVal{Value: false}
+	})
+
+	// --- IO
+	tiny.addBuiltinFn("read_line", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		txt, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		return &runtime.StringVal{Value: txt}
+	})
+
+	tiny.addBuiltinFn("prompt_read_line", []string{"prompt"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		fmt.Print(values[0].Inspect())
+		txt, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		return &runtime.StringVal{Value: txt}
 	})
 
 	tiny.addBuiltinFn("read_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {

@@ -77,6 +77,15 @@ func NewClassDefValue(identifier string, fields []string, methods map[string]*Na
 	return &NativeClassDefValue{identifier, fields, temp}
 }
 
+func (def *NativeClassDefValue) HasField(field string) bool {
+	for _, f := range def.Fields {
+		if f == field {
+			return true
+		}
+	}
+	return false
+}
+
 // TODO: Parent class
 type ClassDefValue struct {
 	identifier  string
@@ -86,8 +95,17 @@ type ClassDefValue struct {
 	methods     map[string]Value
 }
 
+func (def *ClassDefValue) HasField(field string) bool {
+	for _, f := range def.fields {
+		if f == field {
+			return true
+		}
+	}
+	return false
+}
+
 type ClassInstanceValue struct {
-	def    Value
+	Def    Value
 	base   *ClassInstanceValue
 	fields map[string]Value
 }
@@ -98,9 +116,23 @@ type StructDefValue struct {
 	fields      []string
 }
 
+func (str *StructDefValue) HasField(field string) bool {
+	for _, f := range str.fields {
+		if f == field {
+			return true
+		}
+	}
+	return false
+}
+
 type StructInstanceValue struct {
 	def    *StructDefValue
 	fields map[string]Value
+}
+
+func (str *StructInstanceValue) HasField(field string) bool {
+	_, ok := str.fields[field]
+	return ok
 }
 
 type NameSpaceValue struct {
@@ -282,7 +314,7 @@ func (def *NativeClassDefValue) Arity() int {
 }
 
 func (def *NativeClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
-	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+	instance := &ClassInstanceValue{Def: def, fields: make(map[string]Value)}
 
 	if def.Arity() != len(values) {
 		interpreter.Report("Native class constructor '%s' expected %d arguments but received %d.", def.Identifier, def.Arity(), len(values))
@@ -308,7 +340,7 @@ func (def *ClassDefValue) Arity() int {
 }
 
 func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
-	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+	instance := &ClassInstanceValue{Def: def, fields: make(map[string]Value)}
 
 	for _, id := range def.fields {
 		instance.fields[id] = &UnitVal{}
@@ -326,7 +358,7 @@ func (v *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
 func (v *ClassInstanceValue) Inspect() string {
 	var id string
 
-	switch t := v.def.(type) {
+	switch t := v.Def.(type) {
 	case *ClassDefValue:
 		id = t.identifier
 	case *NativeClassDefValue:
@@ -345,7 +377,7 @@ func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 
 	var methods map[string]Value
 
-	switch t := instance.def.(type) {
+	switch t := instance.Def.(type) {
 	case *ClassDefValue:
 		methods = t.methods
 	case *NativeClassDefValue:
@@ -360,7 +392,7 @@ func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 		return fn, true
 	}
 
-	if def, ok := instance.def.(*ClassDefValue); ok {
+	if def, ok := instance.Def.(*ClassDefValue); ok {
 		if def.base != nil {
 			return instance.base.Get(identifier)
 		}
@@ -375,7 +407,7 @@ func (instance *ClassInstanceValue) Set(identifier string, value Value) (Value, 
 		return value, true
 	}
 
-	if def, ok := instance.def.(*ClassDefValue); ok {
+	if def, ok := instance.Def.(*ClassDefValue); ok {
 		if def.base != nil {
 			return instance.base.Set(identifier, value)
 		}
