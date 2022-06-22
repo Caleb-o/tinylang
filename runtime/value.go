@@ -61,16 +61,32 @@ type ThrowValue struct {
 	inner Value
 }
 
+type NativeClassDefValue struct {
+	Identifier string
+	Fields     []string
+	Methods    map[string]Value
+}
+
+func NewClassDefValue(identifier string, fields []string, methods map[string]*NativeFunctionValue) *NativeClassDefValue {
+	temp := make(map[string]Value, len(methods))
+
+	for key, val := range methods {
+		temp[key] = val
+	}
+
+	return &NativeClassDefValue{identifier, fields, temp}
+}
+
 // TODO: Parent class
 type ClassDefValue struct {
 	identifier  string
 	constructor *FunctionValue
 	fields      []string
-	methods     map[string]*FunctionValue
+	methods     map[string]Value
 }
 
 type ClassInstanceValue struct {
-	def    *ClassDefValue
+	def    Value
 	fields map[string]Value
 }
 
@@ -251,6 +267,25 @@ func (v *ThrowValue) Inspect() string                                    { retur
 func (v *ThrowValue) Copy() Value                                        { return &ThrowValue{inner: v.inner} }
 func (v *ThrowValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
+func (v *NativeClassDefValue) GetType() Type                                      { return &ClassDefType{} }
+func (v *NativeClassDefValue) Inspect() string                                    { return fmt.Sprintf("<native class %s>", v.Identifier) }
+func (v *NativeClassDefValue) Copy() Value                                        { return v }
+func (v *NativeClassDefValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
+
+func (def *NativeClassDefValue) Arity() int {
+	return len(def.Fields)
+}
+
+func (def *NativeClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
+	instance := &ClassInstanceValue{def: def, fields: make(map[string]Value)}
+
+	for idx, id := range def.Fields {
+		instance.fields[id] = values[idx]
+	}
+
+	return instance
+}
+
 func (v *ClassDefValue) GetType() Type                                      { return &ClassDefType{} }
 func (v *ClassDefValue) Inspect() string                                    { return fmt.Sprintf("<class %s>", v.identifier) }
 func (v *ClassDefValue) Copy() Value                                        { return v }
@@ -280,7 +315,16 @@ func (def *ClassDefValue) Call(interpreter *Interpreter, values []Value) Value {
 
 func (v *ClassInstanceValue) GetType() Type { return &ClassInstanceType{} }
 func (v *ClassInstanceValue) Inspect() string {
-	return fmt.Sprintf("<instance %s : %p>", v.def.identifier, v)
+	var id string
+
+	switch t := v.def.(type) {
+	case *ClassDefValue:
+		id = t.identifier
+	case *NativeClassDefValue:
+		id = t.Identifier
+	}
+
+	return fmt.Sprintf("<instance %s : %p>", id, v)
 }
 func (v *ClassInstanceValue) Copy() Value                                        { return v }
 func (v *ClassInstanceValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
@@ -290,8 +334,20 @@ func (instance *ClassInstanceValue) Get(identifier string) (Value, bool) {
 		return val, true
 	}
 
-	if fn, ok := instance.def.methods[identifier]; ok {
-		fn.bound = instance
+	var methods map[string]Value
+
+	switch t := instance.def.(type) {
+	case *ClassDefValue:
+		methods = t.methods
+	case *NativeClassDefValue:
+		methods = t.Methods
+	}
+
+	if fn, ok := methods[identifier]; ok {
+		// FIXME: Allow bound in nativefn
+		if f, ok := fn.(*FunctionValue); ok {
+			f.bound = instance
+		}
 		return fn, true
 	}
 

@@ -55,6 +55,15 @@ func (an *Analyser) DeclareNativeNs() {
 	an.top().Insert("builtins", &NameSpaceSymbol{identifier: "builtins"})
 }
 
+func (an *Analyser) DeclareNativeClass(identifier string, fields []string) {
+	if an.lookup(identifier, true) != nil {
+		an.report("Item with name '%s' already exists in the current scope.", identifier)
+		return
+	}
+
+	an.top().Insert(identifier, &NativeClassSymbol{identifier, fields})
+}
+
 func (an *Analyser) DeclareNativeFn(identifier string, params []string) {
 	if an.lookup(identifier, true) != nil {
 		an.report("Item with name '%s' already exists in the current scope.", identifier)
@@ -99,12 +108,6 @@ func (an *Analyser) lookup(identifier string, local bool) Symbol {
 func (an *Analyser) resolve(identifier *lexer.Token) {
 	if an.lookup(identifier.Lexeme, false) == nil {
 		an.reportT("Item with name '%s' does not exist in any scope.", identifier, identifier.Lexeme)
-	}
-}
-
-func (an *Analyser) resolveLocal(identifier *lexer.Token) {
-	if an.lookup(identifier.Lexeme, true) == nil {
-		an.reportT("Item with name '%s' does not exist in the current scope.", identifier, identifier.Lexeme)
 	}
 }
 
@@ -295,6 +298,11 @@ func (an *Analyser) visitCall(call *ast.Call) {
 		if len(sym.params) != len(call.Arguments) {
 			an.reportT("Native function '%s' expected %d argument(s) but received %d", call.Token,
 				call.Token.Lexeme, len(sym.params), len(call.Arguments))
+		}
+	case *NativeClassSymbol:
+		if len(sym.fields) != len(call.Arguments) {
+			an.reportT("Constuctor '%s' expected %d argument(s) but received %d", call.Token,
+				call.Token.Lexeme, len(sym.fields), len(call.Arguments))
 		}
 	case *FunctionSymbol:
 		if len(sym.def.Params) != len(call.Arguments) {

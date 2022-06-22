@@ -21,6 +21,11 @@ type NativeFunctionSymbol struct {
 	params     []string
 }
 
+type NativeClassSymbol struct {
+	identifier string
+	fields     []string
+}
+
 type ClassDefSymbol struct {
 	identifier string
 	def        *ast.ClassDef
@@ -44,6 +49,10 @@ func (s *FunctionSymbol) GetName() string {
 }
 
 func (s *NativeFunctionSymbol) GetName() string {
+	return s.identifier
+}
+
+func (s *NativeClassSymbol) GetName() string {
 	return s.identifier
 }
 

@@ -296,7 +296,7 @@ func (interpreter *Interpreter) visitAnonymousFunction(fndef *ast.AnonymousFunct
 }
 
 func (interpreter *Interpreter) visitClassDef(def *ast.ClassDef) Value {
-	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0, len(def.Fields)), methods: make(map[string]*FunctionValue, len(def.Methods))}
+	classDef := &ClassDefValue{identifier: def.GetToken().Lexeme, constructor: nil, fields: make([]string, 0, len(def.Fields)), methods: make(map[string]Value, len(def.Methods))}
 
 	if def.Constructor != nil {
 		classDef.constructor = interpreter.visitFunctionDef(def.Constructor, false).(*FunctionValue)
