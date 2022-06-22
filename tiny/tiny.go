@@ -18,16 +18,6 @@ func New() *Tiny {
 	return &Tiny{builtins: &runtime.NameSpaceValue{"builtins", make(map[string]runtime.Value)}}
 }
 
-func (tiny *Tiny) AddBuiltinClass(identifier string, fields []string, methods map[string]*runtime.NativeFunctionValue) {
-	tiny.checkId(identifier)
-	tiny.builtins.Members[identifier] = runtime.NewClassDefValue(identifier, fields, methods)
-}
-
-func (tiny *Tiny) AddBuiltinFn(identifier string, params []string, fn runtime.NativeFn) {
-	tiny.checkId(identifier)
-	tiny.builtins.Members[identifier] = runtime.NewFnValue(identifier, params, fn)
-}
-
 func (tiny *Tiny) Run() {
 	var (
 		checkOnly bool
@@ -81,8 +71,18 @@ func (tiny *Tiny) checkId(identifier string) {
 	}
 }
 
+func (tiny *Tiny) addBuiltinClass(identifier string, fields []string, methods map[string]*runtime.NativeFunctionValue) {
+	tiny.checkId(identifier)
+	tiny.builtins.Members[identifier] = runtime.NewClassDefValue(identifier, fields, methods)
+}
+
+func (tiny *Tiny) addBuiltinFn(identifier string, params []string, fn runtime.NativeFn) {
+	tiny.checkId(identifier)
+	tiny.builtins.Members[identifier] = runtime.NewFnValue(identifier, params, fn)
+}
+
 func (tiny *Tiny) createBuiltins() {
-	tiny.AddBuiltinClass("test", []string{"x", "y"}, map[string]*runtime.NativeFunctionValue{
+	tiny.addBuiltinClass("test", []string{"x", "y"}, map[string]*runtime.NativeFunctionValue{
 		"method": runtime.NewFnValue("method", []string{"a"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 			if len(values) == 1 {
 				fmt.Printf("Test method %s\n", values[0].Inspect())
@@ -92,7 +92,7 @@ func (tiny *Tiny) createBuiltins() {
 		}),
 	})
 
-	tiny.AddBuiltinFn("read_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+	tiny.addBuiltinFn("read_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if fileName, ok := values[0].(*runtime.StringVal); !ok {
 			interpreter.Report("Expected string as filename")
 			return nil
@@ -101,7 +101,7 @@ func (tiny *Tiny) createBuiltins() {
 		}
 	})
 
-	tiny.AddBuiltinFn("write_file", []string{"fileName", "content"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+	tiny.addBuiltinFn("write_file", []string{"fileName", "content"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.StringVal); !ok {
 			interpreter.Report("Expected string as filename")
 			return nil
