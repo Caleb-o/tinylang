@@ -54,6 +54,7 @@ const (
 	IDENTIFIER
 	PRINT
 	VAR
+	LET
 	FUNCTION
 	SELF
 	CLASS
@@ -74,6 +75,7 @@ type Token struct {
 
 var KeyWords = map[string]TokenKind{
 	"var":       VAR,
+	"let":       LET,
 	"print":     PRINT,
 	"function":  FUNCTION,
 	"self":      SELF,

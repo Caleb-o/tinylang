@@ -20,6 +20,8 @@ A small interpreted language to try and learn more about language design and dev
 * Builtin Data structures (with literals)
 	* Lists - [1, 2, 3]
 	* Dictionary - {"foo": 123, "bar": 456}
+* "strict" modifier for variables
+	* Cannot re-assign with a different type, acts like static type
 
 ### Features
 * Dynamic typing
@@ -28,6 +30,8 @@ A small interpreted language to try and learn more about language design and dev
 * Anonymous functions
 * Exception-like throw/catch
 	* Throw values and unwind until caught
+* Loose immutability (disallow rebinding symbol, but not get/set of objects)
+	* Note: Stricter mutability may come later
 
 ### Fixes / Modifications
 * Nothing of interest right now :^)
