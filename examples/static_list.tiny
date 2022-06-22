@@ -1,0 +1,69 @@
+class Exception {
+	var message;
+
+	function Exception(message) {
+		self.message = message;
+	}
+}
+
+# Simulate something close to a static list, which only accepts the type
+# that is is assigned. It can be reassigned with a new type.
+class StaticList {
+	var inner;
+
+	function StaticList(init) {
+		self.assign(init);
+	}
+
+	function assign(value) {
+		if builtin.type_name(value) != "list" {
+			# Assign init type to a list
+			self.inner = [value];
+		} else {
+			throw Exception("Cannot add lists");
+		}
+	}
+
+	function add(item) {
+		if builtin.len(self.inner) == 0 {
+			throw Exception("Cannot add to static list that has not been assigned");
+		}
+
+		if builtin.type_name(item) != "list" {
+			if builtin.type_name(self.inner[0]) == builtin.type_name(item) {
+				builtin.append(self.inner, item);
+			} else {
+				throw Exception("Incompatible item");
+			}
+		} else {
+			throw Exception("Cannot add lists");
+		}
+	}
+
+	function remove() {
+		if builtin.len(self.inner) == 0 {
+			return ();
+		}
+
+		return builtin.pop(self.inner);
+	}
+}
+
+# Catch any errors caused by incorrect operations
+catch {
+	var l = StaticList(10);
+	l.add(20);
+
+	# This will cause an error!
+	# l.add("Hello!");
+
+	print(l.inner[0]);
+	print(l.inner[1]);
+
+	print("Popping");
+
+	print(l.remove());
+	print(l.remove());
+} : err {
+	print(err.message);
+}
