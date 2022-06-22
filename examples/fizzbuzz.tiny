@@ -1,0 +1,9 @@
+while var idx = 1; idx < 16; idx += 1 {
+	if builtin.mod(idx, 15) == 0 {
+		print("FizzBuzz");
+	} else if builtin.mod(idx, 3) == 0 {
+		print("Fizz");
+	} else if builtin.mod(idx, 5) == 0 {
+		print("Buzz");
+	}
+}

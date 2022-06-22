@@ -1,0 +1,37 @@
+class FizzBuzz {
+	var current;
+	var max;
+
+	function FizzBuzz(start, end) {
+		self.current = start;
+		self.max = end;
+	}
+
+	function next() {
+		var tmp = self.current;
+
+		if self.current + 1 <= self.max {
+			self.current = self.current + 1;
+		}
+
+		return tmp;
+	}
+
+	function done() {
+		return self.current == self.max;
+	}
+}
+
+var fb = FizzBuzz(1, 16);
+
+while !fb.done() {
+	var idx = fb.next();
+
+	if builtin.mod(idx, 15) == 0 {
+		print("FizzBuzz");
+	} else if builtin.mod(idx, 3) == 0 {
+		print("Fizz");
+	} else if builtin.mod(idx, 5) == 0 {
+		print("Buzz");
+	}
+}

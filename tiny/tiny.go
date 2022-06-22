@@ -273,4 +273,19 @@ func (tiny *Tiny) createBuiltins() {
 		status := shared.WriteFile(values[0].(*runtime.StringVal).Value, values[1].(*runtime.StringVal).Value)
 		return &runtime.BoolVal{Value: status}
 	})
+
+	// --- Misc
+	tiny.addBuiltinFn("mod", []string{"x", "y"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as dividend")
+			return nil
+		}
+
+		if _, ok := values[1].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as divisor")
+			return nil
+		}
+
+		return &runtime.IntVal{Value: values[0].(*runtime.IntVal).Value % values[1].(*runtime.IntVal).Value}
+	})
 }
