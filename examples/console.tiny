@@ -1,0 +1,7 @@
+# Read a line from the std in
+var line = builtin.read_line();
+print(line);
+
+# Give a prompt to the user
+var name = builtin.prompt_read_line("What is your name? ");
+print("Nice to meet you, ", name, "!");

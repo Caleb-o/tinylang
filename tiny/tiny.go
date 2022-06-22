@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"tiny/analysis"
 	"tiny/parser"
 	"tiny/runtime"
@@ -231,13 +232,13 @@ func (tiny *Tiny) createBuiltins() {
 	// --- IO
 	tiny.addBuiltinFn("read_line", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		txt, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		return &runtime.StringVal{Value: txt}
+		return &runtime.StringVal{Value: strings.TrimSpace(txt)}
 	})
 
 	tiny.addBuiltinFn("prompt_read_line", []string{"prompt"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		fmt.Print(values[0].Inspect())
 		txt, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		return &runtime.StringVal{Value: txt}
+		return &runtime.StringVal{Value: strings.TrimSpace(txt)}
 	})
 
 	tiny.addBuiltinFn("read_file", []string{"fileName"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
