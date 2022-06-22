@@ -16,10 +16,8 @@ A small interpreted language to try and learn more about language design and dev
 	* Analyse each new file seperately (index ASTs for analysis)
 * Analysis
 	* Resolve identifiers that aren't yet defined to allow calls before definitions
-* Native functions, structs and namespaces from Go code (for native libraries)
 * Builtin Data structures (with literals)
-	* Lists - [1, 2, 3]
-	* Dictionary - {"foo": 123, "bar": 456}
+	* Dictionary - ["foo": 123, "bar": 456]
 * "strict" modifier for variables
 	* Cannot re-assign with a different type, acts like static type
 
