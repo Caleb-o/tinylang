@@ -1,6 +1,8 @@
 package main
 
+import "tiny/tiny"
+
 func main() {
-	tiny := New()
-	tiny.Run()
+	runner := tiny.New()
+	runner.Run()
 }
