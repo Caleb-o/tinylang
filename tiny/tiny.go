@@ -381,6 +381,16 @@ func (tiny *Tiny) createBuiltins() {
 	})
 
 	// --- Misc
+	tiny.addBuiltinFn("todo", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		interpreter.Report("TODO: unimplemented")
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("todo_ext", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		interpreter.Report("TODO: unimplemented '%s'", values[0].Inspect())
+		return &runtime.UnitVal{}
+	})
+
 	tiny.addBuiltinFn("out", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		fmt.Print(values[0].Inspect())
 

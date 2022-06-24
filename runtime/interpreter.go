@@ -97,6 +97,12 @@ func (interpreter *Interpreter) Report(msg string, args ...any) {
 	shared.ReportErrFatal("Runtime: " + res)
 }
 
+func (interpreter *Interpreter) ReportT(msg string, token *lexer.Token, args ...any) {
+	res := fmt.Sprintf(msg, args...)
+	res = fmt.Sprintf("Runtime: %s [%d:%d]", res, token.Line, token.Column)
+	shared.ReportErrFatal(res)
+}
+
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
 	switch n := node.(type) {
 	case *ast.BinaryOp:
@@ -159,7 +165,7 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return nil
 	}
 
-	interpreter.Report("Unhandled node in Visit '%s':%d", node.GetToken().Lexeme, node.GetToken().Line)
+	interpreter.ReportT("Unhandled node in Visit '%s'", node.GetToken(), node.GetToken().Lexeme)
 	return nil
 }
 
@@ -169,7 +175,7 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 	right := interpreter.Visit(binop.Right)
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
-		interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+		interpreter.ReportT("Invalid binary operation '%s %s %s'", binop.Left.GetToken(), binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
 		return nil
 	}
 
@@ -200,7 +206,7 @@ func (interpreter *Interpreter) visitBinaryOp(binop *ast.BinaryOp) Value {
 		}
 	}
 
-	interpreter.Report("Invalid binary operation '%s %s %s'", binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
+	interpreter.ReportT("Invalid binary operation '%s %s %s'", binop.Left.GetToken(), binop.Left.GetToken().Lexeme, binop.Token.Lexeme, binop.Right.GetToken().Lexeme)
 	return nil
 }
 
@@ -220,7 +226,7 @@ func (interpreter *Interpreter) visitUnaryOp(unary *ast.UnaryOp) Value {
 		return &FloatVal{Value: -right.(*FloatVal).Value}
 	}
 
-	interpreter.Report("Invalid unary operation '%s%s'", unary.GetToken().Lexeme, unary.Right.GetToken().Lexeme)
+	interpreter.ReportT("Invalid unary operation '%s%s'", unary.GetToken(), unary.GetToken().Lexeme, unary.Right.GetToken().Lexeme)
 	return nil
 }
 
@@ -284,7 +290,7 @@ func (interpreter *Interpreter) visitLiteral(lit *ast.Literal) Value {
 		return &StringVal{Value: lit.GetToken().Lexeme}
 	}
 
-	interpreter.Report("Unknown literal type found '%s'", lit.GetToken().Lexeme)
+	interpreter.ReportT("Unknown literal type found '%s'", lit.GetToken(), lit.GetToken().Lexeme)
 	return &UnitVal{}
 }
 
@@ -369,11 +375,11 @@ func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	caller := interpreter.Visit(call.Callee)
 
 	if caller == nil {
-		interpreter.Report("'%s' does not exist.", call.Callee.GetToken().Lexeme)
+		interpreter.ReportT("'%s' does not exist.", call.Callee.GetToken(), call.Callee.GetToken().Lexeme)
 	}
 
 	if _, ok := caller.(TinyCallable); !ok {
-		interpreter.Report("'%s' is not callable.", caller.Inspect())
+		interpreter.ReportT("'%s' is not callable.", call.GetToken(), caller.Inspect())
 	}
 
 	callable := caller.(TinyCallable)
@@ -431,7 +437,7 @@ func (interpreter *Interpreter) visitGet(get *ast.Get) Value {
 		}
 	}
 
-	interpreter.Report("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
+	interpreter.ReportT("Cannot use getter on non-instance values '%s':%s", get.Expr.GetToken(), get.Expr.GetToken().Lexeme, reflect.TypeOf(value))
 	return nil
 }
 
@@ -450,7 +456,7 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 		}
 	}
 
-	interpreter.Report("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(caller))
+	interpreter.ReportT("Cannot use setter on non-instance values '%s':%s %s", set.Caller.GetToken(), set.Caller.GetToken().Lexeme, reflect.TypeOf(set.Caller), reflect.TypeOf(caller))
 	return nil
 }
 
@@ -459,7 +465,7 @@ func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
 	indexer := interpreter.Visit(index.Expr)
 
 	if _, ok := indexer.(*IntVal); !ok {
-		interpreter.Report("Index must use an integer value but received '%d'", indexer.Inspect())
+		interpreter.ReportT("Index must use an integer value but received '%d'", index.GetToken(), indexer.Inspect())
 	}
 
 	indexer_int := indexer.(*IntVal).Value
@@ -467,19 +473,19 @@ func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
 	switch t := caller.(type) {
 	case *ListVal:
 		if indexer_int < 0 || indexer_int >= len(t.Values) {
-			interpreter.Report("Index %d is out of list range 0-%d [%d:%d]", indexer_int, len(t.Values)-1, index.GetToken().Line, index.GetToken().Column)
+			interpreter.ReportT("Index %d is out of list range 0-%d", index.GetToken(), indexer_int, len(t.Values)-1)
 		}
 		return t.Values[indexer_int]
 	case *StringVal:
 		if indexer_int < 0 || indexer_int >= len(t.Value) {
-			interpreter.Report("Index %d is out of string range 0-%d [%d:%d]", indexer_int, len(t.Value)-1, index.GetToken().Line, index.GetToken().Column)
+			interpreter.ReportT("Index %d is out of string range 0-%d", index.GetToken(), indexer_int, len(t.Value)-1)
 		}
 
 		// FIXME: Replace with char type
 		return &StringVal{Value: string(t.Value[indexer_int])}
 	}
 
-	interpreter.Report("Cannot use index on '%s':'%s' [%d:%d]", index.Caller.GetToken().Lexeme, reflect.TypeOf(caller), index.Caller.GetToken().Line, index.Caller.GetToken().Column)
+	interpreter.ReportT("Cannot use index on '%s':'%s'", index.Caller.GetToken(), index.Caller.GetToken().Lexeme, reflect.TypeOf(caller))
 	return nil
 }
 
@@ -493,14 +499,14 @@ func (interpreter *Interpreter) visitIndexSet(iset *ast.IndexSet) Value {
 	switch t := caller.(type) {
 	case *ListVal:
 		if indexer_int < 0 || indexer_int >= len(t.Values) {
-			interpreter.Report("Index %d is out of list range 0-%d  [%d:%d]", indexer_int, len(t.Values)-1, iset.GetToken().Line, iset.GetToken().Column)
+			interpreter.ReportT("Index %d is out of list range 0-%d", iset.GetToken(), indexer_int, len(t.Values)-1)
 		}
 		if ret, ok := t.Set(iset.Token.Kind, indexer_int, value); ok {
 			return ret
 		}
 	case *StringVal:
 		if indexer_int < 0 || indexer_int >= len(t.Value) {
-			interpreter.Report("Index %d is out of string range 0-%d  [%d:%d]", indexer_int, len(t.Value)-1, iset.GetToken().Line, iset.GetToken().Column)
+			interpreter.ReportT("Index %d is out of string range 0-%d", iset.GetToken(), indexer_int, len(t.Value)-1)
 		}
 
 		// FIXME: Make this better and only allow chars
@@ -511,7 +517,7 @@ func (interpreter *Interpreter) visitIndexSet(iset *ast.IndexSet) Value {
 		return t
 	}
 
-	interpreter.Report("Cannot use index on '%s':'%s' [%d:%d]", iset.Idx.Caller.GetToken().Lexeme, reflect.TypeOf(caller), iset.Idx.Caller.GetToken().Line, iset.Idx.Caller.GetToken().Column)
+	interpreter.ReportT("Cannot use index on '%s':'%s'", iset.GetToken(), iset.Idx.Caller.GetToken().Lexeme, reflect.TypeOf(caller), iset.Idx.Caller.GetToken().Line, iset.Idx.Caller.GetToken().Column)
 	return nil
 }
 
