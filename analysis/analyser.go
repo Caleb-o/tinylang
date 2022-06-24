@@ -162,6 +162,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitSet(n)
 	case *ast.Index:
 		an.visitIndex(n)
+	case *ast.IndexSet:
+		an.visitIndexSet(n)
 	case *ast.Self:
 		an.visitSelf(n)
 	case *ast.If:
@@ -378,6 +380,11 @@ func (an *Analyser) visitSet(set *ast.Set) {
 func (an *Analyser) visitIndex(index *ast.Index) {
 	an.visit(index.Caller)
 	an.visit(index.Expr)
+}
+
+func (an *Analyser) visitIndexSet(iset *ast.IndexSet) {
+	an.visit(iset.Idx)
+	an.visit(iset.Expr)
 }
 
 func (an *Analyser) visitSelf(self *ast.Self) {

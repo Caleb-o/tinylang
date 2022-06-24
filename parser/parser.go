@@ -177,12 +177,12 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 	for {
 		if _, ok := parser.match(lexer.OPENPAREN); ok {
 			return parser.functionCall(outer, node)
-		} else if token, ok := parser.match(lexer.OPENSQUARE); ok {
+		} else if _, ok := parser.match(lexer.OPENSQUARE); ok {
 			expr := parser.expr(outer)
 			parser.consume(lexer.CLOSESQUARE)
 
 			// TODO: Allow multi-dimensional
-			return &ast.Index{Token: token, Caller: node, Expr: expr}
+			return &ast.Index{Token: node.GetToken(), Caller: node, Expr: expr}
 		} else if _, ok := parser.match(lexer.DOT); ok {
 			identifier := parser.current
 			parser.consume(lexer.IDENTIFIER)
@@ -292,9 +292,12 @@ func (parser *Parser) assignment(outer *ast.Block) ast.Node {
 	node := parser.or(outer)
 
 	if operator, ok := parser.match(lexer.EQUAL, lexer.PLUS_EQUAL, lexer.MINUS_EQUAL, lexer.STAR_EQUAL, lexer.SLASH_EQUAL); ok {
-		if get, ok := node.(*ast.Get); ok {
-			return &ast.Set{Token: get.Token, Caller: get.Expr, Expr: parser.or(outer)}
-		} else {
+		switch t := node.(type) {
+		case *ast.Get:
+			return &ast.Set{Token: t.Token, Caller: t.Expr, Expr: parser.or(outer)}
+		case *ast.Index:
+			return &ast.IndexSet{Token: operator, Idx: t, Expr: parser.or(outer)}
+		default:
 			return parser.variableAssign(outer, node.GetToken(), operator)
 		}
 	}

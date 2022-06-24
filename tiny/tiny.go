@@ -362,6 +362,28 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.UnitVal{}
 	})
 
+	tiny.addBuiltinFn("set", []string{"list", "index", "value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.ListVal); !ok {
+			interpreter.Report("Cannot append to non-list")
+			return nil
+		}
+
+		if _, ok := values[1].(*runtime.IntVal); !ok {
+			interpreter.Report("Cannot use non-int as index")
+			return nil
+		}
+
+		indexer_int := values[1].(*runtime.IntVal).Value
+		list := values[0].(*runtime.ListVal)
+
+		if indexer_int < 0 || indexer_int >= len(list.Values) {
+			return &runtime.UnitVal{}
+		}
+
+		list.Values[indexer_int] = values[2].Copy()
+		return &runtime.UnitVal{}
+	})
+
 	tiny.addBuiltinFn("pop", []string{"list"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.ListVal); !ok {
 			interpreter.Report("Cannot pop non-list")

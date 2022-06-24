@@ -542,6 +542,25 @@ func (v *ListVal) Modify(operation lexer.TokenKind, other Value) bool {
 	return false
 }
 
+func (v *ListVal) Set(operation lexer.TokenKind, index int, other Value) (Value, bool) {
+	switch operation {
+	case lexer.EQUAL:
+		v.Values[index] = other
+		return other, true
+	case lexer.PLUS_EQUAL:
+		fallthrough
+	case lexer.MINUS_EQUAL:
+		fallthrough
+	case lexer.STAR_EQUAL:
+		fallthrough
+	case lexer.SLASH_EQUAL:
+		result := v.Values[index].Modify(operation, other)
+		return v.Values[index], result
+	}
+
+	return nil, false
+}
+
 func BinopL(operator lexer.TokenKind, a []Value, b []Value) (Value, bool) {
 	switch operator {
 	case lexer.PLUS:

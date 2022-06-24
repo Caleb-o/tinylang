@@ -71,6 +71,12 @@ type Index struct {
 	Expr   Node
 }
 
+type IndexSet struct {
+	Token *lexer.Token
+	Idx   *Index
+	Expr  Node
+}
+
 type Self struct {
 	Token *lexer.Token
 }
@@ -273,6 +279,19 @@ func (expr *Index) AsSExp() string {
 	sb.WriteByte('[')
 	sb.WriteString(expr.Expr.AsSExp())
 	sb.WriteByte(']')
+
+	return sb.String()
+}
+
+func (expr *IndexSet) GetToken() *lexer.Token {
+	return expr.Token
+}
+
+func (expr *IndexSet) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(expr.Idx.AsSExp())
+	sb.WriteString(expr.Expr.AsSExp())
 
 	return sb.String()
 }

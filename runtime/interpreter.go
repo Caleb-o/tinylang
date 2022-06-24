@@ -143,6 +143,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitSet(n)
 	case *ast.Index:
 		return interpreter.visitIndex(n)
+	case *ast.IndexSet:
+		return interpreter.visitIndexSet(n)
 	case *ast.Self:
 		return interpreter.lookup("self")
 	case *ast.If:
@@ -477,7 +479,39 @@ func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
 		return &StringVal{Value: string(t.Value[indexer_int])}
 	}
 
-	interpreter.Report("Cannot use index on type '%s'", reflect.TypeOf(caller))
+	interpreter.Report("Cannot use index on '%s':'%s' [%d:%d]", index.Caller.GetToken().Lexeme, reflect.TypeOf(caller), index.Caller.GetToken().Line, index.Caller.GetToken().Column)
+	return nil
+}
+
+func (interpreter *Interpreter) visitIndexSet(iset *ast.IndexSet) Value {
+	caller := interpreter.Visit(iset.Idx.Caller)
+	index := interpreter.Visit(iset.Idx.Expr)
+	value := interpreter.Visit(iset.Expr)
+
+	indexer_int := index.(*IntVal).Value
+
+	switch t := caller.(type) {
+	case *ListVal:
+		if indexer_int < 0 || indexer_int >= len(t.Values) {
+			interpreter.Report("Index %d is out of list range 0-%d", indexer_int, len(t.Values))
+		}
+		if ret, ok := t.Set(iset.Token.Kind, indexer_int, value); ok {
+			return ret
+		}
+	case *StringVal:
+		if indexer_int < 0 || indexer_int >= len(t.Value) {
+			interpreter.Report("Index %d is out of string range 0-%d", indexer_int, len(t.Value))
+		}
+
+		// FIXME: Make this better and only allow chars
+		new_str := []byte(t.Value)
+		new_str[indexer_int] = byte(value.Inspect()[0])
+		t.Value = string(new_str)
+
+		return t
+	}
+
+	interpreter.Report("Cannot use index on '%s':'%s' [%d:%d]", iset.Idx.Caller.GetToken().Lexeme, reflect.TypeOf(caller), iset.Idx.Caller.GetToken().Line, iset.Idx.Caller.GetToken().Column)
 	return nil
 }
 
