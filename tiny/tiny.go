@@ -349,7 +349,28 @@ func (tiny *Tiny) createBuiltins() {
 		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to string", values[0].Inspect())})
 	})
 
+	tiny.addBuiltinFn("as_string", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.IntVal:
+			return &runtime.StringVal{Value: string(rune(value.Value))}
+		case *runtime.FloatVal:
+			return &runtime.StringVal{Value: string(rune(int(value.Value)))}
+		case *runtime.BoolVal:
+			return &runtime.StringVal{Value: value.Inspect()}
+		case *runtime.StringVal:
+			return value
+		}
+
+		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to string", values[0].Inspect())})
+	})
+
 	// --- Misc
+	tiny.addBuiltinFn("out", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		fmt.Print(values[0].Inspect())
+
+		return &runtime.UnitVal{}
+	})
+
 	tiny.addBuiltinFn("append", []string{"list", "value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.ListVal); !ok {
 			interpreter.Report("Cannot append to non-list")

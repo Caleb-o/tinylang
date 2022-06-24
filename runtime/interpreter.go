@@ -257,10 +257,10 @@ func (interpreter *Interpreter) visitBlock(block *ast.Block, newEnv bool) Value 
 }
 
 func (interpreter *Interpreter) visitList(lit *ast.ListLiteral) Value {
-	values := make([]Value, len(lit.Exprs))
+	values := make([]Value, 0, len(lit.Exprs))
 
-	for idx, value := range lit.Exprs {
-		values[idx] = interpreter.Visit(value)
+	for _, value := range lit.Exprs {
+		values = append(values, interpreter.Visit(value))
 	}
 
 	return &ListVal{values}

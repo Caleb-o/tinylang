@@ -1,0 +1,16 @@
+# Convert a string to a list by indexing chars and appending them
+function str_to_list(string) {
+	if builtin.type_name(string) != "string" {
+		return [];
+	}
+
+	var list = [];
+
+	while var idx = 0; idx < builtin.len(string); idx += 1 {
+		list = list + [string[idx]];
+	}
+
+	return list;
+}
+
+print(str_to_list("Hello"));
