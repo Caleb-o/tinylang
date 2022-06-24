@@ -517,6 +517,7 @@ func (interpreter *Interpreter) visitIndexSet(iset *ast.IndexSet) Value {
 
 func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
 	interpreter.push()
+	defer interpreter.pop()
 
 	if stmt.VarDec != nil {
 		interpreter.visitVarDecl(stmt.VarDec)
@@ -532,12 +533,12 @@ func (interpreter *Interpreter) visitIfStmt(stmt *ast.If) Value {
 		value = interpreter.Visit(stmt.FalseBody)
 	}
 
-	interpreter.pop()
 	return value
 }
 
 func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 	interpreter.push()
+	defer interpreter.pop()
 
 	if stmt.VarDec != nil {
 		interpreter.visitVarDecl(stmt.VarDec)
@@ -546,11 +547,9 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 	condition := interpreter.Visit(stmt.Condition)
 	checkBoolOperand(interpreter, stmt.Condition.GetToken(), condition)
 
-	var value Value = &UnitVal{}
 	for condition.(*BoolVal).Value {
-		if ret, ok := interpreter.visitBlock(stmt.Body, false).(*ReturnValue); ok {
-			value = ret
-			break
+		if throw, ok := interpreter.visitBlock(stmt.Body, false).(*ThrowValue); ok {
+			return throw
 		}
 
 		if stmt.Increment != nil {
@@ -560,12 +559,13 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 		condition = interpreter.Visit(stmt.Condition)
 	}
 
-	interpreter.pop()
-	return value
+	return &UnitVal{}
 }
 
 func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
 	interpreter.push()
+	defer interpreter.pop()
+
 	value := interpreter.Visit(catch.Expr)
 
 	if thrown, ok := value.(*ThrowValue); ok {
@@ -577,6 +577,5 @@ func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
 		interpreter.pop()
 	}
 
-	interpreter.pop()
 	return value
 }
