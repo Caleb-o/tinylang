@@ -181,8 +181,7 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 			expr := parser.expr(outer)
 			parser.consume(lexer.CLOSESQUARE)
 
-			// TODO: Allow multi-dimensional
-			return &ast.Index{Token: node.GetToken(), Caller: node, Expr: expr}
+			node = &ast.Index{Token: node.GetToken(), Caller: node, Expr: expr}
 		} else if _, ok := parser.match(lexer.DOT); ok {
 			identifier := parser.current
 			parser.consume(lexer.IDENTIFIER)

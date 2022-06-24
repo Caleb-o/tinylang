@@ -227,11 +227,8 @@ func (v *StringVal) Modify(operation lexer.TokenKind, other Value) bool {
 		switch operation {
 		case lexer.PLUS_EQUAL:
 			v.Value += value.Value
-		default:
-			return false
+			return true
 		}
-
-		return true
 	}
 
 	return false
