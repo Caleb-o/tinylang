@@ -394,6 +394,9 @@ func (an *Analyser) visitSelf(self *ast.Self) {
 }
 
 func (an *Analyser) visitIfStmt(stmt *ast.If) {
+	an.table = append(an.table, NewTable(an.top()))
+	defer an.pop()
+
 	if stmt.VarDec != nil {
 		an.visit(stmt.VarDec)
 	}
@@ -407,6 +410,9 @@ func (an *Analyser) visitIfStmt(stmt *ast.If) {
 }
 
 func (an *Analyser) visitWhileStmt(stmt *ast.While) {
+	an.table = append(an.table, NewTable(an.top()))
+	defer an.pop()
+
 	if stmt.VarDec != nil {
 		an.visit(stmt.VarDec)
 	}
