@@ -1,0 +1,24 @@
+# Create an anonymous function to call immediately, for single-call work.
+# This is essentially the same as blocks as expressions, but it allows returning.
+let init = function() { 
+	let a = 10 * 20;
+	let b = 20 / a;
+
+	var list = [a, b, b, a];
+
+	while var idx = 0; idx < 10; idx += 1 {
+		if builtin.mod(idx, 2) == 0 {
+			list = list + [b * 2, a];
+		} else {
+			list = list + [a * 2, b];
+		}
+	}
+
+	var sum = 0;
+	while var idx = 0; idx < builtin.len(list); idx += 1 {
+		sum += list[idx];
+	}
+
+	return sum;
+}();
+print(init);
