@@ -334,6 +334,22 @@ func (tiny *Tiny) createBuiltins() {
 		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to float", values[0].Inspect())})
 	})
 
+	tiny.addBuiltinFn("to_bool", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		switch value := values[0].(type) {
+		case *runtime.IntVal:
+			return &runtime.BoolVal{Value: value.Value == 0}
+		case *runtime.FloatVal:
+			return &runtime.BoolVal{Value: int(value.Value) == 0}
+		case *runtime.BoolVal:
+			return value
+
+		case *runtime.StringVal:
+			return &runtime.BoolVal{Value: value.Value == "true"}
+		}
+
+		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to int", values[0].Inspect())})
+	})
+
 	tiny.addBuiltinFn("to_string", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		switch value := values[0].(type) {
 		case *runtime.IntVal:
@@ -368,6 +384,28 @@ func (tiny *Tiny) createBuiltins() {
 	tiny.addBuiltinFn("out", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		fmt.Print(values[0].Inspect())
 
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("reset", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		fmt.Print("\033c")
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("clear", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		fmt.Print("\033[2J\033[H")
+		return &runtime.UnitVal{}
+	})
+
+	tiny.addBuiltinFn("sleep", []string{"interval"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.IntVal); !ok {
+			interpreter.Report("Sleep interval must be an int")
+			return nil
+		}
+
+		val, _ := strconv.Atoi(values[0].Inspect())
+
+		time.Sleep(time.Duration(val * int(time.Millisecond)))
 		return &runtime.UnitVal{}
 	})
 

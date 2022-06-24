@@ -467,12 +467,12 @@ func (interpreter *Interpreter) visitIndex(index *ast.Index) Value {
 	switch t := caller.(type) {
 	case *ListVal:
 		if indexer_int < 0 || indexer_int >= len(t.Values) {
-			interpreter.Report("Index %d is out of list range 0-%d", indexer_int, len(t.Values)-1)
+			interpreter.Report("Index %d is out of list range 0-%d [%d:%d]", indexer_int, len(t.Values)-1, index.GetToken().Line, index.GetToken().Column)
 		}
 		return t.Values[indexer_int]
 	case *StringVal:
 		if indexer_int < 0 || indexer_int >= len(t.Value) {
-			interpreter.Report("Index %d is out of string range 0-%d", indexer_int, len(t.Value)-1)
+			interpreter.Report("Index %d is out of string range 0-%d [%d:%d]", indexer_int, len(t.Value)-1, index.GetToken().Line, index.GetToken().Column)
 		}
 
 		// FIXME: Replace with char type
@@ -493,14 +493,14 @@ func (interpreter *Interpreter) visitIndexSet(iset *ast.IndexSet) Value {
 	switch t := caller.(type) {
 	case *ListVal:
 		if indexer_int < 0 || indexer_int >= len(t.Values) {
-			interpreter.Report("Index %d is out of list range 0-%d", indexer_int, len(t.Values)-1)
+			interpreter.Report("Index %d is out of list range 0-%d  [%d:%d]", indexer_int, len(t.Values)-1, iset.GetToken().Line, iset.GetToken().Column)
 		}
 		if ret, ok := t.Set(iset.Token.Kind, indexer_int, value); ok {
 			return ret
 		}
 	case *StringVal:
 		if indexer_int < 0 || indexer_int >= len(t.Value) {
-			interpreter.Report("Index %d is out of string range 0-%d", indexer_int, len(t.Value)-1)
+			interpreter.Report("Index %d is out of string range 0-%d  [%d:%d]", indexer_int, len(t.Value)-1, iset.GetToken().Line, iset.GetToken().Column)
 		}
 
 		// FIXME: Make this better and only allow chars

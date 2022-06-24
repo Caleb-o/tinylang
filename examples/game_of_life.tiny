@@ -1,0 +1,133 @@
+let SIZE = 24;
+let INIT_SPAWN_CHANCE = 25;
+let INTERVAL = 350;
+
+let	CELL  = "x";
+let SPACE = " ";
+
+
+class Cell {
+	var alive;
+	var aliveNext;
+
+	function Cell(alive) {
+		self.alive = alive;
+		self.aliveNext = false;
+	}
+
+	function set_state(alive) {
+		self.aliveNext = alive;
+	}
+
+	function toggle() {
+		self.alive = self.aliveNext;
+		self.aliveNext = false;
+	}
+}
+
+function make_board() {
+	var board = [];
+
+	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+		let alive = builtin.rand_range(0, 100) < INIT_SPAWN_CHANCE;
+		board = board + [Cell(alive)];
+	}
+
+	return board;
+}
+
+function check_neighbours(board, x, y) {
+	var aliveCount = 0;
+
+	function check(x, y) {
+		var xreal = x;
+		var yreal = y;
+
+		if xreal < 0 {
+			xreal = SIZE - 1;
+		} else if xreal >= SIZE {
+			xreal = 0;
+		}
+
+		if yreal < 0 {
+			yreal = SIZE - 1;
+		} else if yreal >= SIZE {
+			yreal = 0;
+		}
+
+		if board[xreal + yreal * SIZE].alive {
+			aliveCount += 1;
+		}
+	}
+
+	check(x - 1, y);
+	check(x + 1, y);
+	check(x, y - 1);
+	check(x, y + 1);
+	check(x - 1, y - 1);
+	check(x - 1, y + 1);
+	check(x + 1, y - 1);
+	check(x + 1, y + 1);
+
+	return aliveCount;
+}
+
+function iterate(board) {
+	builtin.assertm(builtin.type_name(board) == "list", "Board must be a list");
+
+	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+		var x = idx / SIZE;
+		var y = builtin.mod(idx, SIZE);
+
+		let cell = board[x + y * SIZE];
+		let liveCount = check_neighbours(board, x, y);
+
+		if cell.alive {
+			if liveCount < 2 {
+				cell.set_state(false);
+			} else if liveCount == 2 || liveCount == 3 {
+				cell.set_state(true);
+			} else if liveCount > 3 {
+				cell.set_state(false);
+			}
+		} else {
+			if liveCount == 3 {
+				cell.set_state(true);
+			}
+		}
+	}
+}
+
+function set_board_state(board) {
+	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+		board[idx].toggle();
+	}
+}
+
+function print_board(board) {
+	builtin.assertm(builtin.type_name(board) == "list", "Board must be a list");
+
+	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+		if idx > 0 && builtin.mod(idx, SIZE) == 0 {
+			print();
+		}
+
+		if board[idx].alive {
+			builtin.out(CELL);
+		} else {
+			builtin.out(SPACE);
+		}
+	}
+}
+
+let board = make_board();
+
+while true {
+	iterate(board);
+	set_board_state(board);
+
+	print_board(board);
+	
+	builtin.sleep(INTERVAL);
+	builtin.reset();
+}
