@@ -1,0 +1,25 @@
+# A simple testing example
+# Tests fail if something is thrown
+function foo() {
+	print("Foo");
+}
+
+foo();
+
+test "Doing Things" {
+	foo();
+
+	if builtin.rand_range(0, 10) <= 5 {
+		throw "Random Bug";
+	}
+}
+
+test "Doing Things More!!" {
+	foo();
+
+	while var idx = 0; idx < 10; idx += 1 {
+		if builtin.rand_range(0, 100) <= 10 {
+			throw "Random Bug Again";
+		}
+	}
+}
