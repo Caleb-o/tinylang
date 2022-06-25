@@ -193,6 +193,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitLoopBreak()
 	case *ast.Continue:
 		return interpreter.visitLoopContinue()
+	case *ast.Match:
+		return interpreter.visitMatchCase(n)
 
 	// Ignore
 	case *ast.Import:
@@ -649,4 +651,22 @@ func (interpreter *Interpreter) visitLoopBreak() Value {
 
 func (interpreter *Interpreter) visitLoopContinue() Value {
 	return &ThrowValue{&LoopFlow{false}}
+}
+
+func (interpreter *Interpreter) visitMatchCase(match *ast.Match) Value {
+	value := interpreter.Visit(match.Expr)
+
+	for _, expr := range match.Cases {
+		caseExpr := interpreter.Visit(expr.Expr)
+
+		if Equality(value, caseExpr) {
+			return interpreter.Visit(expr.Body)
+		}
+	}
+
+	if match.CatchAll != nil {
+		return interpreter.Visit(match.CatchAll)
+	}
+
+	return &UnitVal{}
 }

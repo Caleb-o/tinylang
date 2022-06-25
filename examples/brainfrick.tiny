@@ -1,4 +1,4 @@
-var source = builtin.read_file("test.txt"); 
+var source = "+++++++++++++[->++++<]>.";
 var mp = 0;
 # Reserve some tape to reduce allocations
 var tape = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -6,49 +6,51 @@ var tape = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 while var ip = 0; ip < builtin.len(source); ip += 1 {
 	var char = source[ip];
 
-	if char == "+" {
-		tape[mp] += 1;
-	} else if char == "-" {
-		tape[mp] -= 1;
-	} else if char == "." {
-		builtin.out(builtin.as_string(tape[mp]));
-	} else if char == ">" {
-		mp += 1;
+	match char {
+		"+" => tape[mp] += 1;
+		"-" => tape[mp] -= 1;
+		"." => builtin.out(builtin.as_string(tape[mp]));
+		">" => {
+			mp += 1;
 
-		if mp >= builtin.len(tape) {
-			builtin.append(tape, 0);
-		}
-	} else if char == "<" {
-		mp -= 1;
+			if mp >= builtin.len(tape) {
+				builtin.append(tape, 0);
+			}
+		};
+		"<" => {
+			mp -= 1;
 
-		if mp < 0 {
-			mp = builtin.len(tape) - 1;
-		}
-	} else if char == "[" {
-		if tape[mp] == 0 {
-			var env = 0;
-			ip += 1;
-			
-			while ip < builtin.len(source) && env >= 0; ip += 1 {
-				if source[ip] == "]" {
-					env -= 1;
-				} else if source[ip] == "[" {
-					env += 1;
+			if mp < 0 {
+				mp = builtin.len(tape) - 1;
+			}
+		};
+		"[" => {
+			if tape[mp] == 0 {
+				var env = 0;
+				ip += 1;
+				
+				while ip < builtin.len(source) && env >= 0; ip += 1 {
+					if source[ip] == "]" {
+						env -= 1;
+					} else if source[ip] == "[" {
+						env += 1;
+					}
 				}
 			}
-		}
-	} else if char == "]" {
-		if tape[mp] != 0 {
-			var env = 0;
-			ip -= 1;
+		};
+		"]" => {
+			if tape[mp] != 0 {
+				var env = 0;
+				ip -= 1;
 
-			while ip > 0 && env >= 0; ip -= 1 {
-				if source[ip] == "[" {
-					env -= 1;
-				} else if source[ip] == "]" {
-					env += 1;
+				while ip > 0 && env >= 0; ip -= 1 {
+					if source[ip] == "[" {
+						env -= 1;
+					} else if source[ip] == "]" {
+						env += 1;
+					}
 				}
 			}
-		}
+		};
 	}
 }

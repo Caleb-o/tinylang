@@ -692,6 +692,41 @@ func BinopF(operator lexer.TokenKind, a float32, b float32) (Value, bool) {
 	return nil, false
 }
 
+func Equality(left Value, right Value) bool {
+	if reflect.TypeOf(left) != reflect.TypeOf(right) {
+		return false
+	}
+
+	switch t := left.(type) {
+	case *IntVal:
+		return t.Value == right.(*IntVal).Value
+	case *FloatVal:
+		return t.Value == right.(*FloatVal).Value
+	case *BoolVal:
+		return t.Value == right.(*BoolVal).Value
+	case *StringVal:
+		return t.Value == right.(*StringVal).Value
+	case *FunctionValue:
+		return t.definition != right.(*FunctionValue).definition
+	case *ListVal:
+		// FIXME: Better equality
+		return len(t.Values) == len(right.(*ListVal).Values)
+	case *NameSpaceValue:
+		// FIXME: Better equality
+		return t.Identifier == right.(*NameSpaceValue).Identifier
+	case *ClassDefValue:
+		return t.identifier == right.(*ClassDefValue).identifier
+	case *ClassInstanceValue:
+		return Equality(t.Def, right.(*ClassInstanceValue).Def)
+	case *StructDefValue:
+		return t.identifier == right.(*StructDefValue).identifier
+	case *StructInstanceValue:
+		return Equality(t.def, right.(*StructInstanceValue).def)
+	}
+
+	return false
+}
+
 // Helpers
 
 func checkNumericOperand(interpreter *Interpreter, token *lexer.Token, operand Value) {

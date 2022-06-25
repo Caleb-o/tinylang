@@ -28,6 +28,7 @@ const (
 	SEMICOLON
 	DOT
 	COMMA
+	FAT_ARROW
 
 	OPENCURLY
 	CLOSECURLY
@@ -65,6 +66,7 @@ const (
 	TEST
 	BREAK
 	CONTINUE
+	MATCH
 
 	EOF
 	ERROR
@@ -95,6 +97,7 @@ var KeyWords = map[string]TokenKind{
 	"test":      TEST,
 	"break":     BREAK,
 	"continue":  CONTINUE,
+	"match":     MATCH,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

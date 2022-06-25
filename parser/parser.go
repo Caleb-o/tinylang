@@ -176,7 +176,7 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 		return parser.block()
 	}
 
-	report("Unexpected token found in expression '%s':%d", parser.current.Lexeme, parser.current.Line)
+	report("Unexpected token found in expression '%s': [%d:%d]", parser.current.Lexeme, parser.current.Line, parser.current.Column)
 	return nil
 }
 
@@ -368,6 +368,42 @@ func (parser *Parser) catch(outer *ast.Block) *ast.Catch {
 	parser.consume(lexer.IDENTIFIER)
 
 	return &ast.Catch{Token: ftoken, Expr: expr, Var: id, Body: parser.block()}
+}
+
+func (parser *Parser) matchcase(outer *ast.Block) *ast.Match {
+	ftoken := parser.current
+	parser.consume(lexer.MATCH)
+
+	expr := parser.expr(outer)
+	parser.consume(lexer.OPENCURLY)
+	cases := make([]*ast.Case, 0)
+
+	var catchAll ast.Node = nil
+
+	for parser.current.Kind != lexer.CLOSECURLY {
+		token := parser.current
+
+		if parser.current.Kind == lexer.CATCH {
+			if catchAll != nil {
+				report("Match statement cannot declare multiple catch alls")
+			}
+
+			parser.consume(lexer.CATCH)
+			parser.consume(lexer.FAT_ARROW)
+			catchAll = parser.statement(outer)
+		} else {
+			value := parser.expr(outer)
+			parser.consume(lexer.FAT_ARROW)
+			body := parser.statement(outer)
+
+			cases = append(cases, &ast.Case{Token: token, Expr: value, Body: body})
+		}
+
+	}
+
+	parser.consume(lexer.CLOSECURLY)
+
+	return &ast.Match{Token: ftoken, Expr: expr, Cases: cases, CatchAll: catchAll}
 }
 
 func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
@@ -655,6 +691,8 @@ func (parser *Parser) statement(outer *ast.Block) ast.Node {
 		parser.consume(lexer.SEMICOLON)
 	case lexer.CATCH:
 		node = parser.catch(outer)
+	case lexer.MATCH:
+		node = parser.matchcase(outer)
 
 	default:
 		// Expression assignment

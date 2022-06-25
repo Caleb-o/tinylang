@@ -84,6 +84,19 @@ type Continue struct {
 	Token *lexer.Token
 }
 
+type Match struct {
+	Token    *lexer.Token
+	Expr     Node
+	Cases    []*Case
+	CatchAll Node
+}
+
+type Case struct {
+	Token *lexer.Token
+	Expr  Node
+	Body  Node
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -381,4 +394,40 @@ func (stmt *Continue) GetToken() *lexer.Token {
 
 func (stmt *Continue) AsSExp() string {
 	return "continue"
+}
+
+func (stmt *Match) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *Match) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("match ")
+	sb.WriteString(stmt.Expr.AsSExp())
+	sb.WriteByte('(')
+	for _, expr := range stmt.Cases {
+		sb.WriteString(expr.AsSExp())
+	}
+	sb.WriteByte(')')
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *Case) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *Case) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString(stmt.Expr.AsSExp())
+	sb.WriteString("=> ")
+	sb.WriteString(stmt.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
 }

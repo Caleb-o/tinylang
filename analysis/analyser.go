@@ -182,6 +182,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitList(n)
 	case *ast.Test:
 		an.visitTest(n)
+	case *ast.Match:
+		an.visitMatchCase(n)
 
 	case *ast.Break:
 		an.visitLoopFlow(n.GetToken())
@@ -484,6 +486,18 @@ func (an *Analyser) visitTest(test *ast.Test) {
 	an.visit(test.Body)
 
 	an.currentFunction = enclosing
+}
+
+func (an *Analyser) visitMatchCase(match *ast.Match) {
+	an.visit(match.Expr)
+
+	an.table = append(an.table, NewTable(an.top()))
+	defer an.pop()
+
+	for _, expr := range match.Cases {
+		an.visit(expr.Expr)
+		an.visit(expr.Body)
+	}
 }
 
 func (an *Analyser) visitLoopFlow(token *lexer.Token) {

@@ -206,6 +206,10 @@ func (lexer *Lexer) readChars() *Token {
 			kind = EQUAL_EQUAL
 			size = 2
 			break
+		} else if lexer.match('>') {
+			kind = FAT_ARROW
+			size = 2
+			break
 		}
 		kind = EQUAL
 
