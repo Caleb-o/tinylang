@@ -632,8 +632,6 @@ func (parser *Parser) statement(outer *ast.Block) ast.Node {
 	var node ast.Node = nil
 
 	switch parser.current.Kind {
-	case lexer.FUNCTION:
-		node = parser.functionDef(outer)
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
 		node = parser.variableDecl(outer, true)

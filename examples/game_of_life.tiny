@@ -39,7 +39,7 @@ function make_board() {
 function check_neighbours(board, x, y) {
 	var aliveCount = 0;
 
-	function check(x, y) {
+	let check = function(x, y) {
 		var xreal = x;
 		var yreal = y;
 
@@ -58,7 +58,7 @@ function check_neighbours(board, x, y) {
 		if board[xreal + yreal * SIZE].alive {
 			aliveCount += 1;
 		}
-	}
+	};
 
 	check(x - 1, y);
 	check(x + 1, y);

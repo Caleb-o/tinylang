@@ -79,26 +79,6 @@ function simple() {
 simple(); # Hello!
 ```
 
-### Nested Functions
-```coffee
-# Functions can be defined and called within each other
-# They are scope based, so they can only be called from
-# its current scope
-function foo() {
-	function bar() {
-		function baz() {
-
-		}
-
-		baz();
-	}
-
-	bar();
-}
-
-foo();
-```
-
 ### Control Flow
 ```coffee
 var a = 10;
