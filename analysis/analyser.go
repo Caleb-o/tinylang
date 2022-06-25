@@ -23,6 +23,7 @@ const (
 	FUNCTION_CONSTRUCTOR
 	FUNCTION_METHOD
 	FUNCTION_CATCH
+	FUNCTION_TEST
 )
 
 type Analyser struct {
@@ -178,6 +179,8 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitNamespace(n)
 	case *ast.ListLiteral:
 		an.visitList(n)
+	case *ast.Test:
+		an.visitTest(n)
 
 	// Ignore
 	case *ast.Unit:
@@ -461,4 +464,13 @@ func (an *Analyser) visitList(list *ast.ListLiteral) {
 	for _, value := range list.Exprs {
 		an.visit(value)
 	}
+}
+
+func (an *Analyser) visitTest(test *ast.Test) {
+	enclosing := an.currentFunction
+	an.currentFunction = FUNCTION_TEST
+
+	an.visit(test.Body)
+
+	an.currentFunction = enclosing
 }

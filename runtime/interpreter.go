@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -16,8 +17,15 @@ type environment struct {
 	depth     int
 }
 
+type testStats struct {
+	tests  int
+	passed int
+}
+
 type Interpreter struct {
-	env environment
+	env     environment
+	in_test bool
+	tests   testStats
 }
 
 type TinyCallable interface {
@@ -26,7 +34,7 @@ type TinyCallable interface {
 }
 
 func New() *Interpreter {
-	interpreter := &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}}
+	interpreter := &Interpreter{env: environment{variables: make([]map[string]Value, 0, 1), depth: 0}, in_test: false, tests: testStats{0, 0}}
 	interpreter.push()
 
 	return interpreter
@@ -39,6 +47,10 @@ func (interpreter *Interpreter) Run(program *ast.Program) {
 
 	if res, ok := result.(*ThrowValue); ok {
 		interpreter.Report("Uncaught value thrown '%s'", res.inner.Inspect())
+	}
+
+	if interpreter.tests.tests > 0 {
+		shared.Info(fmt.Sprintf("Tests passed [%d/%d]", interpreter.tests.passed, interpreter.tests.tests))
 	}
 }
 
@@ -93,14 +105,30 @@ func (interpreter *Interpreter) pop() {
 
 // --- Private ---
 func (interpreter *Interpreter) Report(msg string, args ...any) {
-	res := fmt.Sprintf(msg, args...)
-	shared.ReportErrFatal("Runtime: " + res)
+	if interpreter.in_test {
+		interpreter.ReportTest(msg, nil)
+	} else {
+		res := fmt.Sprintf(msg, args...)
+		shared.ReportErrFatal("Runtime: " + res)
+	}
 }
 
 func (interpreter *Interpreter) ReportT(msg string, token *lexer.Token, args ...any) {
-	res := fmt.Sprintf(msg, args...)
-	res = fmt.Sprintf("Runtime: %s [%d:%d]", res, token.Line, token.Column)
-	shared.ReportErrFatal(res)
+	if interpreter.in_test {
+		interpreter.ReportTest(msg, token)
+	} else {
+		res := fmt.Sprintf(msg, args...)
+		res = fmt.Sprintf("Runtime: %s [%d:%d]", res, token.Line, token.Column)
+		shared.ReportErrFatal(res)
+	}
+}
+
+func (interpreter *Interpreter) ReportTest(msg string, token *lexer.Token) {
+	if token == nil {
+		log.Printf("Runtime - Test: %s\n", msg)
+	} else {
+		log.Printf("Runtime - Test: %s [%d:%d]\n", msg, token.Line, token.Column)
+	}
 }
 
 func (interpreter *Interpreter) Visit(node ast.Node) Value {
@@ -159,6 +187,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitWhileStmt(n)
 	case *ast.Catch:
 		return interpreter.visitCatch(n)
+	case *ast.Test:
+		return interpreter.visitTest(n)
 
 	// Ignore
 	case *ast.Import:
@@ -584,4 +614,21 @@ func (interpreter *Interpreter) visitCatch(catch *ast.Catch) Value {
 	}
 
 	return value
+}
+
+func (interpreter *Interpreter) visitTest(test *ast.Test) Value {
+	enclosing := interpreter.in_test
+	interpreter.in_test = true
+
+	interpreter.tests.tests += 1
+
+	switch value := interpreter.visitBlock(test.Body, true).(type) {
+	case *ThrowValue:
+		interpreter.ReportTest(fmt.Sprintf("'%s' failed with '%s'", test.Token.Lexeme, value.Inspect()), test.GetToken())
+	default:
+		interpreter.tests.passed += 1
+	}
+
+	interpreter.in_test = enclosing
+	return &UnitVal{}
 }

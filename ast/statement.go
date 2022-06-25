@@ -71,6 +71,11 @@ type NameSpace struct {
 	Body  *Block
 }
 
+type Test struct {
+	Token *lexer.Token
+	Body  *Block
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -331,6 +336,22 @@ func (stmt *NameSpace) AsSExp() string {
 
 	sb.WriteByte('(')
 	sb.WriteString("namespace ")
+	sb.WriteString(stmt.Token.Lexeme)
+	sb.WriteString(stmt.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (stmt *Test) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *Test) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	sb.WriteString("test ")
 	sb.WriteString(stmt.Token.Lexeme)
 	sb.WriteString(stmt.Body.AsSExp())
 	sb.WriteByte(')')

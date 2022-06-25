@@ -31,6 +31,10 @@ func ReadFileErr(path string) (string, bool) {
 	return string(src), true
 }
 
+func Info(msg string) {
+	log.Printf("Info: %s", msg)
+}
+
 func ReportErr(msg string) {
 	log.Printf("\u001b[31;1mError:\u001b[0m %s", msg)
 }

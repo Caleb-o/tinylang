@@ -46,10 +46,12 @@ func (tiny *Tiny) Run() {
 	var (
 		checkOnly bool
 		// usevm     bool
+		test   bool
 		script string
 	)
 
 	flag.BoolVar(&checkOnly, "check", false, "Checks if code is valid and does not run")
+	flag.BoolVar(&test, "test", false, "Run tests")
 	// flag.BoolVar(&usevm, "vm", false, "Use the new interpreter to run code")
 	flag.StringVar(&script, "script", "", "Script to run")
 	flag.Parse()
@@ -60,7 +62,7 @@ func (tiny *Tiny) Run() {
 	}
 
 	if source, ok := shared.ReadFileErr(script); ok {
-		parser := parser.New(source, script)
+		parser := parser.New(source, script, test)
 		program := parser.Parse()
 		analyser := analysis.NewAnalyser(false)
 

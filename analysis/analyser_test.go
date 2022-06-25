@@ -15,7 +15,7 @@ func eq(t *testing.T, value bool, expected bool, msg string) {
 func TestIdentifierLookup(t *testing.T) {
 	path := "../tests/valid/analyser/identifier_lookup_assign.tiny"
 	source := shared.ReadFile(path)
-	program := parser.New(source, path).Parse()
+	program := parser.New(source, path, false).Parse()
 	analyser := NewAnalyser(true)
 
 	eq(t, analyser.Run(program.Body), true, "ID lookup failed")
@@ -24,7 +24,7 @@ func TestIdentifierLookup(t *testing.T) {
 func TestFunctionScope(t *testing.T) {
 	path := "../tests/valid/analyser/function_scope.tiny"
 	source := shared.ReadFile(path)
-	program := parser.New(source, path).Parse()
+	program := parser.New(source, path, false).Parse()
 	analyser := NewAnalyser(true)
 
 	eq(t, analyser.Run(program.Body), true, "Could not resolve ID from function scope")
@@ -34,7 +34,7 @@ func TestFunctionScope(t *testing.T) {
 func TestInvalidIdentifierLookup(t *testing.T) {
 	path := "../tests/invalid/analyser/identifier_lookup_assign.tiny"
 	source := shared.ReadFile(path)
-	program := parser.New(source, path).Parse()
+	program := parser.New(source, path, false).Parse()
 	analyser := NewAnalyser(false)
 
 	eq(t, analyser.Run(program.Body), false, "ID lookup failed")

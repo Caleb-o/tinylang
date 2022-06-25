@@ -62,6 +62,7 @@ const (
 	NAMESPACE
 	RETURN
 	IMPORT
+	TEST
 
 	EOF
 	ERROR
@@ -89,6 +90,7 @@ var KeyWords = map[string]TokenKind{
 	"catch":     CATCH,
 	"import":    IMPORT,
 	"namespace": NAMESPACE,
+	"test":      TEST,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

@@ -24,3 +24,4 @@ _Alt_Identifier22
 function class
 return self
 throw catch
+test

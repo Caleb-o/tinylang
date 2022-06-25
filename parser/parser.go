@@ -18,16 +18,17 @@ type Parser struct {
 	current *lexer.Token
 	stack   []ParserState
 	files   []string
+	test    bool
 }
 
-func New(source string, path string) *Parser {
+func New(source string, path string, test bool) *Parser {
 	lexer := lexer.New(source)
 	files := make([]string, 1)
 
 	initPath, _ := filepath.Abs(path)
 	files[0] = initPath
 
-	return &Parser{lexer, lexer.Next(), make([]ParserState, 0), files}
+	return &Parser{lexer, lexer.Next(), make([]ParserState, 0), files, test}
 }
 
 func (parser *Parser) Parse() *ast.Program {
@@ -397,6 +398,15 @@ func (parser *Parser) namespace(outer *ast.Block) *ast.NameSpace {
 	return &ast.NameSpace{Token: identifer, Body: parser.namespaced()}
 }
 
+func (parser *Parser) testblock(outer *ast.Block) *ast.Test {
+	parser.consume(lexer.TEST)
+
+	identifier := parser.current
+	parser.consume(lexer.STRING)
+
+	return &ast.Test{Token: identifier, Body: parser.block()}
+}
+
 func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	parser.consume(lexer.CLASS)
 
@@ -536,7 +546,7 @@ func (parser *Parser) block() *ast.Block {
 	return block
 }
 
-func (parser *Parser) print(outer *ast.Block) {
+func (parser *Parser) print(outer *ast.Block) *ast.Print {
 	token := parser.current
 	parser.consume(lexer.PRINT)
 	parser.consume(lexer.OPENPAREN)
@@ -549,10 +559,10 @@ func (parser *Parser) print(outer *ast.Block) {
 
 	parser.consume(lexer.CLOSEPAREN)
 
-	outer.Statements = append(outer.Statements, &ast.Print{Token: token, Exprs: exprs})
+	return &ast.Print{Token: token, Exprs: exprs}
 }
 
-func (parser *Parser) returns(outer *ast.Block) {
+func (parser *Parser) returns(outer *ast.Block) *ast.Return {
 	ret := parser.current
 	parser.consume(lexer.RETURN)
 
@@ -561,7 +571,7 @@ func (parser *Parser) returns(outer *ast.Block) {
 		expr = parser.expr(outer)
 	}
 
-	outer.Statements = append(outer.Statements, &ast.Return{Token: ret, Expr: expr})
+	return &ast.Return{Token: ret, Expr: expr}
 }
 
 func (parser *Parser) ifstmt(outer *ast.Block) *ast.If {
@@ -610,44 +620,48 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 }
 
 // FIXME: Use a system similar to Lox so that parsing expression statements are simplified
-func (parser *Parser) statement(outer *ast.Block) {
+func (parser *Parser) statement(outer *ast.Block) ast.Node {
+	var node ast.Node = nil
+
 	switch parser.current.Kind {
 	case lexer.FUNCTION:
-		outer.Statements = append(outer.Statements, parser.functionDef(outer))
-		return
+		node = parser.functionDef(outer)
 	case lexer.VAR:
 		parser.consume(lexer.VAR)
-		outer.Statements = append(outer.Statements, parser.variableDecl(outer, true))
+		node = parser.variableDecl(outer, true)
+		parser.consume(lexer.SEMICOLON)
 	case lexer.LET:
 		parser.consume(lexer.LET)
-		outer.Statements = append(outer.Statements, parser.variableDecl(outer, false))
+		node = parser.variableDecl(outer, false)
+		parser.consume(lexer.SEMICOLON)
 	case lexer.PRINT:
-		parser.print(outer)
+		node = parser.print(outer)
+		parser.consume(lexer.SEMICOLON)
 	case lexer.RETURN:
-		parser.returns(outer)
+		node = parser.returns(outer)
+		parser.consume(lexer.SEMICOLON)
 	case lexer.IF:
-		outer.Statements = append(outer.Statements, parser.ifstmt(outer))
-		return
+		node = parser.ifstmt(outer)
 	case lexer.WHILE:
-		outer.Statements = append(outer.Statements, parser.whilestmt(outer))
-		return
+		node = parser.whilestmt(outer)
 	case lexer.THROW:
-		outer.Statements = append(outer.Statements, parser.throw(outer))
+		node = parser.throw(outer)
+		parser.consume(lexer.SEMICOLON)
 	case lexer.CATCH:
-		outer.Statements = append(outer.Statements, parser.catch(outer))
-		return
+		node = parser.catch(outer)
 
 	default:
 		// Expression assignment
-		outer.Statements = append(outer.Statements, parser.expr(outer))
+		node = parser.expr(outer)
+		parser.consume(lexer.SEMICOLON)
 	}
 
-	parser.consume(lexer.SEMICOLON)
+	return node
 }
 
 func (parser *Parser) statementList(outer *ast.Block, endType lexer.TokenKind) {
 	for parser.current.Kind != endType {
-		parser.statement(outer)
+		outer.Statements = append(outer.Statements, parser.statement(outer))
 	}
 }
 
@@ -708,8 +722,22 @@ func (parser *Parser) outerStatements(block *ast.Block) {
 		case lexer.NAMESPACE:
 			block.Statements = append(block.Statements, parser.namespace(block))
 
+		case lexer.FUNCTION:
+			block.Statements = append(block.Statements, parser.functionDef(block))
+
+		case lexer.TEST:
+			node := parser.testblock(block)
+
+			if parser.test {
+				block.Statements = append(block.Statements, node)
+			}
+
 		default:
-			parser.statement(block)
+			node := parser.statement(block)
+
+			if !parser.test {
+				block.Statements = append(block.Statements, node)
+			}
 		}
 	}
 }

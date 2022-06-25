@@ -13,7 +13,7 @@ func exprEq(expect string, receive string) bool {
 func TestSimpleExpression(t *testing.T) {
 	path := "../tests/valid/parser/simple_expression.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.expr(ast.NewBlock(nil)).AsSExp()
 	if !exprEq(result, "(+ (+ 1 (* 2 3)) (* 1 2))") {
@@ -24,7 +24,7 @@ func TestSimpleExpression(t *testing.T) {
 func TestFunctionDefinition(t *testing.T) {
 	path := "../tests/valid/parser/function_definition_no_block.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((function foo (a, b, c)()))") {
@@ -35,7 +35,7 @@ func TestFunctionDefinition(t *testing.T) {
 func TestFunctionDefinitionMutable(t *testing.T) {
 	path := "../tests/valid/parser/function_definition_mutable_no_block.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((function foo (a, b, c)()))") {
@@ -46,7 +46,7 @@ func TestFunctionDefinitionMutable(t *testing.T) {
 func TestFunctionDefinitionNested(t *testing.T) {
 	path := "../tests/valid/parser/function_definition_nested.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((function foo (a)((function bar (b)()))))") {
@@ -57,7 +57,7 @@ func TestFunctionDefinitionNested(t *testing.T) {
 func TestVariableDeclaration(t *testing.T) {
 	path := "../tests/valid/parser/variable_declaration.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((mut foo (+ 1 2)))") {
@@ -68,7 +68,7 @@ func TestVariableDeclaration(t *testing.T) {
 func TestFunctionWithBlock(t *testing.T) {
 	path := "../tests/valid/parser/function_def_with_block.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((mut a 1)(mut b a)(function foo (a, b, c)((mut d 1)(mut e a))))") {
@@ -79,7 +79,7 @@ func TestFunctionWithBlock(t *testing.T) {
 func TestAssignment(t *testing.T) {
 	path := "../tests/valid/parser/assignment.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((mut a 10)(mut b (a = (+ 3 (/ (* 20 3) 2))))(b = 2))") {
@@ -90,7 +90,7 @@ func TestAssignment(t *testing.T) {
 func TestAnonymousFunction(t *testing.T) {
 	path := "../tests/valid/parser/anonymous_functions.tiny"
 	source := shared.ReadFile(path)
-	parser := New(source, path)
+	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
 	if !exprEq(result, "((function call (x, y, fn)((return fn(x, y))))(mut fn (anon function (a, b)((return (+ a b)))))(mut value1 call(10, 20, fn))(print(value1))(mut value2 call(30, 40, (anon function (a, b)((return (+ a b))))))(print(value2)))") {
