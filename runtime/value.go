@@ -161,6 +161,10 @@ type NameSpaceValue struct {
 	Members    map[string]Value
 }
 
+type LoopFlow struct {
+	exit bool // Exit true = break, false = continue
+}
+
 func (v *UnitVal) GetType() Type                                      { return &UnitType{} }
 func (v *UnitVal) Inspect() string                                    { return "()" }
 func (v *UnitVal) Copy() Value                                        { return &UnitVal{} }
@@ -557,6 +561,21 @@ func (v *ListVal) Set(operation lexer.TokenKind, index int, other Value) (Value,
 
 	return nil, false
 }
+
+func (v *LoopFlow) GetType() Type { return &LoopFlowType{} }
+func (v *LoopFlow) Inspect() string {
+	var str string
+
+	if v.exit {
+		str = "break"
+	} else {
+		str = "continue"
+	}
+
+	return str
+}
+func (v *LoopFlow) Copy() Value                                        { return v }
+func (v *LoopFlow) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func BinopL(operator lexer.TokenKind, a []Value, b []Value) (Value, bool) {
 	switch operator {

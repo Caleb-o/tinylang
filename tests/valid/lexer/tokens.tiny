@@ -25,3 +25,4 @@ function class
 return self
 throw catch
 test
+break continue

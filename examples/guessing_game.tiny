@@ -13,34 +13,39 @@ print("Guess a number between ", min, " and ", max);
 while !done {
 	var line = builtin.prompt_read_line("Number> ");
 
-	if builtin.str_len(line) > 0 {
-		var guess = builtin.to_int(line);
+	# Check the input
+	if builtin.len(line) == 0 {
+		print("Please enter a number");
+		continue;
+	}
 
-		# to_int can return an error value, so we must check it
-		# We cannot throw the value outside of a function
-		if builtin.is_err(guess) {
-			print("Must enter a whole number");
+	var guess = builtin.to_int(line);
+
+	# to_int can return an error value, so we must check it
+	# We cannot throw the value outside of a function
+	if builtin.is_err(guess) {
+		print("Must enter a whole number");
+		continue;
+	}
+
+	# We're done
+	if guess == to_guess {
+		print("You got it!");
+		break;
+	}
+
+	guesses += 1;
+
+	# Out of guesses
+	if guesses > guess_max {
+		print("The number was: ", to_guess);
+		done = true;
+	} else {
+		# Prompt the user with hints
+		if guess > to_guess {
+			print("Lower [", guesses, "/", guess_max, "]");
 		} else {
-			# We're done
-			if guess == to_guess {
-				print("You got it!");
-				done = true;
-			} else {
-				guesses += 1;
-
-				# Out of guesses
-				if guesses > guess_max {
-					print("The number was: ", to_guess);
-					done = true;
-				} else {
-					# Prompt the user with hints
-					if guess > to_guess {
-						print("Lower [", guesses, "/", guess_max, "]");
-					} else {
-						print("Higher [", guesses, "/", guess_max, "]");
-					}
-				}
-			}
+			print("Higher [", guesses, "/", guess_max, "]");
 		}
 	}
 }

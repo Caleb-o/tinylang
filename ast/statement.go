@@ -76,6 +76,14 @@ type Test struct {
 	Body  *Block
 }
 
+type Break struct {
+	Token *lexer.Token
+}
+
+type Continue struct {
+	Token *lexer.Token
+}
+
 func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
@@ -357,4 +365,20 @@ func (stmt *Test) AsSExp() string {
 	sb.WriteByte(')')
 
 	return sb.String()
+}
+
+func (stmt *Break) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *Break) AsSExp() string {
+	return "break"
+}
+
+func (stmt *Continue) GetToken() *lexer.Token {
+	return stmt.Token
+}
+
+func (stmt *Continue) AsSExp() string {
+	return "continue"
 }

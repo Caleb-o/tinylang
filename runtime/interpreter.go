@@ -189,6 +189,10 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitCatch(n)
 	case *ast.Test:
 		return interpreter.visitTest(n)
+	case *ast.Break:
+		return interpreter.visitLoopBreak()
+	case *ast.Continue:
+		return interpreter.visitLoopContinue()
 
 	// Ignore
 	case *ast.Import:
@@ -584,8 +588,14 @@ func (interpreter *Interpreter) visitWhileStmt(stmt *ast.While) Value {
 	checkBoolOperand(interpreter, stmt.Condition.GetToken(), condition)
 
 	for condition.(*BoolVal).Value {
-		if throw, ok := interpreter.visitBlock(stmt.Body, false).(*ThrowValue); ok {
-			return throw
+		if throw, ok := interpreter.visitBlock(stmt.Body, false).(*ReturnValue); ok {
+			if loop, ok := throw.inner.(*LoopFlow); ok {
+				if loop.exit {
+					break
+				}
+			} else {
+				return throw
+			}
 		}
 
 		if stmt.Increment != nil {
@@ -631,4 +641,12 @@ func (interpreter *Interpreter) visitTest(test *ast.Test) Value {
 
 	interpreter.in_test = enclosing
 	return &UnitVal{}
+}
+
+func (interpreter *Interpreter) visitLoopBreak() Value {
+	return &ThrowValue{&LoopFlow{true}}
+}
+
+func (interpreter *Interpreter) visitLoopContinue() Value {
+	return &ThrowValue{&LoopFlow{false}}
 }

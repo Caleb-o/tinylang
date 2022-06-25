@@ -29,6 +29,7 @@ const (
 type Analyser struct {
 	hadErr          bool
 	quiet           bool
+	inLoop          bool
 	currentClass    ClassType
 	currentFunction FunctionType
 	table           []*SymbolTable
@@ -38,7 +39,7 @@ func NewAnalyser(quiet bool) *Analyser {
 	table := make([]*SymbolTable, 0, 2)
 	table = append(table, NewTable(nil))
 
-	return &Analyser{hadErr: false, quiet: quiet, currentClass: CLASS_NONE, currentFunction: FUNCTION_NONE, table: table}
+	return &Analyser{hadErr: false, quiet: quiet, inLoop: false, currentClass: CLASS_NONE, currentFunction: FUNCTION_NONE, table: table}
 }
 
 func (an *Analyser) Run(root ast.Node) bool {
@@ -181,6 +182,11 @@ func (an *Analyser) visit(node ast.Node) {
 		an.visitList(n)
 	case *ast.Test:
 		an.visitTest(n)
+
+	case *ast.Break:
+		an.visitLoopFlow(n.GetToken())
+	case *ast.Continue:
+		an.visitLoopFlow(n.GetToken())
 
 	// Ignore
 	case *ast.Unit:
@@ -413,6 +419,9 @@ func (an *Analyser) visitIfStmt(stmt *ast.If) {
 }
 
 func (an *Analyser) visitWhileStmt(stmt *ast.While) {
+	enclosing := an.inLoop
+	an.inLoop = true
+
 	an.table = append(an.table, NewTable(an.top()))
 	defer an.pop()
 
@@ -427,6 +436,8 @@ func (an *Analyser) visitWhileStmt(stmt *ast.While) {
 	}
 
 	an.visit(stmt.Body)
+
+	an.inLoop = enclosing
 }
 
 func (an *Analyser) visitThrow(throw *ast.Throw) {
@@ -473,4 +484,10 @@ func (an *Analyser) visitTest(test *ast.Test) {
 	an.visit(test.Body)
 
 	an.currentFunction = enclosing
+}
+
+func (an *Analyser) visitLoopFlow(token *lexer.Token) {
+	if !an.inLoop {
+		an.reportT("Cannot use break or continue outside of a loop", token)
+	}
 }

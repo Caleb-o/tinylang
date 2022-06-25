@@ -63,6 +63,8 @@ const (
 	RETURN
 	IMPORT
 	TEST
+	BREAK
+	CONTINUE
 
 	EOF
 	ERROR
@@ -91,6 +93,8 @@ var KeyWords = map[string]TokenKind{
 	"import":    IMPORT,
 	"namespace": NAMESPACE,
 	"test":      TEST,
+	"break":     BREAK,
+	"continue":  CONTINUE,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

@@ -164,6 +164,14 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 	case lexer.CATCH:
 		return parser.catch(outer)
 
+	case lexer.BREAK:
+		parser.consume(lexer.BREAK)
+		return &ast.Break{Token: ftoken}
+
+	case lexer.CONTINUE:
+		parser.consume(lexer.CONTINUE)
+		return &ast.Continue{Token: ftoken}
+
 	case lexer.OPENCURLY:
 		return parser.block()
 	}
