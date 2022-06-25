@@ -498,6 +498,10 @@ func (an *Analyser) visitMatchCase(match *ast.Match) {
 		an.visit(expr.Expr)
 		an.visit(expr.Body)
 	}
+
+	if match.CatchAll != nil {
+		an.visit(match.CatchAll)
+	}
 }
 
 func (an *Analyser) visitLoopFlow(token *lexer.Token) {
