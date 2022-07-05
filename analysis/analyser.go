@@ -152,6 +152,8 @@ func (an *Analyser) visit(node ast.Node) {
 	case *ast.BinaryOp:
 		an.visit(n.Left)
 		an.visit(n.Right)
+	case *ast.Argument:
+		an.visitArgument(n)
 	case *ast.Call:
 		an.visitCall(n)
 	case *ast.Assign:
@@ -317,6 +319,62 @@ func (an *Analyser) visitPrint(print *ast.Print) {
 	}
 }
 
+func (an *Analyser) visitArgument(arg *ast.Argument) {
+	an.visit(arg.Expr)
+}
+
+func (an *Analyser) checkArgs(call *ast.Call, params []*ast.Parameter) {
+	for idx, p := range params {
+		if idx >= len(call.Arguments) {
+			return
+		}
+
+		if call.Arguments[idx].Token == nil {
+			continue
+		}
+
+		// Label must be identifier or index
+		if (call.Arguments[idx].Token.Kind != lexer.INT && call.Arguments[idx].Token.Kind != lexer.IDENTIFIER) ||
+			(p.Token.Lexeme != call.Arguments[idx].Token.Lexeme && fmt.Sprintf("%d", idx) != call.Arguments[idx].Token.Lexeme) {
+			an.reportT(
+				"Argument at position %d in call '%s' expected label '%d' or '%s' but received label '%s'",
+				call.Arguments[idx].Token,
+				idx+1,
+				call.Token.Lexeme,
+				idx,
+				params[idx].Token.Lexeme,
+				call.Arguments[idx].Token.Lexeme,
+			)
+		}
+	}
+}
+
+func (an *Analyser) checkArgsStr(call *ast.Call, params []string) {
+	for idx, p := range params {
+		if idx >= len(call.Arguments) {
+			return
+		}
+
+		if call.Arguments[idx].Token == nil {
+			continue
+		}
+
+		// Label must be identifier or index
+		if (call.Arguments[idx].Token.Kind != lexer.INT && call.Arguments[idx].Token.Kind != lexer.IDENTIFIER) ||
+			(p != call.Arguments[idx].Token.Lexeme && fmt.Sprintf("%d", idx) != call.Arguments[idx].Token.Lexeme) {
+			an.reportT(
+				"Argument at position %d in call '%s' expected label '%d' or '%s' but received label '%s'",
+				call.Arguments[idx].Token,
+				idx+1,
+				call.Token.Lexeme,
+				idx,
+				params[idx],
+				call.Arguments[idx].Token.Lexeme,
+			)
+		}
+	}
+}
+
 func (an *Analyser) visitCall(call *ast.Call) {
 	an.visit(call.Callee)
 
@@ -328,16 +386,22 @@ func (an *Analyser) visitCall(call *ast.Call) {
 			an.reportT("Native function '%s' expected %d argument(s) but received %d", call.Token,
 				call.Token.Lexeme, len(sym.params), len(call.Arguments))
 		}
+		an.checkArgsStr(call, sym.params)
+
 	case *NativeClassSymbol:
 		if len(sym.fields) != len(call.Arguments) {
 			an.reportT("Constuctor '%s' expected %d argument(s) but received %d", call.Token,
 				call.Token.Lexeme, len(sym.fields), len(call.Arguments))
 		}
+		an.checkArgsStr(call, sym.fields)
+
 	case *FunctionSymbol:
 		if len(sym.def.Params) != len(call.Arguments) {
 			an.reportT("Function '%s' expected %d argument(s) but received %d", call.Token,
 				call.Token.Lexeme, len(sym.def.Params), len(call.Arguments))
 		}
+		an.checkArgs(call, sym.def.Params)
+
 	case *ClassDefSymbol:
 		if sym.def.Constructor != nil {
 			cons := sym.def.Constructor
@@ -346,6 +410,7 @@ func (an *Analyser) visitCall(call *ast.Call) {
 				an.reportT("Constuctor '%s' expected %d argument(s) but received %d", call.Token,
 					call.Token.Lexeme, len(cons.Params), len(call.Arguments))
 			}
+			an.checkArgs(call, cons.Params)
 		}
 	}
 

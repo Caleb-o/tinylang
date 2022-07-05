@@ -163,6 +163,8 @@ func (interpreter *Interpreter) Visit(node ast.Node) Value {
 		return interpreter.visitStructDef(n)
 	case *ast.NameSpace:
 		return interpreter.visitNamespace(n)
+	case *ast.Argument:
+		return interpreter.Visit(n.Expr)
 	case *ast.Call:
 		return interpreter.visitCall(n)
 	case *ast.Assign:

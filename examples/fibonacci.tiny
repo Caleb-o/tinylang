@@ -7,4 +7,4 @@ function fib(n) {
 	}
 }
 
-print(fib(30)); # 2178309
+print(fib(n: 30)); # 2178309

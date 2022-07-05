@@ -29,6 +29,11 @@ type Parameter struct {
 	Mutable bool
 }
 
+type Argument struct {
+	Token *lexer.Token
+	Expr  Node
+}
+
 type Unit struct {
 	Token *lexer.Token
 }
@@ -45,7 +50,7 @@ type ListLiteral struct {
 type Call struct {
 	Token     *lexer.Token
 	Callee    Node
-	Arguments []Node
+	Arguments []*Argument
 }
 
 type Assign struct {
@@ -164,6 +169,20 @@ func (param *Parameter) GetToken() *lexer.Token {
 
 func (param *Parameter) AsSExp() string {
 	return param.Token.Lexeme
+}
+
+func (arg *Argument) GetToken() *lexer.Token {
+	return arg.Token
+}
+
+func (arg *Argument) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteString(arg.Token.Lexeme)
+	sb.WriteString(": ")
+	sb.WriteString(arg.Expr.AsSExp())
+
+	return sb.String()
 }
 
 func (unit *Unit) GetToken() *lexer.Token {

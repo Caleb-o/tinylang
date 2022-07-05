@@ -22,11 +22,11 @@ function baz() {
 }
 
 var name = "Bob";
-say_hello(name, 32);
+say_hello(name: name, age: 32);
 
 name = "Dave";
 
-bar(true);
+bar(foo: true);
 baz();
 
 print("Hello!", " Foo ", 123, " ", name);

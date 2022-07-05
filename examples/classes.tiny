@@ -17,7 +17,7 @@ class Foo {
 }
 
 # Instantiate Foo
-var f1 = Foo(10, 20);
+var f1 = Foo(x: 10, y: 20);
 # Use the print method on the instance
 f1.print_xy(); # X: 10, Y: 20
 
