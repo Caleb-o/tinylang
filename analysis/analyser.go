@@ -334,14 +334,12 @@ func (an *Analyser) checkArgs(call *ast.Call, params []*ast.Parameter) {
 		}
 
 		// Label must be identifier or index
-		if (call.Arguments[idx].Token.Kind != lexer.INT && call.Arguments[idx].Token.Kind != lexer.IDENTIFIER) ||
-			(p.Token.Lexeme != call.Arguments[idx].Token.Lexeme && fmt.Sprintf("%d", idx) != call.Arguments[idx].Token.Lexeme) {
+		if call.Arguments[idx].Token.Kind != lexer.IDENTIFIER || p.Token.Lexeme != call.Arguments[idx].Token.Lexeme {
 			an.reportT(
-				"Argument at position %d in call '%s' expected label '%d' or '%s' but received label '%s'",
+				"Argument at position %d in call '%s' expected label '%s' but received label '%s'",
 				call.Arguments[idx].Token,
 				idx+1,
 				call.Token.Lexeme,
-				idx,
 				params[idx].Token.Lexeme,
 				call.Arguments[idx].Token.Lexeme,
 			)
@@ -360,14 +358,12 @@ func (an *Analyser) checkArgsStr(call *ast.Call, params []string) {
 		}
 
 		// Label must be identifier or index
-		if (call.Arguments[idx].Token.Kind != lexer.INT && call.Arguments[idx].Token.Kind != lexer.IDENTIFIER) ||
-			(p != call.Arguments[idx].Token.Lexeme && fmt.Sprintf("%d", idx) != call.Arguments[idx].Token.Lexeme) {
+		if call.Arguments[idx].Token.Kind != lexer.IDENTIFIER || p != call.Arguments[idx].Token.Lexeme {
 			an.reportT(
-				"Argument at position %d in call '%s' expected label '%d' or '%s' but received label '%s'",
+				"Argument at position %d in call '%s' expected label '%s' but received label '%s'",
 				call.Arguments[idx].Token,
 				idx+1,
 				call.Token.Lexeme,
-				idx,
 				params[idx],
 				call.Arguments[idx].Token.Lexeme,
 			)

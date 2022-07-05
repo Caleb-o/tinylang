@@ -1,0 +1,10 @@
+function foo(bar, baz) {}
+
+# Add labels to your arguments to document usage.
+# Labels can be omitted completely or partially.
+# They are meant for readability without reading
+# the function signature.
+foo(bar: 10, baz: "Hello");
+foo(10, baz: "Hello");
+foo(bar: 10, "Hello");
+foo(10, 1);
