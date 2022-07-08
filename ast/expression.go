@@ -50,7 +50,7 @@ type ListLiteral struct {
 type Call struct {
 	Token     *lexer.Token
 	Callee    Node
-	Arguments []*Argument
+	Arguments []Node
 }
 
 type Assign struct {

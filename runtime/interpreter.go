@@ -412,15 +412,21 @@ func (interpreter *Interpreter) visitNamespace(ns *ast.NameSpace) Value {
 func (interpreter *Interpreter) visitCall(call *ast.Call) Value {
 	caller := interpreter.Visit(call.Callee)
 
-	if caller == nil {
-		interpreter.ReportT("'%s' does not exist.", call.Callee.GetToken(), call.Callee.GetToken().Lexeme)
-	}
-
 	if _, ok := caller.(TinyCallable); !ok {
 		interpreter.ReportT("'%s' is not callable.", call.GetToken(), caller.Inspect())
 	}
 
 	callable := caller.(TinyCallable)
+
+	if callable.Arity() != len(call.Arguments) {
+		interpreter.ReportT(
+			"Function '%s' expected %d arguments but received %d",
+			call.Token,
+			call.Token.Lexeme,
+			callable.Arity(),
+			len(call.Arguments),
+		)
+	}
 
 	arguments := make([]Value, 0, len(call.Arguments))
 

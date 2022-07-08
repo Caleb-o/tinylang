@@ -99,17 +99,10 @@ func (parser *Parser) consumeIfExists(expected lexer.TokenKind) {
 }
 
 func (parser *Parser) functionCall(outer *ast.Block, callee ast.Node) ast.Node {
-	arguments := make([]*ast.Argument, 0)
+	arguments := make([]ast.Node, 0)
 
 	for parser.current.Kind != lexer.CLOSEPAREN {
-		potential_label := parser.expr(outer)
-
-		if _, ok := parser.match(lexer.COLON); ok {
-			arguments = append(arguments, &ast.Argument{potential_label.GetToken(), parser.expr(outer)})
-		} else {
-			arguments = append(arguments, &ast.Argument{nil, potential_label})
-		}
-
+		arguments = append(arguments, parser.expr(outer))
 		parser.consumeIfExists(lexer.COMMA)
 	}
 	parser.consume(lexer.CLOSEPAREN)
