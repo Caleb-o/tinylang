@@ -513,6 +513,14 @@ func (v *NameSpaceValue) Get(identifier string) (Value, bool) {
 	return nil, false
 }
 
+func (v *NameSpaceValue) Set(identifier string, value Value) (Value, bool) {
+	if _, ok := v.Members[identifier]; ok {
+		v.Members[identifier] = value
+		return value, true
+	}
+	return nil, false
+}
+
 func (v *ListVal) GetType() Type { return &ListType{} }
 func (v *ListVal) Inspect() string {
 	var sb strings.Builder

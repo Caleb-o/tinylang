@@ -337,8 +337,9 @@ func (interpreter *Interpreter) visitIdentifier(id *ast.Identifier) Value {
 }
 
 func (interpreter *Interpreter) visitVarDecl(decl *ast.VariableDecl) Value {
-	interpreter.insert(decl.GetToken().Lexeme, interpreter.Visit(decl.Expr).Copy())
-	return &UnitVal{}
+	value := interpreter.Visit(decl.Expr).Copy()
+	interpreter.insert(decl.GetToken().Lexeme, value)
+	return value
 }
 
 func (interpreter *Interpreter) visitPrint(print *ast.Print) Value {
@@ -495,6 +496,10 @@ func (interpreter *Interpreter) visitSet(set *ast.Set) Value {
 			return ret.Copy()
 		}
 	case *StructInstanceValue:
+		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
+			return ret.Copy()
+		}
+	case *NameSpaceValue:
 		if ret, ok := t.Set(set.GetToken().Lexeme, obj); ok {
 			return ret.Copy()
 		}
