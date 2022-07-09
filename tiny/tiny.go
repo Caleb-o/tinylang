@@ -510,8 +510,21 @@ func (tiny *Tiny) createBuiltins() {
 		return &runtime.IntVal{Value: values[0].(*runtime.IntVal).Value % values[1].(*runtime.IntVal).Value}
 	})
 
-	// Set the seed
-	rand.Seed(time.Now().UnixNano())
+	tiny.addBuiltinFn("rand_seed_init", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		seed := time.Now().UnixNano()
+		rand.Seed(seed)
+
+		return &runtime.IntVal{Value: int(seed)}
+	})
+
+	tiny.addBuiltinFn("rand_seed_set", []string{"seed"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		if _, ok := values[0].(*runtime.IntVal); !ok {
+			interpreter.Report("Expected int as seed")
+			return nil
+		}
+
+		return &runtime.UnitVal{}
+	})
 
 	tiny.addBuiltinFn("rand", []string{"max"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		if _, ok := values[0].(*runtime.IntVal); !ok {
