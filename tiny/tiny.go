@@ -48,6 +48,7 @@ func (tiny *Tiny) Run() {
 	var (
 		checkOnly bool
 		usevm     bool
+		debug     bool
 		test      bool
 		script    string
 	)
@@ -55,6 +56,7 @@ func (tiny *Tiny) Run() {
 	flag.BoolVar(&checkOnly, "check", false, "Checks if code is valid and does not run")
 	flag.BoolVar(&test, "test", false, "Run tests")
 	flag.BoolVar(&usevm, "vm", false, "Use the new VM to run code")
+	flag.BoolVar(&debug, "d", false, "Allow debugging features")
 	flag.StringVar(&script, "script", "", "Script to run")
 	flag.Parse()
 
@@ -96,7 +98,7 @@ func (tiny *Tiny) Run() {
 				chunk := compiler.Compile(program)
 
 				vm := vm.NewVM(chunk)
-				vm.Run()
+				vm.Run(debug)
 			} else {
 				interpreter.Run(program)
 			}

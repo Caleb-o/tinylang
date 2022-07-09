@@ -17,6 +17,13 @@ const (
 	Sub
 	Mul
 	Div
+
+	Less
+	LessEq
+	Greater
+	GreaterEq
+	EqualEqual
+	NotEqual
 )
 
 func (b binaryOp) Operator() string {
@@ -29,6 +36,19 @@ func (b binaryOp) Operator() string {
 		return "*"
 	case Div:
 		return "/"
+
+	case Less:
+		return "<"
+	case LessEq:
+		return "<="
+	case Greater:
+		return ">"
+	case GreaterEq:
+		return ">="
+	case EqualEqual:
+		return "=="
+	case NotEqual:
+		return "!="
 	}
 
 	return ""
@@ -44,6 +64,9 @@ func (b binaryOp) ToKind() lexer.TokenKind {
 		return lexer.STAR
 	case Div:
 		return lexer.SLASH
+
+	case Less:
+		return lexer.LESS
 	}
 
 	return lexer.ERROR
@@ -72,11 +95,21 @@ func (vm *VM) Report(msg string, args ...any) {
 	shared.ReportErrFatal("Runtime: " + res)
 }
 
-func (vm *VM) Run() {
-	vm.chunk.Debug()
+func (vm *VM) Run(debug bool) {
+	if debug {
+		vm.chunk.Debug()
+	}
 
 	for vm.ip < len(vm.chunk.Instructions) {
 		switch vm.chunk.Instructions[vm.ip] {
+		case compiler.OpenScope:
+			vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
+			vm.ip++
+
+		case compiler.CloseScope:
+			vm.scope = vm.scope[:len(vm.scope)-1]
+			vm.ip++
+
 		case compiler.Push:
 			vm.stack = append(vm.stack, vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]])
 			vm.ip += 2
@@ -85,22 +118,75 @@ func (vm *VM) Run() {
 			vm.binaryOp(Add)
 			vm.ip++
 
+		case compiler.Sub:
+			vm.binaryOp(Sub)
+			vm.ip++
+
+		case compiler.Mul:
+			vm.binaryOp(Mul)
+			vm.ip++
+
+		case compiler.Div:
+			vm.binaryOp(Div)
+			vm.ip++
+
+		case compiler.Less:
+			vm.binaryOp(Less)
+			vm.ip++
+
+		case compiler.LessEq:
+			vm.binaryOp(LessEq)
+			vm.ip++
+
+		case compiler.Greater:
+			vm.binaryOp(Greater)
+			vm.ip++
+
+		case compiler.GreaterEq:
+			vm.binaryOp(GreaterEq)
+			vm.ip++
+
+		case compiler.EqEq:
+			vm.binaryOp(EqualEqual)
+			vm.ip++
+
+		case compiler.NotEq:
+			vm.binaryOp(NotEqual)
+			vm.ip++
+
 		case compiler.Get:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]]
-			vm.push(vm.scope[len(vm.scope)-1].variables[identifier.Inspect()])
-			vm.ip += 2
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]]
+			vm.push(vm.scope[vm.chunk.Instructions[vm.ip+1]].variables[identifier.Inspect()])
+			vm.ip += 3
 
 		case compiler.Set:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-			vm.scope[len(vm.scope)-1].variables[identifier] = vm.pop()
-			vm.ip += 2
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]].Inspect()
+			vm.scope[vm.chunk.Instructions[vm.ip+1]].variables[identifier] = vm.pop()
+			vm.ip += 3
 
 		case compiler.Print:
 			vm.print()
 			vm.ip += 2
 
+		case compiler.Jump:
+			vm.ip = int(vm.chunk.Instructions[vm.ip+1])
+
+		case compiler.JumpFalse:
+			condition := vm.pop()
+
+			value, _ := condition.(*runtime.BoolVal)
+
+			if !value.Value {
+				vm.ip = int(vm.chunk.Instructions[vm.ip+1])
+				break
+			}
+			vm.ip += 2
+
 		case compiler.Halt:
 			vm.ip += 1
+
+		default:
+			vm.Report("Unknown operation in loop %d at position %d", vm.chunk.Instructions[vm.ip], vm.ip)
 		}
 	}
 }

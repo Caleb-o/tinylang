@@ -10,17 +10,29 @@ import (
 
 type Compiler struct {
 	chunk *Chunk
+	depth int
 }
 
 func NewCompiler() *Compiler {
 	return &Compiler{
-		&Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
+		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
+		depth: 0,
 	}
 }
 
 func (c *Compiler) Compile(program *ast.Program) *Chunk {
 	c.compileProgram(c.chunk, program)
 	return c.chunk
+}
+
+func (c *Compiler) begin() {
+	c.chunk.addOp(OpenScope)
+	c.depth++
+}
+
+func (c *Compiler) end() {
+	c.chunk.addOp(CloseScope)
+	c.depth--
 }
 
 func (c *Compiler) addVariable(identifier string) byte {
@@ -50,6 +62,11 @@ func (c *Compiler) compileProgram(chunk *Chunk, program *ast.Program) {
 
 func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	switch n := node.(type) {
+	case *ast.Block:
+		for _, stmt := range n.Statements {
+			c.visit(chunk, stmt)
+		}
+
 	case *ast.BinaryOp:
 		c.binaryOp(chunk, n)
 	case *ast.UnaryOp:
@@ -63,10 +80,14 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 
 	case *ast.VariableDecl:
 		c.variableDecl(chunk, n)
+	case *ast.Assign:
+		c.variableAssign(chunk, n)
+	case *ast.While:
+		c.whileStmt(chunk, n)
 	case *ast.Literal:
 		chunk.addOps(Push, chunk.addConstant(n))
 	case *ast.Identifier:
-		c.chunk.addOps(Get, c.getVariable(n.GetToken().Lexeme))
+		c.chunk.addOps(Get, byte(c.depth), c.getVariable(n.GetToken().Lexeme))
 
 	default:
 		fmt.Printf("Gen: Unimplemented node '%s'", reflect.TypeOf(node))
@@ -86,6 +107,19 @@ func (c *Compiler) binaryOp(chunk *Chunk, binop *ast.BinaryOp) {
 		chunk.addOp(Mul)
 	case lexer.SLASH:
 		chunk.addOp(Div)
+
+	case lexer.LESS:
+		chunk.addOp(Less)
+	case lexer.LESS_EQUAL:
+		chunk.addOp(LessEq)
+	case lexer.GREATER:
+		chunk.addOp(Greater)
+	case lexer.GREATER_EQUAL:
+		chunk.addOp(GreaterEq)
+	case lexer.EQUAL_EQUAL:
+		chunk.addOp(EqEq)
+	case lexer.NOT_EQUAL:
+		chunk.addOp(NotEq)
 	}
 }
 
@@ -97,5 +131,33 @@ func (c *Compiler) unaryOp(chunk *Chunk, unary *ast.UnaryOp) {
 func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 	// Analyser should pickup clashes, so we don't need to check names
 	c.visit(chunk, decl.Expr)
-	c.chunk.addOps(Set, c.addVariable(decl.GetToken().Lexeme))
+	c.chunk.addOps(Set, byte(c.depth), c.addVariable(decl.GetToken().Lexeme))
+}
+
+func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
+	c.visit(chunk, assign.Expr)
+	c.chunk.addOps(Set, byte(c.depth), c.getVariable(assign.GetToken().Lexeme))
+}
+
+func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
+	c.begin()
+
+	if stmt.VarDec != nil {
+		c.variableDecl(chunk, stmt.VarDec)
+	}
+
+	condition := len(c.chunk.Instructions)
+	c.visit(chunk, stmt.Condition)
+
+	false_expr := c.chunk.addOps(JumpFalse, 0)
+	c.visit(chunk, stmt.Body)
+
+	if stmt.Increment != nil {
+		c.visit(chunk, stmt.Increment)
+	}
+
+	c.chunk.addOps(Jump, byte(condition))
+	c.end()
+
+	c.chunk.upateOpPos(false_expr)
 }

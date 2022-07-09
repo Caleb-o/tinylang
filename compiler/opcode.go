@@ -12,20 +12,30 @@ import (
 const (
 	Halt byte = iota
 
-	Push
+	Push // Push const_index
 	Pop
 	Negate
+
+	OpenScope
+	CloseScope
 
 	Add
 	Sub
 	Mul
 	Div
 
-	Get
-	Set
+	Less
+	LessEq
+	Greater
+	GreaterEq
+	EqEq
+	NotEq
 
-	Jump
-	JumpFalse
+	Get // Get scope_index const_index
+	Set // Set scope_index const_index
+
+	Jump      // Jump IP
+	JumpFalse // JumpFalse IP
 
 	Print
 )
@@ -48,6 +58,18 @@ func (c *Chunk) Debug() {
 		switch op {
 		case Halt:
 			sb.WriteString("Halt")
+			idx++
+
+		case OpenScope:
+			sb.WriteString("Open Scope")
+			idx++
+
+		case CloseScope:
+			sb.WriteString("Close Scope")
+			idx++
+
+		case Negate:
+			sb.WriteString("Negate")
 			idx++
 
 		case Push:
@@ -74,6 +96,30 @@ func (c *Chunk) Debug() {
 			sb.WriteString("Divide")
 			idx++
 
+		case Less:
+			sb.WriteString("Less")
+			idx++
+
+		case LessEq:
+			sb.WriteString("Less Equal")
+			idx++
+
+		case Greater:
+			sb.WriteString("Greater")
+			idx++
+
+		case GreaterEq:
+			sb.WriteString("Greater Equal")
+			idx++
+
+		case EqEq:
+			sb.WriteString("Equal Equal")
+			idx++
+
+		case NotEq:
+			sb.WriteString("Not Equal")
+			idx++
+
 		case Get:
 			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
 			idx += 2
@@ -86,8 +132,16 @@ func (c *Chunk) Debug() {
 			sb.WriteString(fmt.Sprintf("Print<Count %d>", c.Instructions[idx+1]))
 			idx += 2
 
+		case Jump:
+			sb.WriteString(fmt.Sprintf("Jump<Position %d>", c.Instructions[idx+1]))
+			idx += 2
+
+		case JumpFalse:
+			sb.WriteString(fmt.Sprintf("Jump False<Position %d>", c.Instructions[idx+1]))
+			idx += 2
+
 		default:
-			sb.WriteString("Unknown")
+			sb.WriteString(fmt.Sprintf("Unknown<%d>", op))
 			idx++
 		}
 
@@ -97,13 +151,18 @@ func (c *Chunk) Debug() {
 	fmt.Println(sb.String())
 }
 
-func (c *Chunk) addOp(code byte) {
+func (c *Chunk) addOp(code byte) int {
 	c.Instructions = append(c.Instructions, code)
+	return len(c.Instructions) - 1
 }
 
-func (c *Chunk) addOps(left byte, right byte) {
-	c.Instructions = append(c.Instructions, left)
-	c.Instructions = append(c.Instructions, right)
+func (c *Chunk) addOps(operands ...byte) int {
+	c.Instructions = append(c.Instructions, operands...)
+	return len(c.Instructions) - 1
+}
+
+func (c *Chunk) upateOpPos(index int) {
+	c.Instructions[index] = byte(len(c.Instructions) - 1)
 }
 
 func (c *Chunk) addConstant(node *ast.Literal) byte {
