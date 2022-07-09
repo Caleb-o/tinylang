@@ -224,25 +224,25 @@ namespace Game {
 					};
 
 					"w" => {
-						if self.cursor_y > 0 {
+						if self.cursor_y - 1 >= 0 {
 							self.cursor_y = self.cursor_y - 1;
 						}
 					};
 
 					"s" => {
-						if self.cursor_y < self.height {
+						if self.cursor_y + 1 < self.height {
 							self.cursor_y = self.cursor_y + 1;
 						}
 					};
 
 					"a" => {
-						if self.cursor_x > 0 {
+						if self.cursor_x - 1 >= 0 {
 							self.cursor_x = self.cursor_x - 1;
 						}
 					};
 
 					"d" => {
-						if self.cursor_x < self.width {
+						if self.cursor_x + 1 < self.width {
 							self.cursor_x = self.cursor_x + 1;
 						}
 					};
@@ -301,7 +301,92 @@ namespace Game {
 	}
 }
 
+namespace Menu {
+	class Item {
+		var name;
+		var item;
+
+		function Item(name, item) {
+			self.name = name;
+			self.item = item;
+		}
+	}
+
+
+	class Main {
+		var running;
+		var idx;
+		var items;
+
+		function Main(items) {
+			self.running = true;
+			self.idx = 0;
+			self.items = items;
+		}
+
+		function run() {
+			while self.running {
+				self.render();
+
+				match builtin.read_line() {
+					"w" => {
+						if self.idx - 1 >= 0 {
+							self.idx = self.idx - 1;
+						}
+					};
+
+					"s" => {
+						if self.idx + 1 < builtin.len(self.items) {
+							self.idx = self.idx + 1;
+						}
+					};
+
+					"" => {
+						self.items[self.idx].item();
+						return;
+					};
+				}
+
+				builtin.reset();
+			}
+		}
+
+		function render() {
+			print("Select Field Size");
+			while var idx = 0; idx < builtin.len(self.items); idx += 1 {
+				if self.idx == idx {
+					builtin.out("> ");
+				} else {
+					builtin.out("  ");
+				}
+
+				print(idx + 1, ". ", self.items[idx].name);
+			}
+
+			print();
+			print("w - up | s - down");
+		}
+	}
+}
+
 # Initialise with random seed
 builtin.rand_seed_init();
-let field = Game.Field(16, 16);
-field.run();
+var field = ();
+
+let menu = Menu.Main(
+	[
+		Menu.Item("8x8", function() { field = Game.Field(8, 8); }),
+		Menu.Item("16x16", function() { field = Game.Field(16, 16); }),
+		Menu.Item("24x24", function() { field = Game.Field(24, 24); }),
+		Menu.Item("Exit", function() {}),
+	]
+);
+
+menu.run();
+builtin.reset();
+
+# Run the game
+if !builtin.is_unit(field) {
+	field.run();
+	builtin.reset();
+}

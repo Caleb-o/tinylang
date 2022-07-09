@@ -382,6 +382,11 @@ func (tiny *Tiny) createBuiltins() {
 		return runtime.NewThrow(&runtime.StringVal{Value: fmt.Sprintf("Could not convert '%s' to string", values[0].Inspect())})
 	})
 
+	tiny.addBuiltinFn("is_unit", []string{"value"}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
+		_, ok := values[0].(*runtime.UnitVal)
+		return &runtime.BoolVal{Value: ok}
+	})
+
 	// --- Misc
 	tiny.addBuiltinFn("todo", []string{}, func(interpreter *runtime.Interpreter, values []runtime.Value) runtime.Value {
 		interpreter.Report("TODO: unimplemented")
