@@ -303,5 +303,5 @@ namespace Game {
 
 # Initialise with random seed
 builtin.rand_seed_init();
-let field = Game.Field(15, 15);
+let field = Game.Field(16, 16);
 field.run();
