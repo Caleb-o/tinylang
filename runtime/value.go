@@ -556,13 +556,7 @@ func (v *ListVal) Set(operation lexer.TokenKind, index int, other Value) (Value,
 	case lexer.EQUAL:
 		v.Values[index] = other
 		return other, true
-	case lexer.PLUS_EQUAL:
-		fallthrough
-	case lexer.MINUS_EQUAL:
-		fallthrough
-	case lexer.STAR_EQUAL:
-		fallthrough
-	case lexer.SLASH_EQUAL:
+	case lexer.PLUS_EQUAL, lexer.MINUS_EQUAL, lexer.STAR_EQUAL, lexer.SLASH_EQUAL:
 		result := v.Values[index].Modify(operation, other)
 		return v.Values[index], result
 	}

@@ -114,15 +114,7 @@ func (parser *Parser) primary(outer *ast.Block) ast.Node {
 	ftoken := parser.current
 
 	switch parser.current.Kind {
-	case lexer.INT:
-		fallthrough
-	case lexer.FLOAT:
-		fallthrough
-	case lexer.BOOL:
-		fallthrough
-	case lexer.CHAR:
-		fallthrough
-	case lexer.STRING:
+	case lexer.INT, lexer.FLOAT, lexer.BOOL, lexer.CHAR, lexer.STRING:
 		parser.consume(ftoken.Kind)
 		return &ast.Literal{Token: ftoken}
 

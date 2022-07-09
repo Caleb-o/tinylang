@@ -213,7 +213,7 @@ namespace Game {
 			while !self.done {
 				self.render();
 
-				print("wasd - Move | f - Flag | q - Open | e - Exit | r - Reveal");
+				print("wasd - Move | f - Flag | <ENTER> - Open | e - Exit | r - Reveal");
 				builtin.out(">> ");
 				let input = builtin.read_line();
 
@@ -247,8 +247,8 @@ namespace Game {
 						}
 					};
 
+					"" => self.open();
 					"f" => self.set_flag();
-					"q" => self.open();
 					"r" => self.open_all();
 				}
 

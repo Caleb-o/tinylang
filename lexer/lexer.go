@@ -113,13 +113,7 @@ func (lexer *Lexer) skipWhitespace() {
 			lexer.column = 1
 			lexer.pos++
 
-		case ' ':
-			fallthrough
-		case '\t':
-			fallthrough
-		case '\b':
-			fallthrough
-		case '\r':
+		case ' ', '\t', '\b', '\r':
 			lexer.advance()
 
 		default:
