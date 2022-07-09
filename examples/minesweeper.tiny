@@ -1,0 +1,246 @@
+namespace Game {
+	let FREE = 0;
+	let BOMB = 1;
+
+	let BOMB_CHANCE = 20;
+
+	class Tile {
+		var state;
+		var open;
+		var flagged;
+		var neighbours;
+
+		function Tile(state) {
+			self.state = state;
+			self.open = false;
+			self.flagged = false;
+			self.neighbours = 0;
+		}
+	}
+
+	class Field {
+		var done;
+		var first;
+		var bombs;
+		var width;
+		var height;
+		var tiles;
+		var cursor_x;
+		var cursor_y;
+
+		function Field(width, height) {
+			self.done = false;
+			self.first = true;
+			self.bombs = 0;
+
+			self.width = width;
+			self.height = height;
+			self.tiles = [];
+
+			self.cursor_x = 0;
+			self.cursor_y = 0;
+
+			while var idx = 0; idx < width * height; idx += 1 {
+				self.tiles = self.tiles + [Tile(FREE)];
+			}
+		}
+
+		function initialise() {
+			while var idx = 0; idx < self.width * self.height; idx += 1 {
+				if !self.tiles[idx].open {
+					var state = FREE;
+
+					if builtin.rand_range(0, 100) < BOMB_CHANCE {
+						state = BOMB;
+						self.bombs = self.bombs + 1;
+					}
+
+					self.tiles[idx].state = state;
+				}
+			}
+		}
+
+		function getStateOf(index) {
+			let t = self.tiles[index];
+
+			if !t.open {
+				if t.flagged {
+					return "?";	
+				}
+				return ".";
+			} else {
+				match t.state {
+					FREE => {
+						if t.neighbours == 0 {
+							return " ";
+						}
+						return builtin.to_string(t.neighbours);
+					};
+					BOMB => return "*";
+				}
+			}
+
+			throw "Invalid state";
+		}
+
+		function findNeighbours(x, y) {
+			var bombCount = 0;
+
+			let check = function(x, y) {
+				var xreal = x;
+				var yreal = y;
+
+				# Disallow wrapping, this messes with the count
+				if xreal < 0 || xreal >= self.width {
+					return;
+				}
+
+				# Disallow wrapping, this messes with the count
+				if yreal < 0 || yreal >= self.height {
+					return;
+				}
+
+				if self.tiles[xreal + self.width * yreal].state == BOMB {
+					bombCount += 1;
+				}
+			};
+
+			check(x - 1, y);
+			check(x + 1, y);
+			check(x, y - 1);
+			check(x, y + 1);
+			check(x - 1, y - 1);
+			check(x - 1, y + 1);
+			check(x + 1, y - 1);
+			check(x + 1, y + 1);
+
+			return bombCount;
+		}
+
+		function setFlag() {
+			let t = self.tiles[self.cursor_x + self.width * self.cursor_y];
+
+			if !t.open {
+				t.flagged = !t.flagged;
+			}
+		}
+
+		function open() {
+			let t = self.tiles[self.cursor_x + self.width * self.cursor_y];
+
+			if !t.open {
+				t.open = true;
+
+				if t.state == BOMB {
+					self.end("Game Over!");
+					return;
+				}
+
+				t.neighbours = self.findNeighbours(self.cursor_x, self.cursor_y);
+			}
+
+			# Initialise the field after the first attempt
+			if self.first {
+				self.first = false;
+				self.initialise();
+			}
+		}
+
+		function openAll() {
+			while var idx = 0; idx < self.width * self.height; idx += 1 {
+				let t = self.tiles[idx];
+
+				if t.state == BOMB {
+					t.open = true;
+				}
+			}
+		}
+
+		function end(message) {
+			self.done = true;
+			builtin.reset();
+			self.openAll();
+			self.render();
+
+			print(message);
+			builtin.sleep(4000);
+		}
+
+		function run() {
+			while !self.done {
+				self.render();
+
+				print("wasd - Move | f - Flag | q - Open | e - Exit | r - Reveal");
+				builtin.out(">> ");
+				let input = builtin.read_line();
+
+				match input {
+					"e" => {
+						self.end("Goodbye!");
+						return;
+					};
+
+					"w" => {
+						if self.cursor_y > 0 {
+							self.cursor_y = self.cursor_y - 1;
+						}
+					};
+
+					"s" => {
+						if self.cursor_y < self.height {
+							self.cursor_y = self.cursor_y + 1;
+						}
+					};
+
+					"a" => {
+						if self.cursor_x > 0 {
+							self.cursor_x = self.cursor_x - 1;
+						}
+					};
+
+					"d" => {
+						if self.cursor_x < self.width {
+							self.cursor_x = self.cursor_x + 1;
+						}
+					};
+
+					"f" => self.setFlag();
+					"q" => self.open();
+					"r" => self.openAll();
+				}
+
+				builtin.reset();
+			}
+		}
+
+		function render() {
+			if self.first {
+				print("### MineSweeper ###");
+			} else {
+				print("### MineSweeper : Bombs ", self.bombs, " ###");
+			}
+			while var idx = 0; idx < self.width * self.height; idx += 1 {
+				if idx > 0 && builtin.mod(idx, self.width) == 0 {
+					print();
+				}
+
+				let x = builtin.mod(idx, self.width);
+				let y = idx / self.width;
+
+				if x == self.cursor_x && y == self.cursor_y {
+					builtin.out("[" + self.getStateOf(idx) + "]");
+				} else {
+					builtin.out(" " + self.getStateOf(idx) + " ");
+				}
+			}
+
+			print();
+			print();
+		}
+	}
+}
+
+# Initialise with random seed
+builtin.rand_seed_init();
+let field = Game.Field(10, 10);
+field.run();
