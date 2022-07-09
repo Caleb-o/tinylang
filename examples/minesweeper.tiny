@@ -60,7 +60,7 @@ namespace Game {
 			}
 		}
 
-		function getStateOf(index) {
+		function get_state_of(index) {
 			let t = self.tiles[index];
 
 			if !t.open {
@@ -83,24 +83,21 @@ namespace Game {
 			throw "Invalid state";
 		}
 
-		function findNeighbours(x, y) {
+		function find_neighbours(x, y) {
 			var bombCount = 0;
 
 			let check = function(x, y) {
-				var xreal = x;
-				var yreal = y;
-
 				# Disallow wrapping, this messes with the count
-				if xreal < 0 || xreal >= self.width {
+				if x < 0 || x >= self.width {
 					return;
 				}
 
 				# Disallow wrapping, this messes with the count
-				if yreal < 0 || yreal >= self.height {
+				if y < 0 || y >= self.height {
 					return;
 				}
 
-				if self.tiles[xreal + self.width * yreal].state == BOMB {
+				if self.tiles[x + self.width * y].state == BOMB {
 					bombCount += 1;
 				}
 			};
@@ -117,11 +114,54 @@ namespace Game {
 			return bombCount;
 		}
 
-		function setFlag() {
+		function set_flag() {
 			let t = self.tiles[self.cursor_x + self.width * self.cursor_y];
 
 			if !t.open {
 				t.flagged = !t.flagged;
+			}
+		}
+
+		function open_free(x, y) {
+			if self.tiles[x + self.width * y].state == FREE {
+				let check = function(x, y) {
+					# Disallow wrapping, this messes with the count
+					if x < 0 || x >= self.width {
+						return;
+					}
+
+					# Disallow wrapping, this messes with the count
+					if y < 0 || y >= self.height {
+						return;
+					}
+
+					let index = x + self.width * y;
+					if self.tiles[index].open {
+						return;
+					}
+
+					if self.tiles[index].state == BOMB {
+						return;
+					}
+
+					# Don't open tiles with nearby bombs
+					if self.find_neighbours(x, y) > 0 {
+						return;
+					}
+
+					# Can just set the field, since we check for no neighbours and bombs
+					self.tiles[x + self.width * y].open = true;
+					self.open_free(x, y);
+				};
+
+				check(x - 1, y);
+				check(x + 1, y);
+				check(x, y - 1);
+				check(x, y + 1);
+				check(x - 1, y - 1);
+				check(x - 1, y + 1);
+				check(x + 1, y - 1);
+				check(x + 1, y + 1);
 			}
 		}
 
@@ -136,7 +176,10 @@ namespace Game {
 					return;
 				}
 
-				t.neighbours = self.findNeighbours(self.cursor_x, self.cursor_y);
+				t.neighbours = self.find_neighbours(self.cursor_x, self.cursor_y);
+				if !self.first {
+					self.open_free(self.cursor_x, self.cursor_y);
+				}
 			}
 
 			# Initialise the field after the first attempt
@@ -146,7 +189,7 @@ namespace Game {
 			}
 		}
 
-		function openAll() {
+		function open_all() {
 			while var idx = 0; idx < self.width * self.height; idx += 1 {
 				let t = self.tiles[idx];
 
@@ -159,7 +202,7 @@ namespace Game {
 		function end(message) {
 			self.done = true;
 			builtin.reset();
-			self.openAll();
+			self.open_all();
 			self.render();
 
 			print(message);
@@ -204,13 +247,22 @@ namespace Game {
 						}
 					};
 
-					"f" => self.setFlag();
+					"f" => self.set_flag();
 					"q" => self.open();
-					"r" => self.openAll();
+					"r" => self.open_all();
 				}
 
 				builtin.reset();
 			}
+		}
+
+		function render_line() {
+			builtin.out("--");
+			while var idx = 0; idx < self.width; idx += 1 {
+				builtin.out("---");
+			}
+			builtin.out("--");
+			print();
 		}
 
 		function render() {
@@ -219,20 +271,29 @@ namespace Game {
 			} else {
 				print("### MineSweeper : Bombs ", self.bombs, " ###");
 			}
+
+			self.render_line();
+
+			builtin.out("| ");
 			while var idx = 0; idx < self.width * self.height; idx += 1 {
 				if idx > 0 && builtin.mod(idx, self.width) == 0 {
+					builtin.out(" |");
 					print();
+					builtin.out("| ");
 				}
 
 				let x = builtin.mod(idx, self.width);
 				let y = idx / self.width;
 
 				if x == self.cursor_x && y == self.cursor_y {
-					builtin.out("[" + self.getStateOf(idx) + "]");
+					builtin.out("[" + self.get_state_of(idx) + "]");
 				} else {
-					builtin.out(" " + self.getStateOf(idx) + " ");
+					builtin.out(" " + self.get_state_of(idx) + " ");
 				}
 			}
+			print(" |");
+
+			self.render_line();
 
 			print();
 			print();
@@ -242,5 +303,5 @@ namespace Game {
 
 # Initialise with random seed
 builtin.rand_seed_init();
-let field = Game.Field(10, 10);
+let field = Game.Field(15, 15);
 field.run();
