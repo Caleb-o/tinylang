@@ -34,9 +34,13 @@ const (
 	Get // Get scope_index const_index
 	Set // Set scope_index const_index
 
+	NewFn // NewFn arity start name_index
+	Call  // Call scope_index name_index
+
 	Jump      // Jump IP
 	JumpFalse // JumpFalse IP
 
+	Return
 	Print
 )
 
@@ -121,12 +125,20 @@ func (c *Chunk) Debug() {
 			idx++
 
 		case Get:
-			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
+			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
+			idx += 3
 
 		case Set:
-			sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
+			sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
+			idx += 3
+
+		case NewFn:
+			sb.WriteString(fmt.Sprintf("NewFn<Params %d | Start %d | ID '%s'>", c.Instructions[idx+1], c.Instructions[idx+2], c.Constants[c.Instructions[idx+3]].Inspect()))
+			idx += 4
+
+		case Call:
+			sb.WriteString(fmt.Sprintf("Call<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
+			idx += 3
 
 		case Print:
 			sb.WriteString(fmt.Sprintf("Print<Count %d>", c.Instructions[idx+1]))
@@ -140,12 +152,17 @@ func (c *Chunk) Debug() {
 			sb.WriteString(fmt.Sprintf("Jump False<Position %d>", c.Instructions[idx+1]))
 			idx += 2
 
+		case Return:
+			sb.WriteString("Return")
+			idx++
+
 		default:
 			sb.WriteString(fmt.Sprintf("Unknown<%d>", op))
 			idx++
 		}
 
 		sb.WriteByte('\n')
+		// fmt.Println(sb.String())
 	}
 
 	fmt.Println(sb.String())
@@ -163,6 +180,10 @@ func (c *Chunk) addOps(operands ...byte) int {
 
 func (c *Chunk) upateOpPos(index int) {
 	c.Instructions[index] = byte(len(c.Instructions) - 1)
+}
+
+func (c *Chunk) upateOpPosNext(index int) {
+	c.Instructions[index] = byte(len(c.Instructions))
 }
 
 func (c *Chunk) addConstant(node *ast.Literal) byte {

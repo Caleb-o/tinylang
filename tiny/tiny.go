@@ -97,8 +97,8 @@ func (tiny *Tiny) Run() {
 				compiler := compiler.NewCompiler()
 				chunk := compiler.Compile(program)
 
-				vm := vm.NewVM(chunk)
-				vm.Run(debug)
+				vm := vm.NewVM(debug, chunk)
+				vm.Run()
 			} else {
 				interpreter.Run(program)
 			}

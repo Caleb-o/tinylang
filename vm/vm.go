@@ -5,89 +5,33 @@ import (
 	"reflect"
 	"strings"
 	"tiny/compiler"
-	"tiny/lexer"
 	"tiny/runtime"
 	"tiny/shared"
 )
-
-type binaryOp byte
-
-const (
-	Add binaryOp = iota
-	Sub
-	Mul
-	Div
-
-	Less
-	LessEq
-	Greater
-	GreaterEq
-	EqualEqual
-	NotEqual
-)
-
-func (b binaryOp) Operator() string {
-	switch b {
-	case Add:
-		return "+"
-	case Sub:
-		return "-"
-	case Mul:
-		return "*"
-	case Div:
-		return "/"
-
-	case Less:
-		return "<"
-	case LessEq:
-		return "<="
-	case Greater:
-		return ">"
-	case GreaterEq:
-		return ">="
-	case EqualEqual:
-		return "=="
-	case NotEqual:
-		return "!="
-	}
-
-	return ""
-}
-
-func (b binaryOp) ToKind() lexer.TokenKind {
-	switch b {
-	case Add:
-		return lexer.PLUS
-	case Sub:
-		return lexer.MINUS
-	case Mul:
-		return lexer.STAR
-	case Div:
-		return lexer.SLASH
-
-	case Less:
-		return lexer.LESS
-	}
-
-	return lexer.ERROR
-}
 
 type Scope struct {
 	variables map[string]runtime.Value
 }
 
-type VM struct {
-	chunk *compiler.Chunk
-	ip    int
-	stack []runtime.Value
-	scope []Scope
+type Frame struct {
+	ret_to      int
+	stack_start int
 }
 
-func NewVM(chunk *compiler.Chunk) *VM {
+type VM struct {
+	debug  bool
+	chunk  *compiler.Chunk
+	ip     int
+	stack  []runtime.Value
+	scope  []Scope
+	frames []Frame
+}
+
+func NewVM(debug bool, chunk *compiler.Chunk) *VM {
 	scopes := make([]Scope, 0, 1)
 	scopes = append(scopes, Scope{make(map[string]runtime.Value)})
 
-	return &VM{chunk, 0, make([]runtime.Value, 0), scopes}
+	return &VM{debug, chunk, 0, make([]runtime.Value, 0), scopes, make([]Frame, 0)}
 }
 
 func (vm *VM) Report(msg string, args ...any) {
@@ -95,23 +39,26 @@ func (vm *VM) Report(msg string, args ...any) {
 	shared.ReportErrFatal("Runtime: " + res)
 }
 
-func (vm *VM) Run(debug bool) {
-	if debug {
+func (vm *VM) Run() {
+	if vm.debug {
 		vm.chunk.Debug()
 	}
+
+	vm.newFrame(-1, 0)
+	defer vm.dropFrame()
 
 	for vm.ip < len(vm.chunk.Instructions) {
 		switch vm.chunk.Instructions[vm.ip] {
 		case compiler.OpenScope:
-			vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
+			vm.begin()
 			vm.ip++
 
 		case compiler.CloseScope:
-			vm.scope = vm.scope[:len(vm.scope)-1]
+			vm.end()
 			vm.ip++
 
 		case compiler.Push:
-			vm.stack = append(vm.stack, vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]])
+			vm.push(vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]])
 			vm.ip += 2
 
 		case compiler.Add:
@@ -164,6 +111,32 @@ func (vm *VM) Run(debug bool) {
 			vm.scope[vm.chunk.Instructions[vm.ip+1]].variables[identifier] = vm.pop()
 			vm.ip += 3
 
+		case compiler.NewFn:
+			arity := vm.chunk.Instructions[vm.ip+1]
+			start := vm.chunk.Instructions[vm.ip+2]
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+3]].Inspect()
+
+			// Assume global scope
+			vm.scope[0].variables[identifier] = &runtime.CompiledFunctionValue{int(start), arity, nil}
+			vm.ip += 4
+
+		case compiler.Call:
+			// Push current IP to stack
+			scope := vm.chunk.Instructions[vm.ip+1]
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]].Inspect()
+
+			fn, _ := vm.scope[scope].variables[identifier].(*runtime.CompiledFunctionValue)
+			vm.newFrame(vm.ip+3, int(fn.Arity))
+
+			vm.ip = fn.Start_ip
+
+		case compiler.Return:
+			frame := vm.dropFrame()
+
+			// Remove stack values
+			vm.stack = vm.stack[:frame.stack_start]
+			vm.ip = frame.ret_to
+
 		case compiler.Print:
 			vm.print()
 			vm.ip += 2
@@ -189,6 +162,32 @@ func (vm *VM) Run(debug bool) {
 			vm.Report("Unknown operation in loop %d at position %d", vm.chunk.Instructions[vm.ip], vm.ip)
 		}
 	}
+}
+
+func (vm *VM) newFrame(return_to int, arity int) {
+	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
+
+	if arity > 0 {
+		start := len(vm.stack) - arity
+		end := len(vm.stack)
+		for idx := end - 1; idx >= start; idx-- {
+			vm.push(vm.stack[idx])
+		}
+	}
+}
+
+func (vm *VM) dropFrame() Frame {
+	frame := vm.frames[len(vm.frames)-1]
+	vm.frames = vm.frames[:len(vm.frames)-1]
+	return frame
+}
+
+func (vm *VM) begin() {
+	vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
+}
+
+func (vm *VM) end() {
+	vm.scope = vm.scope[:len(vm.scope)-1]
 }
 
 func (vm *VM) binaryOp(operation binaryOp) {
@@ -221,10 +220,10 @@ func (vm *VM) binaryOp(operation binaryOp) {
 			vm.push(value)
 		}
 
-	case *runtime.ListVal:
-		if value, ok := runtime.BinopL(operation.ToKind(), left.(*runtime.ListVal).Values, right.(*runtime.ListVal).Values); ok {
-			vm.push(value)
-		}
+		// case *ListVal:
+		// 	if value, ok := BinopL(operation.ToKind(), left.(*ListVal).Values, right.(*ListVal).Values); ok {
+		// 		vm.push(value)
+		// 	}
 	}
 }
 

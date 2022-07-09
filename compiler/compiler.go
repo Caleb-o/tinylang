@@ -10,12 +10,17 @@ import (
 
 type Compiler struct {
 	chunk *Chunk
+	ids   []map[string]interface{}
 	depth int
 }
 
 func NewCompiler() *Compiler {
+	ids := make([]map[string]interface{}, 0)
+	ids = append(ids, make(map[string]interface{}))
+
 	return &Compiler{
 		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
+		ids:   ids,
 		depth: 0,
 	}
 }
@@ -28,15 +33,20 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 func (c *Compiler) begin() {
 	c.chunk.addOp(OpenScope)
 	c.depth++
+
+	c.ids = append(c.ids, make(map[string]interface{}))
 }
 
 func (c *Compiler) end() {
 	c.chunk.addOp(CloseScope)
 	c.depth--
+
+	c.ids = c.ids[:len(c.ids)-1]
 }
 
 func (c *Compiler) addVariable(identifier string) byte {
 	c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
+	c.ids[c.depth][identifier] = nil
 	return byte(len(c.chunk.Constants) - 1)
 }
 
@@ -49,6 +59,21 @@ func (c *Compiler) getVariable(identifier string) byte {
 		}
 	}
 
+	// TODO: Report error or unreachable
+	return 0
+}
+
+func (c *Compiler) findVariable(identifier string) byte {
+	idx := c.depth
+
+	for idx >= 0 {
+		if _, ok := c.ids[idx][identifier]; ok {
+			return byte(idx)
+		}
+		idx--
+	}
+
+	// TODO: Report error or unreachable
 	return 0
 }
 
@@ -63,9 +88,12 @@ func (c *Compiler) compileProgram(chunk *Chunk, program *ast.Program) {
 func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Block:
-		for _, stmt := range n.Statements {
-			c.visit(chunk, stmt)
-		}
+		c.body(chunk, n, true)
+
+	case *ast.FunctionDef:
+		c.functionDef(chunk, n)
+	case *ast.Call:
+		c.call(chunk, n)
 
 	case *ast.BinaryOp:
 		c.binaryOp(chunk, n)
@@ -87,11 +115,44 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	case *ast.Literal:
 		chunk.addOps(Push, chunk.addConstant(n))
 	case *ast.Identifier:
-		c.chunk.addOps(Get, byte(c.depth), c.getVariable(n.GetToken().Lexeme))
+		c.chunk.addOps(Get, c.findVariable(n.GetToken().Lexeme), c.getVariable(n.GetToken().Lexeme))
 
 	default:
 		fmt.Printf("Gen: Unimplemented node '%s'", reflect.TypeOf(node))
 	}
+}
+
+func (c *Compiler) body(chunk *Chunk, block *ast.Block, newEnv bool) {
+	if newEnv {
+		c.begin()
+		defer c.end()
+	}
+
+	for _, stmt := range block.Statements {
+		c.visit(chunk, stmt)
+	}
+}
+
+func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
+	defStart := c.chunk.addOps(Jump, 0)
+
+	c.begin()
+	for _, value := range def.Params {
+		c.chunk.addOps(Set, byte(c.depth), c.addVariable(value.GetToken().Lexeme))
+	}
+	c.body(chunk, def.Body, false)
+	c.end()
+
+	c.chunk.addOp(Return)
+	c.chunk.upateOpPosNext(defStart)
+	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), c.addVariable(def.GetToken().Lexeme))
+}
+
+func (c *Compiler) call(chunk *Chunk, call *ast.Call) {
+	for _, value := range call.Arguments {
+		c.visit(chunk, value)
+	}
+	c.chunk.addOps(Call, c.findVariable(call.GetToken().Lexeme), c.addVariable(call.GetToken().Lexeme))
 }
 
 func (c *Compiler) binaryOp(chunk *Chunk, binop *ast.BinaryOp) {

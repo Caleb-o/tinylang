@@ -40,6 +40,12 @@ type FunctionValue struct {
 	bound      Value
 }
 
+type CompiledFunctionValue struct {
+	Start_ip int
+	Arity    byte
+	Bound    Value
+}
+
 type NativeFunctionValue struct {
 	Identifier string
 	Params     []string
@@ -271,6 +277,13 @@ func (fn *FunctionValue) Call(interpreter *Interpreter, values []Value) Value {
 	interpreter.pop()
 	return value
 }
+
+func (v *CompiledFunctionValue) GetType() Type { return &FunctionType{} }
+func (v *CompiledFunctionValue) Inspect() string {
+	return "<fn>"
+}
+func (v *CompiledFunctionValue) Copy() Value                                        { return v }
+func (v *CompiledFunctionValue) Modify(operation lexer.TokenKind, other Value) bool { return false }
 
 func (v *NativeFunctionValue) GetType() Type { return &NativeFunctionType{} }
 func (v *NativeFunctionValue) Inspect() string {
