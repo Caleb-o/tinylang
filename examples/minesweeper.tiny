@@ -177,7 +177,7 @@ namespace Game {
 				}
 
 				t.neighbours = self.find_neighbours(self.cursor_x, self.cursor_y);
-				if !self.first {
+				if !self.first && t.neighbours == 0 {
 					self.open_free(self.cursor_x, self.cursor_y);
 				}
 			}
