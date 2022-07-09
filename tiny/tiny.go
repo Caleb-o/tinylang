@@ -10,9 +10,11 @@ import (
 	"strings"
 	"time"
 	"tiny/analysis"
+	"tiny/compiler"
 	"tiny/parser"
 	"tiny/runtime"
 	"tiny/shared"
+	"tiny/vm"
 )
 
 type Tiny struct {
@@ -45,14 +47,14 @@ func (tiny *Tiny) AddFunction(namespace string, identifier string, params []stri
 func (tiny *Tiny) Run() {
 	var (
 		checkOnly bool
-		// usevm     bool
-		test   bool
-		script string
+		usevm     bool
+		test      bool
+		script    string
 	)
 
 	flag.BoolVar(&checkOnly, "check", false, "Checks if code is valid and does not run")
 	flag.BoolVar(&test, "test", false, "Run tests")
-	// flag.BoolVar(&usevm, "vm", false, "Use the new interpreter to run code")
+	flag.BoolVar(&usevm, "vm", false, "Use the new VM to run code")
 	flag.StringVar(&script, "script", "", "Script to run")
 	flag.Parse()
 
@@ -89,7 +91,16 @@ func (tiny *Tiny) Run() {
 				interpreter.Import(ns.Identifier, ns)
 			}
 
-			interpreter.Run(program)
+			if usevm {
+				compiler := compiler.NewCompiler()
+				chunk := compiler.Compile(program)
+
+				vm := vm.NewVM(chunk)
+				vm.Run()
+			} else {
+				interpreter.Run(program)
+			}
+
 		} else {
 			fmt.Println("Good!")
 		}
