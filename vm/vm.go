@@ -311,6 +311,11 @@ func (vm *VM) printStepInfo(last int) {
 }
 
 func (vm *VM) newFrame(return_to int, arity int) {
+	// TODO: See if this works as intended in more complex cases
+	if len(vm.stack) != arity {
+		vm.Report("Function expected %d argument(s) but receieved %d", arity, len(vm.stack))
+	}
+
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
 
 	if arity > 0 {
