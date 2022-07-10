@@ -202,7 +202,7 @@ func (c *Compiler) unaryOp(chunk *Chunk, unary *ast.UnaryOp) {
 func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 	// Analyser should pickup clashes, so we don't need to check names
 	c.visit(chunk, decl.Expr)
-	c.chunk.addOps(Set, c.addVariable(decl.GetToken().Lexeme))
+	c.chunk.addOps(Define, c.addVariable(decl.GetToken().Lexeme))
 }
 
 func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
@@ -234,7 +234,7 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 
 	condition := c.chunk.addOps(JumpFalse, 0)
 
-	c.body(chunk, stmt.TrueBody, true)
+	c.body(chunk, stmt.TrueBody, false)
 
 	var end_of_stmt int
 	if stmt.FalseBody != nil {

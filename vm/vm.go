@@ -55,11 +55,11 @@ func (vm *VM) Run() {
 
 		switch vm.chunk.Instructions[vm.ip] {
 		case compiler.OpenScope:
-			vm.begin()
+			// vm.begin()
 			vm.ip++
 
 		case compiler.CloseScope:
-			vm.end()
+			// vm.end()
 			vm.ip++
 
 		case compiler.Push:
@@ -147,7 +147,7 @@ func (vm *VM) Run() {
 			start := vm.chunk.Instructions[vm.ip+2]
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+3]].Inspect()
 
-			// Assume global scope
+			// Assume global scope as functions cannot be defined in non-global scope
 			vm.scope[0].variables[identifier] = &runtime.CompiledFunctionValue{int(start), arity, nil}
 			vm.ip += 4
 
@@ -169,15 +169,15 @@ func (vm *VM) Run() {
 
 			if len(vm.stack) > frame.stack_start {
 				retValue = vm.pop()
-			} else {
-				retValue = &runtime.UnitVal{}
 			}
 
 			// Remove stack values
 			vm.stack = vm.stack[:frame.stack_start]
 			vm.end()
 
-			vm.push(retValue)
+			if retValue != nil {
+				vm.push(retValue)
+			}
 			vm.ip = frame.ret_to
 
 		case compiler.Print:
