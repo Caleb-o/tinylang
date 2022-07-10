@@ -192,10 +192,8 @@ func (vm *VM) Run() {
 
 			// Remove stack values
 			vm.stack = vm.stack[:frame.stack_start]
-
-			for idx := 0; idx < int(vm.chunk.Instructions[vm.ip+1]); idx++ {
-				vm.end()
-			}
+			// Remove inner scopes
+			vm.scope = vm.scope[:len(vm.scope)-int(vm.chunk.Instructions[vm.ip+1])]
 
 			if retValue != nil {
 				vm.push(retValue)
