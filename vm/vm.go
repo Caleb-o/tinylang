@@ -172,7 +172,7 @@ func (vm *VM) Run() {
 			}
 
 			// TODO: See if this works as intended in more complex cases
-			if len(vm.stack) != int(fn.Arity) {
+			if len(vm.stack) < int(fn.Arity) {
 				vm.Report("Function '%s' expected %d argument(s) but receieved %d", identifier, fn.Arity, len(vm.stack))
 			}
 
@@ -192,7 +192,10 @@ func (vm *VM) Run() {
 
 			// Remove stack values
 			vm.stack = vm.stack[:frame.stack_start]
-			vm.end()
+
+			for idx := 0; idx < int(vm.chunk.Instructions[vm.ip+1]); idx++ {
+				vm.end()
+			}
 
 			if retValue != nil {
 				vm.push(retValue)
@@ -242,7 +245,6 @@ func (vm *VM) Run() {
 			case "exit":
 				return
 			}
-
 		}
 	}
 }
@@ -384,7 +386,7 @@ func (vm *VM) binaryOp(operation binaryOp) {
 }
 
 func (vm *VM) push(value runtime.Value) {
-	vm.stack = append(vm.stack, value.Copy())
+	vm.stack = append(vm.stack, value)
 
 	// if vm.debug {
 	// 	var sb strings.Builder

@@ -44,7 +44,7 @@ const (
 	Jump      // Jump IP
 	JumpFalse // JumpFalse IP
 
-	Return
+	Return // Return scope_depth
 	Print
 )
 
@@ -179,8 +179,8 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 		idx += 2
 
 	case Return:
-		sb.WriteString("Return")
-		idx++
+		sb.WriteString(fmt.Sprintf("Return<Depth %d>", c.Instructions[idx+1]))
+		idx += 2
 
 	default:
 		sb.WriteString(fmt.Sprintf("Unknown<%d>", c.Instructions[idx]))

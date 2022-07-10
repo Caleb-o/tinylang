@@ -9,9 +9,10 @@ import (
 )
 
 type Compiler struct {
-	chunk *Chunk
-	ids   []map[string]interface{}
-	depth int
+	chunk       *Chunk
+	ids         []map[string]interface{}
+	scope_depth int
+	depth       int
 }
 
 func NewCompiler() *Compiler {
@@ -19,9 +20,10 @@ func NewCompiler() *Compiler {
 	ids = append(ids, make(map[string]interface{}))
 
 	return &Compiler{
-		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
-		ids:   ids,
-		depth: 0,
+		chunk:       &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
+		ids:         ids,
+		scope_depth: 0,
+		depth:       0,
 	}
 }
 
@@ -31,6 +33,7 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 }
 
 func (c *Compiler) begin(open bool) {
+	c.scope_depth += 1
 	if open {
 		c.chunk.addOp(OpenScope)
 	}
@@ -40,6 +43,8 @@ func (c *Compiler) begin(open bool) {
 }
 
 func (c *Compiler) end(close bool) {
+	c.scope_depth -= 1
+
 	if close {
 		c.chunk.addOp(CloseScope)
 	}
@@ -116,7 +121,7 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 		if n.Expr != nil {
 			c.visit(chunk, n.Expr)
 		}
-		c.chunk.addOp(Return)
+		c.chunk.addOps(Return, byte(c.scope_depth))
 
 	case *ast.VariableDecl:
 		c.variableDecl(chunk, n)
@@ -151,6 +156,7 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	name_id := c.addVariable(def.GetToken().Lexeme)
 	defStart := c.chunk.addOps(Jump, 0)
 
+	c.scope_depth = 0
 	c.begin(false)
 	for _, value := range def.Params {
 		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
@@ -158,7 +164,7 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	c.body(chunk, def.Body, false)
 	c.end(false)
 
-	c.chunk.addOp(Return)
+	c.chunk.addOps(Return, 0)
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), name_id)
 }
@@ -166,6 +172,7 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 	defStart := c.chunk.addOps(Jump, 0)
 
+	c.scope_depth = 0
 	c.begin(false)
 	for _, value := range anon.Params {
 		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
@@ -173,7 +180,8 @@ func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 	c.body(chunk, anon.Body, false)
 	c.end(false)
 
-	c.chunk.addOp(Return)
+	c.chunk.addOps(Return, 0)
+
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewAnonFn, byte(len(anon.Params)), byte(defStart+1))
 }
