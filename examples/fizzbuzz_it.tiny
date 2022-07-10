@@ -22,7 +22,7 @@ class FizzBuzz {
 	}
 }
 
-var fb = FizzBuzz(start: 1, end: 16);
+var fb = FizzBuzz(1, 16);
 
 while !fb.done() {
 	var idx = fb.next();

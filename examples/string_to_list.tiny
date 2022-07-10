@@ -13,4 +13,4 @@ function str_to_list(string) {
 	return list;
 }
 
-print(str_to_list(string: "Hello"));
+print(str_to_list("Hello"));
