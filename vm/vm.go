@@ -11,6 +11,10 @@ import (
 	"tiny/shared"
 )
 
+const (
+	STACK_MAX int = 256
+)
+
 type Scope struct {
 	variables map[string]runtime.Value
 }
@@ -31,10 +35,10 @@ type VM struct {
 }
 
 func NewVM(debug bool, step bool, chunk *compiler.Chunk) *VM {
-	scopes := make([]Scope, 0, 1)
+	scopes := make([]Scope, 0, 32)
 	scopes = append(scopes, Scope{make(map[string]runtime.Value)})
 
-	return &VM{debug, step, chunk, 0, make([]runtime.Value, 0), scopes, make([]Frame, 0)}
+	return &VM{debug, step, chunk, 0, make([]runtime.Value, 0, STACK_MAX), scopes, make([]Frame, 0, STACK_MAX)}
 }
 
 func (vm *VM) Report(msg string, args ...any) {
