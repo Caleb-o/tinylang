@@ -32,15 +32,15 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 
 func (c *Compiler) begin() {
 	c.chunk.addOp(OpenScope)
-	c.depth++
 
+	c.depth++
 	c.ids = append(c.ids, make(map[string]interface{}))
 }
 
 func (c *Compiler) end() {
 	c.chunk.addOp(CloseScope)
-	c.depth--
 
+	c.depth--
 	c.ids = c.ids[:len(c.ids)-1]
 }
 
@@ -63,7 +63,7 @@ func (c *Compiler) getVariable(identifier string) byte {
 	return 0
 }
 
-func (c *Compiler) findVariable(identifier string) byte {
+func (c *Compiler) findVariableScope(identifier string) byte {
 	idx := c.depth
 
 	for idx >= 0 {
@@ -106,16 +106,24 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 		}
 		chunk.addOps(Print, byte(len(n.Exprs)))
 
+	case *ast.Return:
+		if n.Expr != nil {
+			c.visit(chunk, n.Expr)
+		}
+		c.chunk.addOp(Return)
+
 	case *ast.VariableDecl:
 		c.variableDecl(chunk, n)
 	case *ast.Assign:
 		c.variableAssign(chunk, n)
-	case *ast.While:
-		c.whileStmt(chunk, n)
 	case *ast.Literal:
 		chunk.addOps(Push, chunk.addConstant(n))
+	case *ast.If:
+		c.ifStmt(chunk, n)
+	case *ast.While:
+		c.whileStmt(chunk, n)
 	case *ast.Identifier:
-		c.chunk.addOps(Get, c.findVariable(n.GetToken().Lexeme), c.getVariable(n.GetToken().Lexeme))
+		c.getIdentifier(chunk, n)
 
 	default:
 		fmt.Printf("Gen: Unimplemented node '%s'", reflect.TypeOf(node))
@@ -134,25 +142,27 @@ func (c *Compiler) body(chunk *Chunk, block *ast.Block, newEnv bool) {
 }
 
 func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
+	name_id := c.addVariable(def.GetToken().Lexeme)
 	defStart := c.chunk.addOps(Jump, 0)
 
 	c.begin()
 	for _, value := range def.Params {
-		c.chunk.addOps(Set, byte(c.depth), c.addVariable(value.GetToken().Lexeme))
+		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
 	}
 	c.body(chunk, def.Body, false)
 	c.end()
 
 	c.chunk.addOp(Return)
 	c.chunk.upateOpPosNext(defStart)
-	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), c.addVariable(def.GetToken().Lexeme))
+	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), name_id)
 }
 
 func (c *Compiler) call(chunk *Chunk, call *ast.Call) {
 	for _, value := range call.Arguments {
 		c.visit(chunk, value)
 	}
-	c.chunk.addOps(Call, c.findVariable(call.GetToken().Lexeme), c.addVariable(call.GetToken().Lexeme))
+	// c.chunk.addOps(Call, c.findVariableScope(call.Token.Lexeme), c.addVariable(call.Token.Lexeme))
+	c.chunk.addOps(Call, 0, c.getVariable(call.Token.Lexeme))
 }
 
 func (c *Compiler) binaryOp(chunk *Chunk, binop *ast.BinaryOp) {
@@ -192,12 +202,53 @@ func (c *Compiler) unaryOp(chunk *Chunk, unary *ast.UnaryOp) {
 func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 	// Analyser should pickup clashes, so we don't need to check names
 	c.visit(chunk, decl.Expr)
-	c.chunk.addOps(Set, byte(c.depth), c.addVariable(decl.GetToken().Lexeme))
+	c.chunk.addOps(Set, c.addVariable(decl.GetToken().Lexeme))
 }
 
 func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
 	c.visit(chunk, assign.Expr)
-	c.chunk.addOps(Set, byte(c.depth), c.getVariable(assign.GetToken().Lexeme))
+
+	if c.findVariableScope(assign.Token.Lexeme) > 0 {
+		c.chunk.addOps(SetLocal, c.getVariable(assign.Token.Lexeme))
+	} else {
+		c.chunk.addOps(Set, c.getVariable(assign.Token.Lexeme))
+	}
+}
+
+func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
+	if c.findVariableScope(identifier.Token.Lexeme) > 0 {
+		c.chunk.addOps(GetLocal, c.getVariable(identifier.Token.Lexeme))
+	} else {
+		c.chunk.addOps(Get, c.getVariable(identifier.Token.Lexeme))
+	}
+}
+
+func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
+	c.begin()
+
+	if stmt.VarDec != nil {
+		c.variableDecl(chunk, stmt.VarDec)
+	}
+
+	c.visit(chunk, stmt.Condition)
+
+	condition := c.chunk.addOps(JumpFalse, 0)
+
+	c.body(chunk, stmt.TrueBody, true)
+
+	var end_of_stmt int
+	if stmt.FalseBody != nil {
+		end_of_stmt = c.chunk.addOps(Jump, 0)
+	}
+
+	c.chunk.upateOpPosNext(condition)
+
+	if stmt.FalseBody != nil {
+		c.visit(chunk, stmt.FalseBody)
+		c.chunk.upateOpPosNext(end_of_stmt)
+	}
+
+	c.end()
 }
 
 func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
@@ -211,7 +262,7 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	c.visit(chunk, stmt.Condition)
 
 	false_expr := c.chunk.addOps(JumpFalse, 0)
-	c.visit(chunk, stmt.Body)
+	c.body(chunk, stmt.Body, false)
 
 	if stmt.Increment != nil {
 		c.visit(chunk, stmt.Increment)

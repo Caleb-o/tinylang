@@ -102,14 +102,40 @@ func (vm *VM) Run() {
 			vm.ip++
 
 		case compiler.Get:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]]
-			vm.push(vm.scope[vm.chunk.Instructions[vm.ip+1]].variables[identifier.Inspect()])
-			vm.ip += 3
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+			vm.push(vm.scope[0].variables[identifier])
+			vm.ip += 2
 
 		case compiler.Set:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]].Inspect()
-			vm.scope[vm.chunk.Instructions[vm.ip+1]].variables[identifier] = vm.pop()
-			vm.ip += 3
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+			vm.scope[0].variables[identifier] = vm.pop()
+			vm.ip += 2
+
+		case compiler.GetLocal:
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+
+			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
+				if value, ok := vm.scope[idx].variables[identifier]; ok {
+					vm.push(value)
+					break
+				}
+			}
+			vm.ip += 2
+
+		case compiler.SetLocal:
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
+				if _, ok := vm.scope[idx].variables[identifier]; ok {
+					vm.scope[idx].variables[identifier] = vm.pop()
+					break
+				}
+			}
+			vm.ip += 2
+
+		case compiler.Define:
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+			vm.scope[len(vm.scope)-1].variables[identifier] = vm.pop()
+			vm.ip += 2
 
 		case compiler.NewFn:
 			arity := vm.chunk.Instructions[vm.ip+1]
@@ -124,8 +150,9 @@ func (vm *VM) Run() {
 			// Push current IP to stack
 			scope := vm.chunk.Instructions[vm.ip+1]
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]].Inspect()
+			fn := vm.scope[scope].variables[identifier].(*runtime.CompiledFunctionValue)
 
-			fn, _ := vm.scope[scope].variables[identifier].(*runtime.CompiledFunctionValue)
+			vm.begin()
 			vm.newFrame(vm.ip+3, int(fn.Arity))
 
 			vm.ip = fn.Start_ip
@@ -133,8 +160,19 @@ func (vm *VM) Run() {
 		case compiler.Return:
 			frame := vm.dropFrame()
 
+			var retValue runtime.Value = nil
+
+			if len(vm.stack) > frame.stack_start {
+				retValue = vm.pop()
+			} else {
+				retValue = &runtime.UnitVal{}
+			}
+
 			// Remove stack values
 			vm.stack = vm.stack[:frame.stack_start]
+			vm.end()
+
+			vm.push(retValue)
 			vm.ip = frame.ret_to
 
 		case compiler.Print:
@@ -147,19 +185,19 @@ func (vm *VM) Run() {
 		case compiler.JumpFalse:
 			condition := vm.pop()
 
-			value, _ := condition.(*runtime.BoolVal)
+			value := condition.(*runtime.BoolVal)
 
 			if !value.Value {
 				vm.ip = int(vm.chunk.Instructions[vm.ip+1])
-				break
+			} else {
+				vm.ip += 2
 			}
-			vm.ip += 2
 
 		case compiler.Halt:
 			vm.ip += 1
 
 		default:
-			vm.Report("Unknown operation in loop %d at position %d", vm.chunk.Instructions[vm.ip], vm.ip)
+			vm.Report("Unknown operation in loop '%d' at position %d", vm.chunk.Instructions[vm.ip], vm.ip)
 		}
 	}
 }
@@ -195,6 +233,7 @@ func (vm *VM) binaryOp(operation binaryOp) {
 	left := vm.pop()
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
+		fmt.Printf("Pos %d \n", vm.ip)
 		vm.Report("Invalid binary operation '%s:%s %s %s:%s'", left.Inspect(), reflect.TypeOf(left), operation.Operator(), right.Inspect(), reflect.TypeOf(right))
 		return
 	}
@@ -229,11 +268,41 @@ func (vm *VM) binaryOp(operation binaryOp) {
 
 func (vm *VM) push(value runtime.Value) {
 	vm.stack = append(vm.stack, value)
+
+	// if vm.debug {
+	// 	var sb strings.Builder
+
+	// 	for idx, value := range vm.stack {
+	// 		sb.WriteString(value.Inspect())
+
+	// 		if idx < len(vm.stack)-1 {
+	// 			sb.WriteString(", ")
+	// 		}
+	// 	}
+
+	// 	fmt.Printf("%d: Push [%s]\n", vm.ip, sb.String())
+	// 	bufio.NewReader(os.Stdin).ReadString('\n')
+	// }
 }
 
 func (vm *VM) pop() runtime.Value {
 	value := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
+
+	// if vm.debug {
+	// 	var sb strings.Builder
+
+	// 	for idx, value := range vm.stack {
+	// 		sb.WriteString(value.Inspect())
+
+	// 		if idx < len(vm.stack)-1 {
+	// 			sb.WriteString(", ")
+	// 		}
+	// 	}
+
+	// 	fmt.Printf("%d: Pop [%s]\n", vm.ip, sb.String())
+	// 	bufio.NewReader(os.Stdin).ReadString('\n')
+	// }
 	return value
 }
 
@@ -241,8 +310,8 @@ func (vm *VM) print() {
 	count := vm.chunk.Instructions[vm.ip+1]
 	values := make([]runtime.Value, count)
 
-	for i := int(count - 1); i >= 0; i-- {
-		values[i] = vm.pop()
+	for idx := int(count - 1); idx >= 0; idx-- {
+		values[idx] = vm.pop()
 	}
 
 	var sb strings.Builder

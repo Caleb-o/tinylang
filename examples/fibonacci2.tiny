@@ -19,4 +19,4 @@ function fib(nth) {
 	return b;
 }
 
-print(fib(n: 32)); # 2178309
+print(fib(32)); # 2178309

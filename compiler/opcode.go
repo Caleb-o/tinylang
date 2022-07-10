@@ -31,8 +31,11 @@ const (
 	EqEq
 	NotEq
 
-	Get // Get scope_index const_index
-	Set // Set scope_index const_index
+	Get      // Get name_index
+	Set      // Set name_index
+	GetLocal // GetLocal name_index
+	SetLocal // SetLocal name_index
+	Define   // Define name_index
 
 	NewFn // NewFn arity start name_index
 	Call  // Call scope_index name_index
@@ -125,12 +128,24 @@ func (c *Chunk) Debug() {
 			idx++
 
 		case Get:
-			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
-			idx += 3
+			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+			idx += 2
 
 		case Set:
-			sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
-			idx += 3
+			sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+			idx += 2
+
+		case GetLocal:
+			sb.WriteString(fmt.Sprintf("GetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+			idx += 2
+
+		case SetLocal:
+			sb.WriteString(fmt.Sprintf("SetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+			idx += 2
+
+		case Define:
+			sb.WriteString(fmt.Sprintf("Define<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+			idx += 2
 
 		case NewFn:
 			sb.WriteString(fmt.Sprintf("NewFn<Params %d | Start %d | ID '%s'>", c.Instructions[idx+1], c.Instructions[idx+2], c.Constants[c.Instructions[idx+3]].Inspect()))
@@ -153,7 +168,7 @@ func (c *Chunk) Debug() {
 			idx += 2
 
 		case Return:
-			sb.WriteString("Return")
+			sb.WriteString("Return\n")
 			idx++
 
 		default:

@@ -1,10 +1,9 @@
 # Recursive fibonacci
 function fib(n) {
-	if n > 1 {
-		return fib(n - 1) + fib(n - 2);
-	} else {
-		return n;
+	if n <= 1 {
+        return n;
 	}
+    return fib(n-1) + fib(n-2);
 }
 
-print(fib(n: 30)); # 2178309
+print(fib(32)); # 2178309

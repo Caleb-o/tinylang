@@ -59,6 +59,16 @@ func (b binaryOp) ToKind() lexer.TokenKind {
 
 	case Less:
 		return lexer.LESS
+	case LessEq:
+		return lexer.LESS_EQUAL
+	case Greater:
+		return lexer.GREATER
+	case GreaterEq:
+		return lexer.GREATER_EQUAL
+	case EqualEqual:
+		return lexer.EQUAL_EQUAL
+	case NotEqual:
+		return lexer.NOT_EQUAL
 	}
 
 	return lexer.ERROR
