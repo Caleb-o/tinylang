@@ -30,15 +30,19 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 	return c.chunk
 }
 
-func (c *Compiler) begin() {
-	c.chunk.addOp(OpenScope)
+func (c *Compiler) begin(open bool) {
+	if open {
+		c.chunk.addOp(OpenScope)
+	}
 
 	c.depth++
 	c.ids = append(c.ids, make(map[string]interface{}))
 }
 
-func (c *Compiler) end() {
-	c.chunk.addOp(CloseScope)
+func (c *Compiler) end(close bool) {
+	if close {
+		c.chunk.addOp(CloseScope)
+	}
 
 	c.depth--
 	c.ids = c.ids[:len(c.ids)-1]
@@ -132,8 +136,8 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 
 func (c *Compiler) body(chunk *Chunk, block *ast.Block, newEnv bool) {
 	if newEnv {
-		c.begin()
-		defer c.end()
+		c.begin(true)
+		defer c.end(true)
 	}
 
 	for _, stmt := range block.Statements {
@@ -145,12 +149,12 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	name_id := c.addVariable(def.GetToken().Lexeme)
 	defStart := c.chunk.addOps(Jump, 0)
 
-	c.begin()
+	c.begin(false)
 	for _, value := range def.Params {
 		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
 	}
 	c.body(chunk, def.Body, false)
-	c.end()
+	c.end(false)
 
 	c.chunk.addOp(Return)
 	c.chunk.upateOpPosNext(defStart)
@@ -224,7 +228,7 @@ func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
 }
 
 func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
-	c.begin()
+	c.begin(true)
 
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
@@ -248,11 +252,11 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 		c.chunk.upateOpPosNext(end_of_stmt)
 	}
 
-	c.end()
+	c.end(true)
 }
 
 func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
-	c.begin()
+	c.begin(true)
 
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
@@ -269,7 +273,7 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	}
 
 	c.chunk.addOps(Jump, byte(condition))
-	c.end()
+	c.end(true)
 
 	c.chunk.upateOpPos(false_expr)
 }

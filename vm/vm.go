@@ -55,11 +55,11 @@ func (vm *VM) Run() {
 
 		switch vm.chunk.Instructions[vm.ip] {
 		case compiler.OpenScope:
-			// vm.begin()
+			vm.begin()
 			vm.ip++
 
 		case compiler.CloseScope:
-			// vm.end()
+			vm.end()
 			vm.ip++
 
 		case compiler.Push:
