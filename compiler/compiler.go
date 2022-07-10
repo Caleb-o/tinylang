@@ -164,7 +164,7 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	c.body(chunk, def.Body, false)
 	c.end(false)
 
-	c.chunk.addOps(Return, 0)
+	c.chunk.addOps(Return, 1)
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), name_id)
 }
@@ -180,7 +180,7 @@ func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 	c.body(chunk, anon.Body, false)
 	c.end(false)
 
-	c.chunk.addOps(Return, 0)
+	c.chunk.addOps(Return, 1)
 
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewAnonFn, byte(len(anon.Params)), byte(defStart+1))

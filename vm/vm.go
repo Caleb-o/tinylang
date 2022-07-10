@@ -87,27 +87,27 @@ func (vm *VM) Run() {
 			vm.ip++
 
 		case compiler.Less:
-			vm.binaryOp(Less)
+			vm.compare(Less)
 			vm.ip++
 
 		case compiler.LessEq:
-			vm.binaryOp(LessEq)
+			vm.compare(LessEq)
 			vm.ip++
 
 		case compiler.Greater:
-			vm.binaryOp(Greater)
+			vm.compare(Greater)
 			vm.ip++
 
 		case compiler.GreaterEq:
-			vm.binaryOp(GreaterEq)
+			vm.compare(GreaterEq)
 			vm.ip++
 
 		case compiler.EqEq:
-			vm.binaryOp(EqualEqual)
+			vm.compare(EqualEqual)
 			vm.ip++
 
 		case compiler.NotEq:
-			vm.binaryOp(NotEqual)
+			vm.compare(NotEqual)
 			vm.ip++
 
 		case compiler.Get:
@@ -159,12 +159,10 @@ func (vm *VM) Run() {
 			arity := vm.chunk.Instructions[vm.ip+1]
 			start := vm.chunk.Instructions[vm.ip+2]
 
-			// Assume global scope as functions cannot be defined in non-global scope
 			vm.push(&runtime.CompiledFunctionValue{int(start), arity, nil})
 			vm.ip += 3
 
 		case compiler.Call:
-			// Push current IP to stack
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
 
 			var fn *runtime.CompiledFunctionValue = nil
@@ -320,6 +318,9 @@ func (vm *VM) printStepInfo(last int) {
 }
 
 func (vm *VM) newFrame(return_to int, arity int) {
+	if len(vm.frames) >= STACK_MAX {
+		vm.Report("Stack overflow")
+	}
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
 }
 
@@ -339,10 +340,27 @@ func (vm *VM) end() {
 
 func (vm *VM) binaryOp(operation binaryOp) {
 	right := vm.pop()
+	// This shouldn't need to be here, as below, but it's still faster
+	left := vm.stack[len(vm.stack)-1].Copy()
+
+	if reflect.TypeOf(left) != reflect.TypeOf(right) {
+		vm.Report("Invalid binary operation '%s:%s %s %s:%s'", left.Inspect(), reflect.TypeOf(left), operation.Operator(), right.Inspect(), reflect.TypeOf(right))
+		return
+	}
+
+	if !left.Modify(operation.ToKind(), right) {
+		vm.Report("Value of type '%s' cannot be modified", reflect.TypeOf(left))
+	}
+
+	// This shouldn't need to be here, but it works
+	vm.stack[len(vm.stack)-1] = left
+}
+
+func (vm *VM) compare(operation binaryOp) {
+	right := vm.pop()
 	left := vm.pop()
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
-		fmt.Printf("Pos %d \n", vm.ip)
 		vm.Report("Invalid binary operation '%s:%s %s %s:%s'", left.Inspect(), reflect.TypeOf(left), operation.Operator(), right.Inspect(), reflect.TypeOf(right))
 		return
 	}
@@ -367,51 +385,20 @@ func (vm *VM) binaryOp(operation binaryOp) {
 		if value, ok := runtime.BinopS(operation.ToKind(), left.(*runtime.StringVal).Value, right.(*runtime.StringVal).Value); ok {
 			vm.push(value)
 		}
-
-		// case *ListVal:
-		// 	if value, ok := BinopL(operation.ToKind(), left.(*ListVal).Values, right.(*ListVal).Values); ok {
-		// 		vm.push(value)
-		// 	}
 	}
 }
 
 func (vm *VM) push(value runtime.Value) {
+	if len(vm.stack)+1 >= STACK_MAX {
+		vm.Report("Stack overflow")
+	}
+
 	vm.stack = append(vm.stack, value)
-
-	// if vm.debug {
-	// 	var sb strings.Builder
-
-	// 	for idx, value := range vm.stack {
-	// 		sb.WriteString(value.Inspect())
-
-	// 		if idx < len(vm.stack)-1 {
-	// 			sb.WriteString(", ")
-	// 		}
-	// 	}
-
-	// 	fmt.Printf("%d: Push [%s]\n", vm.ip, sb.String())
-	// 	bufio.NewReader(os.Stdin).ReadString('\n')
-	// }
 }
 
 func (vm *VM) pop() runtime.Value {
 	value := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
-
-	// if vm.debug {
-	// 	var sb strings.Builder
-
-	// 	for idx, value := range vm.stack {
-	// 		sb.WriteString(value.Inspect())
-
-	// 		if idx < len(vm.stack)-1 {
-	// 			sb.WriteString(", ")
-	// 		}
-	// 	}
-
-	// 	fmt.Printf("%d: Pop [%s]\n", vm.ip, sb.String())
-	// 	bufio.NewReader(os.Stdin).ReadString('\n')
-	// }
 	return value
 }
 

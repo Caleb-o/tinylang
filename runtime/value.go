@@ -180,16 +180,16 @@ func (v *IntVal) GetType() Type   { return &IntType{} }
 func (v *IntVal) Inspect() string { return fmt.Sprintf("%d", v.Value) }
 func (v *IntVal) Copy() Value     { return &IntVal{Value: v.Value} }
 func (v *IntVal) Modify(operation lexer.TokenKind, other Value) bool {
-	if value, ok := other.(*IntVal); ok {
+	if right, ok := other.(*IntVal); ok {
 		switch operation {
-		case lexer.PLUS_EQUAL:
-			v.Value += value.Value
-		case lexer.MINUS_EQUAL:
-			v.Value -= value.Value
-		case lexer.STAR_EQUAL:
-			v.Value *= value.Value
-		case lexer.SLASH_EQUAL:
-			v.Value /= value.Value
+		case lexer.PLUS:
+			v.Value += right.Value
+		case lexer.MINUS:
+			v.Value -= right.Value
+		case lexer.STAR:
+			v.Value *= right.Value
+		case lexer.SLASH:
+			v.Value /= right.Value
 		default:
 			return false
 		}
@@ -204,16 +204,16 @@ func (v *FloatVal) GetType() Type   { return &FloatType{} }
 func (v *FloatVal) Inspect() string { return fmt.Sprintf("%f", v.Value) }
 func (v *FloatVal) Copy() Value     { return &FloatVal{Value: v.Value} }
 func (v *FloatVal) Modify(operation lexer.TokenKind, other Value) bool {
-	if value, ok := other.(*FloatVal); ok {
+	if right, ok := other.(*FloatVal); ok {
 		switch operation {
-		case lexer.PLUS_EQUAL:
-			v.Value += value.Value
-		case lexer.MINUS_EQUAL:
-			v.Value -= value.Value
-		case lexer.STAR_EQUAL:
-			v.Value *= value.Value
-		case lexer.SLASH_EQUAL:
-			v.Value /= value.Value
+		case lexer.PLUS:
+			v.Value += right.Value
+		case lexer.MINUS:
+			v.Value -= right.Value
+		case lexer.STAR:
+			v.Value *= right.Value
+		case lexer.SLASH:
+			v.Value /= right.Value
 		default:
 			return false
 		}
@@ -233,10 +233,10 @@ func (v *StringVal) GetType() Type   { return &StringType{} }
 func (v *StringVal) Inspect() string { return v.Value }
 func (v *StringVal) Copy() Value     { return &StringVal{Value: v.Value} }
 func (v *StringVal) Modify(operation lexer.TokenKind, other Value) bool {
-	if value, ok := other.(*StringVal); ok {
+	if right, ok := other.(*StringVal); ok {
 		switch operation {
-		case lexer.PLUS_EQUAL:
-			v.Value += value.Value
+		case lexer.PLUS:
+			v.Value += right.Value
 			return true
 		}
 	}
@@ -552,10 +552,10 @@ func (v *ListVal) Inspect() string {
 }
 func (v *ListVal) Copy() Value { return v }
 func (v *ListVal) Modify(operation lexer.TokenKind, other Value) bool {
-	if value, ok := other.(*ListVal); ok {
+	if right, ok := other.(*ListVal); ok {
 		switch operation {
-		case lexer.PLUS_EQUAL:
-			for _, item := range value.Values {
+		case lexer.PLUS:
+			for _, item := range right.Values {
 				v.Values = append(v.Values, item.Copy())
 			}
 		}
@@ -569,7 +569,7 @@ func (v *ListVal) Set(operation lexer.TokenKind, index int, other Value) (Value,
 	case lexer.EQUAL:
 		v.Values[index] = other
 		return other, true
-	case lexer.PLUS_EQUAL, lexer.MINUS_EQUAL, lexer.STAR_EQUAL, lexer.SLASH_EQUAL:
+	case lexer.PLUS, lexer.MINUS, lexer.STAR, lexer.SLASH:
 		result := v.Values[index].Modify(operation, other)
 		return v.Values[index], result
 	}
