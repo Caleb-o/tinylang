@@ -341,7 +341,8 @@ func (vm *VM) end() {
 func (vm *VM) binaryOp(operation binaryOp) {
 	right := vm.pop()
 	// This shouldn't need to be here, as below, but it's still faster
-	left := vm.stack[len(vm.stack)-1].Copy()
+	index := len(vm.stack) - 1
+	left := vm.stack[index].Copy()
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
 		vm.Report("Invalid binary operation '%s:%s %s %s:%s'", left.Inspect(), reflect.TypeOf(left), operation.Operator(), right.Inspect(), reflect.TypeOf(right))
@@ -353,7 +354,7 @@ func (vm *VM) binaryOp(operation binaryOp) {
 	}
 
 	// This shouldn't need to be here, but it works
-	vm.stack[len(vm.stack)-1] = left
+	vm.stack[index] = left
 }
 
 func (vm *VM) compare(operation binaryOp) {
