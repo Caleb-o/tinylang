@@ -317,18 +317,6 @@ func (vm *VM) printStepInfo(last int) {
 
 func (vm *VM) newFrame(return_to int, arity int) {
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
-
-	if arity > 0 {
-		new_stack := make([]runtime.Value, 0, arity)
-
-		for idx := 0; idx < arity; idx++ {
-			new_stack = append(new_stack, vm.pop())
-		}
-
-		for _, value := range new_stack {
-			vm.push(value)
-		}
-	}
 }
 
 func (vm *VM) dropFrame() Frame {

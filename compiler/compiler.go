@@ -158,8 +158,8 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 
 	c.scope_depth = 0
 	c.begin(false)
-	for _, value := range def.Params {
-		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
+	for idx := len(def.Params) - 1; idx >= 0; idx-- {
+		c.chunk.addOps(Define, c.addVariable(def.Params[idx].Token.Lexeme))
 	}
 	c.body(chunk, def.Body, false)
 	c.end(false)
@@ -174,8 +174,8 @@ func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 
 	c.scope_depth = 0
 	c.begin(false)
-	for _, value := range anon.Params {
-		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
+	for idx := len(anon.Params) - 1; idx >= 0; idx-- {
+		c.chunk.addOps(Define, c.addVariable(anon.Params[idx].Token.Lexeme))
 	}
 	c.body(chunk, anon.Body, false)
 	c.end(false)
