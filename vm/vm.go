@@ -171,6 +171,11 @@ func (vm *VM) Run() {
 				}
 			}
 
+			// TODO: See if this works as intended in more complex cases
+			if len(vm.stack) != int(fn.Arity) {
+				vm.Report("Function '%s' expected %d argument(s) but receieved %d", identifier, fn.Arity, len(vm.stack))
+			}
+
 			vm.begin()
 			vm.newFrame(vm.ip+2, int(fn.Arity))
 
@@ -311,11 +316,6 @@ func (vm *VM) printStepInfo(last int) {
 }
 
 func (vm *VM) newFrame(return_to int, arity int) {
-	// TODO: See if this works as intended in more complex cases
-	if len(vm.stack) != arity {
-		vm.Report("Function expected %d argument(s) but receieved %d", arity, len(vm.stack))
-	}
-
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
 
 	if arity > 0 {
