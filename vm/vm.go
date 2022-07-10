@@ -151,14 +151,28 @@ func (vm *VM) Run() {
 			vm.scope[0].variables[identifier] = &runtime.CompiledFunctionValue{int(start), arity, nil}
 			vm.ip += 4
 
+		case compiler.NewAnonFn:
+			arity := vm.chunk.Instructions[vm.ip+1]
+			start := vm.chunk.Instructions[vm.ip+2]
+
+			// Assume global scope as functions cannot be defined in non-global scope
+			vm.push(&runtime.CompiledFunctionValue{int(start), arity, nil})
+			vm.ip += 3
+
 		case compiler.Call:
 			// Push current IP to stack
-			scope := vm.chunk.Instructions[vm.ip+1]
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+2]].Inspect()
-			fn := vm.scope[scope].variables[identifier].(*runtime.CompiledFunctionValue)
+			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
+
+			var fn *runtime.CompiledFunctionValue = nil
+			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
+				if value, ok := vm.scope[idx].variables[identifier]; ok {
+					fn = value.(*runtime.CompiledFunctionValue)
+					break
+				}
+			}
 
 			vm.begin()
-			vm.newFrame(vm.ip+3, int(fn.Arity))
+			vm.newFrame(vm.ip+2, int(fn.Arity))
 
 			vm.ip = fn.Start_ip
 
@@ -300,14 +314,14 @@ func (vm *VM) newFrame(return_to int, arity int) {
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
 
 	if arity > 0 {
-		new_stack := make([]runtime.Value, 0)
+		new_stack := make([]runtime.Value, 0, arity)
 
 		for idx := 0; idx < arity; idx++ {
 			new_stack = append(new_stack, vm.pop())
 		}
 
-		for idx := arity - 1; idx >= 0; idx-- {
-			vm.push(new_stack[idx])
+		for _, value := range new_stack {
+			vm.push(value)
 		}
 	}
 }
@@ -365,7 +379,7 @@ func (vm *VM) binaryOp(operation binaryOp) {
 }
 
 func (vm *VM) push(value runtime.Value) {
-	vm.stack = append(vm.stack, value)
+	vm.stack = append(vm.stack, value.Copy())
 
 	// if vm.debug {
 	// 	var sb strings.Builder

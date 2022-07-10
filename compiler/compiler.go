@@ -96,6 +96,8 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 
 	case *ast.FunctionDef:
 		c.functionDef(chunk, n)
+	case *ast.AnonymousFunction:
+		c.anonFunction(chunk, n)
 	case *ast.Call:
 		c.call(chunk, n)
 
@@ -130,7 +132,7 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 		c.getIdentifier(chunk, n)
 
 	default:
-		fmt.Printf("Gen: Unimplemented node '%s'", reflect.TypeOf(node))
+		fmt.Printf("Compiler: Unimplemented node '%s'", reflect.TypeOf(node))
 	}
 }
 
@@ -161,12 +163,26 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), name_id)
 }
 
+func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
+	defStart := c.chunk.addOps(Jump, 0)
+
+	c.begin(false)
+	for _, value := range anon.Params {
+		c.chunk.addOps(Define, c.addVariable(value.Token.Lexeme))
+	}
+	c.body(chunk, anon.Body, false)
+	c.end(false)
+
+	c.chunk.addOp(Return)
+	c.chunk.upateOpPosNext(defStart)
+	c.chunk.addOps(NewAnonFn, byte(len(anon.Params)), byte(defStart+1))
+}
+
 func (c *Compiler) call(chunk *Chunk, call *ast.Call) {
 	for _, value := range call.Arguments {
 		c.visit(chunk, value)
 	}
-	// c.chunk.addOps(Call, c.findVariableScope(call.Token.Lexeme), c.addVariable(call.Token.Lexeme))
-	c.chunk.addOps(Call, 0, c.getVariable(call.Token.Lexeme))
+	c.chunk.addOps(Call, c.getVariable(call.Token.Lexeme))
 }
 
 func (c *Compiler) binaryOp(chunk *Chunk, binop *ast.BinaryOp) {

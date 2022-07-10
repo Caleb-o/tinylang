@@ -37,8 +37,9 @@ const (
 	SetLocal // SetLocal name_index
 	Define   // Define name_index
 
-	NewFn // NewFn arity start name_index
-	Call  // Call scope_index name_index
+	NewFn     // NewFn arity start name_index
+	NewAnonFn // NewAnonFn arity start
+	Call      // Call name_index
 
 	Jump      // Jump IP
 	JumpFalse // JumpFalse IP
@@ -157,9 +158,13 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 		sb.WriteString(fmt.Sprintf("NewFn<Params %d | Start %d | ID '%s'>", c.Instructions[idx+1], c.Instructions[idx+2], c.Constants[c.Instructions[idx+3]].Inspect()))
 		idx += 4
 
-	case Call:
-		sb.WriteString(fmt.Sprintf("Call<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
+	case NewAnonFn:
+		sb.WriteString(fmt.Sprintf("NewAnonFn<Params %d | Start %d>", c.Instructions[idx+1], c.Instructions[idx+2]))
 		idx += 3
+
+	case Call:
+		sb.WriteString(fmt.Sprintf("Call<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
 
 	case Print:
 		sb.WriteString(fmt.Sprintf("Print<Count %d>", c.Instructions[idx+1]))
