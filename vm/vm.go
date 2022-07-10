@@ -1,7 +1,9 @@
 package vm
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"tiny/compiler"
@@ -20,6 +22,7 @@ type Frame struct {
 
 type VM struct {
 	debug  bool
+	step   bool
 	chunk  *compiler.Chunk
 	ip     int
 	stack  []runtime.Value
@@ -27,11 +30,11 @@ type VM struct {
 	frames []Frame
 }
 
-func NewVM(debug bool, chunk *compiler.Chunk) *VM {
+func NewVM(debug bool, step bool, chunk *compiler.Chunk) *VM {
 	scopes := make([]Scope, 0, 1)
 	scopes = append(scopes, Scope{make(map[string]runtime.Value)})
 
-	return &VM{debug, chunk, 0, make([]runtime.Value, 0), scopes, make([]Frame, 0)}
+	return &VM{debug, step, chunk, 0, make([]runtime.Value, 0), scopes, make([]Frame, 0)}
 }
 
 func (vm *VM) Report(msg string, args ...any) {
@@ -48,6 +51,8 @@ func (vm *VM) Run() {
 	defer vm.dropFrame()
 
 	for vm.ip < len(vm.chunk.Instructions) {
+		last := vm.ip
+
 		switch vm.chunk.Instructions[vm.ip] {
 		case compiler.OpenScope:
 			vm.begin()
@@ -199,17 +204,110 @@ func (vm *VM) Run() {
 		default:
 			vm.Report("Unknown operation in loop '%d' at position %d", vm.chunk.Instructions[vm.ip], vm.ip)
 		}
+
+		if vm.step {
+			vm.printStepInfo(last)
+			fmt.Print(">> ")
+			raw, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+
+			text := strings.TrimSpace(raw)
+
+			switch text {
+			case "reset":
+				vm.ip = 0
+				vm.frames = make([]Frame, 1)
+				vm.newFrame(-1, 0)
+				vm.scope = make([]Scope, 0)
+				vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
+				vm.stack = make([]runtime.Value, 0)
+			case "exit":
+				return
+			}
+
+		}
 	}
+}
+
+func (vm *VM) printStepInfo(last int) {
+	var sb strings.Builder
+
+	sb.WriteString("== General ==\n")
+	sb.WriteString("[Now]  ")
+	vm.chunk.PrintInstruction(&sb, last, vm.chunk.Instructions)
+
+	if vm.ip < len(vm.chunk.Instructions) {
+		sb.WriteString("[Next] ")
+		vm.chunk.PrintInstruction(&sb, vm.ip, vm.chunk.Instructions)
+		sb.WriteByte('\n')
+	} else {
+		sb.WriteString("-- End --\n")
+	}
+
+	count := 0
+	for idx := len(vm.scope) - 1; idx >= 0; idx-- {
+		sb.WriteString(fmt.Sprintf("== Scope %d ==\n", idx))
+		for field, variable := range vm.scope[idx].variables {
+			sb.WriteString(fmt.Sprintf("  '%s' = %s\n", field, variable.Inspect()))
+		}
+
+		if len(vm.scope[idx].variables) == 0 {
+			sb.WriteString("EMPTY\n")
+		}
+
+		count += 1
+		if count == 5 {
+			if len(vm.scope) > 5 {
+				sb.WriteString("...\n")
+			}
+			break
+		}
+	}
+	sb.WriteByte('\n')
+	sb.WriteByte('\n')
+
+	sb.WriteString("Stack [")
+
+	if len(vm.stack) > 20 {
+		sb.WriteString("..., ")
+	}
+
+	count = 0
+
+	if len(vm.stack) >= 20 {
+		count = 10
+	}
+
+	for idx := count; idx < len(vm.stack); idx++ {
+		sb.WriteString(vm.stack[idx].Inspect())
+		count += 1
+
+		if count == 20 {
+			break
+		}
+
+		if idx < len(vm.stack)-1 {
+			sb.WriteString(", ")
+		}
+	}
+
+	sb.WriteByte(']')
+	sb.WriteByte('\n')
+
+	fmt.Printf("\033c%s\n", sb.String())
 }
 
 func (vm *VM) newFrame(return_to int, arity int) {
 	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
 
 	if arity > 0 {
-		start := len(vm.stack) - arity
-		end := len(vm.stack)
-		for idx := end - 1; idx >= start; idx-- {
-			vm.push(vm.stack[idx])
+		new_stack := make([]runtime.Value, 0)
+
+		for idx := 0; idx < arity; idx++ {
+			new_stack = append(new_stack, vm.pop())
+		}
+
+		for idx := arity - 1; idx >= 0; idx-- {
+			vm.push(new_stack[idx])
 		}
 	}
 }

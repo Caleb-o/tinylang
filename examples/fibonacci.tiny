@@ -1,9 +1,10 @@
 # Recursive fibonacci
 function fib(n) {
-	if n <= 1 {
-        return n;
+	if n >= 2 {
+		var new = fib(n-1) + fib(n-2);
+    	return new;
 	}
-    return fib(n-1) + fib(n-2);
+	return n;
 }
 
 print(fib(32)); # 2178309

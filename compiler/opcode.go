@@ -58,129 +58,132 @@ func (c *Chunk) Debug() {
 
 	sb.WriteString("=== ByteCode Debug ===\n")
 	for idx < len(c.Instructions) {
-		op := c.Instructions[idx]
-
-		sb.WriteString(fmt.Sprintf("%04d: ", idx))
-
-		switch op {
-		case Halt:
-			sb.WriteString("Halt")
-			idx++
-
-		case OpenScope:
-			sb.WriteString("Open Scope")
-			idx++
-
-		case CloseScope:
-			sb.WriteString("Close Scope")
-			idx++
-
-		case Negate:
-			sb.WriteString("Negate")
-			idx++
-
-		case Push:
-			sb.WriteString(fmt.Sprintf("Push<Value '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case Pop:
-			sb.WriteString("Pop")
-			idx++
-
-		case Add:
-			sb.WriteString("Add")
-			idx++
-
-		case Sub:
-			sb.WriteString("Subtract")
-			idx++
-
-		case Mul:
-			sb.WriteString("Multiply")
-			idx++
-
-		case Div:
-			sb.WriteString("Divide")
-			idx++
-
-		case Less:
-			sb.WriteString("Less")
-			idx++
-
-		case LessEq:
-			sb.WriteString("Less Equal")
-			idx++
-
-		case Greater:
-			sb.WriteString("Greater")
-			idx++
-
-		case GreaterEq:
-			sb.WriteString("Greater Equal")
-			idx++
-
-		case EqEq:
-			sb.WriteString("Equal Equal")
-			idx++
-
-		case NotEq:
-			sb.WriteString("Not Equal")
-			idx++
-
-		case Get:
-			sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case Set:
-			sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case GetLocal:
-			sb.WriteString(fmt.Sprintf("GetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case SetLocal:
-			sb.WriteString(fmt.Sprintf("SetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case Define:
-			sb.WriteString(fmt.Sprintf("Define<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-			idx += 2
-
-		case NewFn:
-			sb.WriteString(fmt.Sprintf("NewFn<Params %d | Start %d | ID '%s'>", c.Instructions[idx+1], c.Instructions[idx+2], c.Constants[c.Instructions[idx+3]].Inspect()))
-			idx += 4
-
-		case Call:
-			sb.WriteString(fmt.Sprintf("Call<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
-			idx += 3
-
-		case Print:
-			sb.WriteString(fmt.Sprintf("Print<Count %d>", c.Instructions[idx+1]))
-			idx += 2
-
-		case Jump:
-			sb.WriteString(fmt.Sprintf("Jump<Position %d>", c.Instructions[idx+1]))
-			idx += 2
-
-		case JumpFalse:
-			sb.WriteString(fmt.Sprintf("Jump False<Position %d>", c.Instructions[idx+1]))
-			idx += 2
-
-		case Return:
-			sb.WriteString("Return\n")
-			idx++
-
-		default:
-			sb.WriteString(fmt.Sprintf("Unknown<%d>", op))
-			idx++
-		}
-
-		sb.WriteByte('\n')
-		// fmt.Println(sb.String())
+		idx = c.PrintInstruction(&sb, idx, c.Instructions)
 	}
 
 	fmt.Println(sb.String())
+}
+
+func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []byte) int {
+	idx := index
+	sb.WriteString(fmt.Sprintf("%04d: ", idx))
+
+	switch instructions[idx] {
+	case Halt:
+		sb.WriteString("Halt")
+		idx++
+
+	case OpenScope:
+		sb.WriteString("Open Scope")
+		idx++
+
+	case CloseScope:
+		sb.WriteString("Close Scope")
+		idx++
+
+	case Negate:
+		sb.WriteString("Negate")
+		idx++
+
+	case Push:
+		sb.WriteString(fmt.Sprintf("Push<Value '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case Pop:
+		sb.WriteString("Pop")
+		idx++
+
+	case Add:
+		sb.WriteString("Add")
+		idx++
+
+	case Sub:
+		sb.WriteString("Subtract")
+		idx++
+
+	case Mul:
+		sb.WriteString("Multiply")
+		idx++
+
+	case Div:
+		sb.WriteString("Divide")
+		idx++
+
+	case Less:
+		sb.WriteString("Less")
+		idx++
+
+	case LessEq:
+		sb.WriteString("Less Equal")
+		idx++
+
+	case Greater:
+		sb.WriteString("Greater")
+		idx++
+
+	case GreaterEq:
+		sb.WriteString("Greater Equal")
+		idx++
+
+	case EqEq:
+		sb.WriteString("Equal Equal")
+		idx++
+
+	case NotEq:
+		sb.WriteString("Not Equal")
+		idx++
+
+	case Get:
+		sb.WriteString(fmt.Sprintf("Get<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case Set:
+		sb.WriteString(fmt.Sprintf("Set<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case GetLocal:
+		sb.WriteString(fmt.Sprintf("GetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case SetLocal:
+		sb.WriteString(fmt.Sprintf("SetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case Define:
+		sb.WriteString(fmt.Sprintf("Define<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		idx += 2
+
+	case NewFn:
+		sb.WriteString(fmt.Sprintf("NewFn<Params %d | Start %d | ID '%s'>", c.Instructions[idx+1], c.Instructions[idx+2], c.Constants[c.Instructions[idx+3]].Inspect()))
+		idx += 4
+
+	case Call:
+		sb.WriteString(fmt.Sprintf("Call<ID '%s'>", c.Constants[c.Instructions[idx+2]].Inspect()))
+		idx += 3
+
+	case Print:
+		sb.WriteString(fmt.Sprintf("Print<Count %d>", c.Instructions[idx+1]))
+		idx += 2
+
+	case Jump:
+		sb.WriteString(fmt.Sprintf("Jump<Position %d>", c.Instructions[idx+1]))
+		idx += 2
+
+	case JumpFalse:
+		sb.WriteString(fmt.Sprintf("Jump False<Position %d>", c.Instructions[idx+1]))
+		idx += 2
+
+	case Return:
+		sb.WriteString("Return")
+		idx++
+
+	default:
+		sb.WriteString(fmt.Sprintf("Unknown<%d>", c.Instructions[idx]))
+		idx++
+	}
+
+	sb.WriteByte('\n')
+	return idx
 }
 
 func (c *Chunk) addOp(code byte) int {
