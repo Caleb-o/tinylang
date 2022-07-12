@@ -15,13 +15,16 @@ type local struct {
 
 type scope struct {
 	locals      []local
-	counter     byte
 	local_depth int
 }
 
-func (s *scope) findLocal(identifier string, depth int) int {
-	for idx, local := range s.locals {
-		if local.id == identifier && local.depth == depth {
+func (s *scope) findLocal(identifier string) int {
+	// Must iterate in reverse, so we can find the local at the correct
+	// scope. If we shadow in other scopes, we may get the wrong value.
+	for idx := len(s.locals) - 1; idx >= 0; idx-- {
+		local := s.locals[idx]
+
+		if local.id == identifier && local.depth <= s.local_depth {
 			return idx
 		}
 	}
@@ -37,7 +40,7 @@ type Compiler struct {
 
 func NewCompiler() *Compiler {
 	ids := make([]*scope, 0, 8)
-	ids = append(ids, &scope{make([]local, 0, 8), 0, 0})
+	ids = append(ids, &scope{make([]local, 0, 8), 0})
 
 	return &Compiler{
 		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
@@ -53,7 +56,7 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 
 func (c *Compiler) begin() {
 	c.depth++
-	c.ids = append(c.ids, &scope{make([]local, 0, 8), 0, 0})
+	c.ids = append(c.ids, &scope{make([]local, 0, 8), 0})
 }
 
 func (c *Compiler) end() {
@@ -84,13 +87,12 @@ func (c *Compiler) addVariable(identifier string) (byte, byte) {
 		index = len(c.chunk.Constants) - 1
 	}
 
-	scope := c.ids[len(c.ids)-1]
-
-	if local_id := scope.findLocal(identifier, c.depth); local_id > -1 {
-		return byte(local_id), byte(index)
+	if c.depth == 0 {
+		return 0, byte(index)
 	}
 
-	scope.locals = append(scope.locals, local{identifier, c.depth})
+	scope := c.ids[c.depth]
+	scope.locals = append(scope.locals, local{identifier, scope.local_depth})
 	return byte(len(scope.locals) - 1), byte(index)
 }
 
@@ -106,11 +108,10 @@ func (c *Compiler) addVariableWithSlot(identifier string, slot byte) {
 
 	if !found {
 		c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
-		scope := c.ids[len(c.ids)-1]
-
-		scope.locals = append(c.ids[len(c.ids)-1].locals, local{identifier, c.depth})
-		scope.counter++
 	}
+
+	scope := c.ids[len(c.ids)-1]
+	scope.locals = append(c.ids[len(c.ids)-1].locals, local{identifier, c.depth})
 }
 
 func (c *Compiler) getVariable(identifier string) byte {
@@ -128,7 +129,7 @@ func (c *Compiler) getVariable(identifier string) byte {
 
 func (c *Compiler) findVariableSlot(identifier string) byte {
 	for idx := len(c.ids) - 1; idx >= 0; idx-- {
-		if index := c.ids[idx].findLocal(identifier, c.depth); index > -1 {
+		if index := c.ids[idx].findLocal(identifier); index > -1 {
 			return byte(index)
 		}
 	}
@@ -148,7 +149,9 @@ func (c *Compiler) compileProgram(chunk *Chunk, program *ast.Program) {
 func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Block:
+		c.open()
 		c.body(chunk, n)
+		c.close()
 
 	case *ast.FunctionDef:
 		c.functionDef(chunk, n)
@@ -304,6 +307,8 @@ func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
 }
 
 func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
+	c.open()
+
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
 	}
@@ -319,6 +324,7 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 		end_of_stmt = c.chunk.addOps(Jump, 0)
 	}
 
+	c.close()
 	c.chunk.upateOpPosNext(condition)
 
 	if stmt.FalseBody != nil {
