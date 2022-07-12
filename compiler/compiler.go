@@ -8,22 +8,25 @@ import (
 	"tiny/runtime"
 )
 
+type scope struct {
+	ids     map[string]byte
+	counter byte
+}
+
 type Compiler struct {
-	chunk       *Chunk
-	ids         []map[string]interface{}
-	scope_depth int
-	depth       int
+	chunk *Chunk
+	ids   []*scope
+	depth int
 }
 
 func NewCompiler() *Compiler {
-	ids := make([]map[string]interface{}, 0)
-	ids = append(ids, make(map[string]interface{}))
+	ids := make([]*scope, 0, 8)
+	ids = append(ids, &scope{make(map[string]byte, 8), 0})
 
 	return &Compiler{
-		chunk:       &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
-		ids:         ids,
-		scope_depth: 0,
-		depth:       0,
+		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
+		ids:   ids,
+		depth: 0,
 	}
 }
 
@@ -33,30 +36,45 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 }
 
 func (c *Compiler) begin(open bool) {
-	c.scope_depth += 1
-	if open {
-		c.chunk.addOp(OpenScope)
-	}
-
 	c.depth++
-	c.ids = append(c.ids, make(map[string]interface{}))
+	c.ids = append(c.ids, &scope{make(map[string]byte, 8), 0})
 }
 
 func (c *Compiler) end(close bool) {
-	c.scope_depth -= 1
-
-	if close {
-		c.chunk.addOp(CloseScope)
-	}
-
 	c.depth--
 	c.ids = c.ids[:len(c.ids)-1]
 }
 
-func (c *Compiler) addVariable(identifier string) byte {
+func (c *Compiler) addVariable(identifier string) (byte, byte) {
+	index := -1
+
+	for idx, constant := range c.chunk.Constants {
+		if constant.Inspect() == identifier {
+			index = idx
+			break
+		}
+	}
+
+	if index == -1 {
+		c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
+		index = len(c.chunk.Constants) - 1
+	}
+
+	scope := c.ids[c.depth]
+	id := scope.counter
+
+	scope.ids[identifier] = id
+	scope.counter += 1
+
+	return id, byte(index)
+}
+
+func (c *Compiler) addVariableWithSlot(identifier string, slot byte) {
 	c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
-	c.ids[c.depth][identifier] = nil
-	return byte(len(c.chunk.Constants) - 1)
+
+	scope := c.ids[c.depth]
+	scope.ids[identifier] = slot
+	scope.counter += 1
 }
 
 func (c *Compiler) getVariable(identifier string) byte {
@@ -72,14 +90,11 @@ func (c *Compiler) getVariable(identifier string) byte {
 	return 0
 }
 
-func (c *Compiler) findVariableScope(identifier string) byte {
-	idx := c.depth
-
-	for idx >= 0 {
-		if _, ok := c.ids[idx][identifier]; ok {
-			return byte(idx)
+func (c *Compiler) findVariableSlot(identifier string) byte {
+	for idx := c.depth; idx >= 0; idx-- {
+		if _, ok := c.ids[idx].ids[identifier]; ok {
+			return c.ids[idx].ids[identifier]
 		}
-		idx--
 	}
 
 	// TODO: Report error or unreachable
@@ -121,7 +136,7 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 		if n.Expr != nil {
 			c.visit(chunk, n.Expr)
 		}
-		c.chunk.addOps(Return, byte(c.scope_depth))
+		c.chunk.addOp(Return)
 
 	case *ast.VariableDecl:
 		c.variableDecl(chunk, n)
@@ -153,18 +168,17 @@ func (c *Compiler) body(chunk *Chunk, block *ast.Block, newEnv bool) {
 }
 
 func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
-	name_id := c.addVariable(def.GetToken().Lexeme)
+	_, name_id := c.addVariable(def.GetToken().Lexeme)
 	defStart := c.chunk.addOps(Jump, 0)
 
-	c.scope_depth = 0
 	c.begin(false)
 	for idx := len(def.Params) - 1; idx >= 0; idx-- {
-		c.chunk.addOps(Define, c.addVariable(def.Params[idx].Token.Lexeme))
+		c.addVariableWithSlot(def.Params[idx].Token.Lexeme, byte(idx))
 	}
 	c.body(chunk, def.Body, false)
 	c.end(false)
 
-	c.chunk.addOps(Return, 1)
+	c.chunk.addOp(Return)
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewFn, byte(len(def.Params)), byte(defStart+1), name_id)
 }
@@ -172,15 +186,14 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 	defStart := c.chunk.addOps(Jump, 0)
 
-	c.scope_depth = 0
 	c.begin(false)
 	for idx := len(anon.Params) - 1; idx >= 0; idx-- {
-		c.chunk.addOps(Define, c.addVariable(anon.Params[idx].Token.Lexeme))
+		c.addVariableWithSlot(anon.Params[idx].Token.Lexeme, byte(idx))
 	}
 	c.body(chunk, anon.Body, false)
 	c.end(false)
 
-	c.chunk.addOps(Return, 1)
+	c.chunk.addOp(Return)
 
 	c.chunk.upateOpPosNext(defStart)
 	c.chunk.addOps(NewAnonFn, byte(len(anon.Params)), byte(defStart+1))
@@ -230,22 +243,28 @@ func (c *Compiler) unaryOp(chunk *Chunk, unary *ast.UnaryOp) {
 func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 	// Analyser should pickup clashes, so we don't need to check names
 	c.visit(chunk, decl.Expr)
-	c.chunk.addOps(Define, c.addVariable(decl.GetToken().Lexeme))
+	slot, id := c.addVariable(decl.GetToken().Lexeme)
+
+	if c.depth > 0 {
+		c.chunk.addOps(SetLocal, slot)
+	} else {
+		c.chunk.addOps(Set, id)
+	}
 }
 
 func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
 	c.visit(chunk, assign.Expr)
 
-	if c.findVariableScope(assign.Token.Lexeme) > 0 {
-		c.chunk.addOps(SetLocal, c.getVariable(assign.Token.Lexeme))
+	if c.depth > 0 {
+		c.chunk.addOps(SetLocal, c.findVariableSlot(assign.Token.Lexeme))
 	} else {
 		c.chunk.addOps(Set, c.getVariable(assign.Token.Lexeme))
 	}
 }
 
 func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
-	if c.findVariableScope(identifier.Token.Lexeme) > 0 {
-		c.chunk.addOps(GetLocal, c.getVariable(identifier.Token.Lexeme))
+	if c.depth > 0 {
+		c.chunk.addOps(GetLocal, c.findVariableSlot(identifier.Token.Lexeme))
 	} else {
 		c.chunk.addOps(Get, c.getVariable(identifier.Token.Lexeme))
 	}
@@ -299,5 +318,5 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	c.chunk.addOps(Jump, byte(condition))
 	c.end(true)
 
-	c.chunk.upateOpPos(false_expr)
+	c.chunk.upateOpPosNext(false_expr)
 }

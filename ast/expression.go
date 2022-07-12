@@ -99,6 +99,15 @@ type Catch struct {
 	Body  *Block
 }
 
+type Block struct {
+	Statements []Node
+	token      *lexer.Token
+}
+
+func NewBlock(token *lexer.Token) *Block {
+	return &Block{Statements: make([]Node, 0, 4), token: token}
+}
+
 func NewAnonFn(token *lexer.Token, params []*Parameter, body *Block) *AnonymousFunction {
 	return &AnonymousFunction{token: token, Params: params, Body: body}
 }
@@ -366,6 +375,22 @@ func (expr *Catch) AsSExp() string {
 	sb.WriteByte(':')
 	sb.WriteString(expr.Var.Lexeme)
 	sb.WriteString(expr.Body.AsSExp())
+	sb.WriteByte(')')
+
+	return sb.String()
+}
+
+func (block *Block) GetToken() *lexer.Token {
+	return block.token
+}
+
+func (block *Block) AsSExp() string {
+	var sb strings.Builder
+
+	sb.WriteByte('(')
+	for _, stmt := range block.Statements {
+		sb.WriteString(stmt.AsSExp())
+	}
 	sb.WriteByte(')')
 
 	return sb.String()

@@ -15,30 +15,24 @@ const (
 	STACK_MAX int = 256
 )
 
-type Scope struct {
-	variables map[string]runtime.Value
-}
-
 type Frame struct {
 	ret_to      int
 	stack_start int
 }
 
 type VM struct {
-	debug  bool
-	step   bool
-	chunk  *compiler.Chunk
-	ip     int
-	stack  []runtime.Value
-	scope  []Scope
-	frames []Frame
+	debug   bool
+	step    bool
+	chunk   *compiler.Chunk
+	ip      int
+	sp      int
+	globals map[string]runtime.Value
+	stack   []runtime.Value
+	frames  []Frame
 }
 
 func NewVM(debug bool, step bool, chunk *compiler.Chunk) *VM {
-	scopes := make([]Scope, 0, 32)
-	scopes = append(scopes, Scope{make(map[string]runtime.Value)})
-
-	return &VM{debug, step, chunk, 0, make([]runtime.Value, 0, STACK_MAX), scopes, make([]Frame, 0, STACK_MAX)}
+	return &VM{debug, step, chunk, 0, 0, make(map[string]runtime.Value, 32), make([]runtime.Value, STACK_MAX), make([]Frame, 0, STACK_MAX)}
 }
 
 func (vm *VM) Report(msg string, args ...any) {
@@ -58,16 +52,18 @@ func (vm *VM) Run() {
 		last := vm.ip
 
 		switch vm.chunk.Instructions[vm.ip] {
-		case compiler.OpenScope:
-			vm.begin()
-			vm.ip++
-
-		case compiler.CloseScope:
-			vm.end()
-			vm.ip++
-
 		case compiler.Push:
 			vm.push(vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]])
+			vm.ip += 2
+
+		case compiler.Pop:
+			vm.sp--
+			vm.ip++
+
+		case compiler.PopN:
+			count := int(vm.chunk.Instructions[vm.ip+1])
+			vm.stack = vm.stack[:vm.sp-count]
+			vm.sp -= count
 			vm.ip += 2
 
 		case compiler.Add:
@@ -112,38 +108,23 @@ func (vm *VM) Run() {
 
 		case compiler.Get:
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-			vm.push(vm.scope[0].variables[identifier])
+			vm.push(vm.globals[identifier])
 			vm.ip += 2
 
 		case compiler.Set:
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-			vm.scope[0].variables[identifier] = vm.pop()
+			vm.globals[identifier] = vm.pop()
 			vm.ip += 2
 
 		case compiler.GetLocal:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-
-			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
-				if value, ok := vm.scope[idx].variables[identifier]; ok {
-					vm.push(value)
-					break
-				}
-			}
+			vm.push(vm.stack[vm.frames[len(vm.frames)-1].stack_start+int(vm.chunk.Instructions[vm.ip+1])])
 			vm.ip += 2
 
 		case compiler.SetLocal:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
-				if _, ok := vm.scope[idx].variables[identifier]; ok {
-					vm.scope[idx].variables[identifier] = vm.pop()
-					break
-				}
+			idx := vm.frames[len(vm.frames)-1].stack_start + int(vm.chunk.Instructions[vm.ip+1])
+			if vm.sp != idx {
+				vm.stack[idx] = vm.peek()
 			}
-			vm.ip += 2
-
-		case compiler.Define:
-			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-			vm.scope[len(vm.scope)-1].variables[identifier] = vm.pop()
 			vm.ip += 2
 
 		case compiler.NewFn:
@@ -151,8 +132,7 @@ func (vm *VM) Run() {
 			start := vm.chunk.Instructions[vm.ip+2]
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+3]].Inspect()
 
-			// Assume global scope as functions cannot be defined in non-global scope
-			vm.scope[0].variables[identifier] = &runtime.CompiledFunctionValue{int(start), arity, nil}
+			vm.globals[identifier] = &runtime.CompiledFunctionValue{int(start), arity, nil}
 			vm.ip += 4
 
 		case compiler.NewAnonFn:
@@ -164,23 +144,14 @@ func (vm *VM) Run() {
 
 		case compiler.Call:
 			identifier := vm.chunk.Constants[vm.chunk.Instructions[vm.ip+1]].Inspect()
-
-			var fn *runtime.CompiledFunctionValue = nil
-			for idx := len(vm.scope) - 1; idx >= 0; idx-- {
-				if value, ok := vm.scope[idx].variables[identifier]; ok {
-					fn = value.(*runtime.CompiledFunctionValue)
-					break
-				}
-			}
+			fn := vm.globals[identifier].(*runtime.CompiledFunctionValue)
 
 			// TODO: See if this works as intended in more complex cases
-			if len(vm.stack) < int(fn.Arity) {
-				vm.Report("Function '%s' expected %d argument(s) but receieved %d", identifier, fn.Arity, len(vm.stack))
+			if vm.sp-vm.frames[len(vm.frames)-1].stack_start < int(fn.Arity) {
+				vm.Report("Function '%s' expected %d argument(s) but receieved %d", identifier, fn.Arity, vm.sp-vm.frames[len(vm.frames)-1].stack_start)
 			}
 
-			vm.begin()
 			vm.newFrame(vm.ip+2, int(fn.Arity))
-
 			vm.ip = fn.Start_ip
 
 		case compiler.Return:
@@ -188,14 +159,12 @@ func (vm *VM) Run() {
 
 			var retValue runtime.Value = nil
 
-			if len(vm.stack) > frame.stack_start {
+			if vm.sp > frame.stack_start {
 				retValue = vm.pop()
 			}
 
 			// Remove stack values
-			vm.stack = vm.stack[:frame.stack_start]
-			// Remove inner scopes
-			vm.scope = vm.scope[:len(vm.scope)-int(vm.chunk.Instructions[vm.ip+1])]
+			vm.sp = frame.stack_start
 
 			if retValue != nil {
 				vm.push(retValue)
@@ -237,11 +206,10 @@ func (vm *VM) Run() {
 			switch text {
 			case "reset":
 				vm.ip = 0
-				vm.frames = make([]Frame, 1)
+				vm.frames = make([]Frame, STACK_MAX)
+				vm.globals = make(map[string]runtime.Value, 32)
 				vm.newFrame(-1, 0)
-				vm.scope = make([]Scope, 0)
-				vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
-				vm.stack = make([]runtime.Value, 0)
+				vm.sp = 0
 			case "exit":
 				return
 			}
@@ -264,49 +232,40 @@ func (vm *VM) printStepInfo(last int) {
 		sb.WriteString("-- End --\n")
 	}
 
-	count := 0
-	for idx := len(vm.scope) - 1; idx >= 0; idx-- {
-		sb.WriteString(fmt.Sprintf("== Scope %d ==\n", idx))
-		for field, variable := range vm.scope[idx].variables {
-			sb.WriteString(fmt.Sprintf("  '%s' = %s\n", field, variable.Inspect()))
-		}
+	sb.WriteString("=== Globals ===\n")
+	idx := 0
+	for id, global := range vm.globals {
+		sb.WriteString(fmt.Sprintf("%s = '%s'\n", id, global.Inspect()))
 
-		if len(vm.scope[idx].variables) == 0 {
-			sb.WriteString("EMPTY\n")
+		if idx >= 20 {
+			sb.WriteString("...\n")
+			break
 		}
+		idx += 1
+	}
+	sb.WriteByte('\n')
 
-		count += 1
-		if count == 5 {
-			if len(vm.scope) > 5 {
-				sb.WriteString("...\n")
-			}
+	sb.WriteString("=== Constants ===\n")
+	for idx, constant := range vm.chunk.Constants {
+		sb.WriteString(fmt.Sprintf("%d: '%s'\n", idx, constant.Inspect()))
+
+		if idx >= 20 {
+			sb.WriteString("...\n")
 			break
 		}
 	}
-	sb.WriteByte('\n')
 	sb.WriteByte('\n')
 
 	sb.WriteString("Stack [")
 
-	if len(vm.stack) > 20 {
+	if vm.sp > 20 {
 		sb.WriteString("..., ")
 	}
 
-	count = 0
+	for idx := 0; idx < vm.sp; idx++ {
+		sb.WriteString(fmt.Sprintf("'%s'", vm.stack[idx].Inspect()))
 
-	if len(vm.stack) >= 20 {
-		count = 10
-	}
-
-	for idx := count; idx < len(vm.stack); idx++ {
-		sb.WriteString(vm.stack[idx].Inspect())
-		count += 1
-
-		if count == 20 {
-			break
-		}
-
-		if idx < len(vm.stack)-1 {
+		if idx < vm.sp-1 {
 			sb.WriteString(", ")
 		}
 	}
@@ -321,7 +280,7 @@ func (vm *VM) newFrame(return_to int, arity int) {
 	if len(vm.frames) >= STACK_MAX {
 		vm.Report("Stack overflow")
 	}
-	vm.frames = append(vm.frames, Frame{return_to, len(vm.stack) - arity})
+	vm.frames = append(vm.frames, Frame{return_to, vm.sp - arity})
 }
 
 func (vm *VM) dropFrame() Frame {
@@ -330,18 +289,10 @@ func (vm *VM) dropFrame() Frame {
 	return frame
 }
 
-func (vm *VM) begin() {
-	vm.scope = append(vm.scope, Scope{make(map[string]runtime.Value)})
-}
-
-func (vm *VM) end() {
-	vm.scope = vm.scope[:len(vm.scope)-1]
-}
-
 func (vm *VM) binaryOp(operation binaryOp) {
 	right := vm.pop()
 	// This shouldn't need to be here, as below, but it's still faster
-	index := len(vm.stack) - 1
+	index := vm.sp - 1
 	left := vm.stack[index].Copy()
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
@@ -390,17 +341,22 @@ func (vm *VM) compare(operation binaryOp) {
 }
 
 func (vm *VM) push(value runtime.Value) {
-	if len(vm.stack)+1 >= STACK_MAX {
+	if vm.sp+1 >= STACK_MAX {
 		vm.Report("Stack overflow")
 	}
 
-	vm.stack = append(vm.stack, value)
+	vm.stack[vm.sp] = value
+	vm.sp++
 }
 
 func (vm *VM) pop() runtime.Value {
-	value := vm.stack[len(vm.stack)-1]
-	vm.stack = vm.stack[:len(vm.stack)-1]
+	value := vm.stack[vm.sp-1]
+	vm.sp--
 	return value
+}
+
+func (vm *VM) peek() runtime.Value {
+	return vm.stack[vm.sp-1].Copy()
 }
 
 func (vm *VM) print() {

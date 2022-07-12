@@ -14,10 +14,8 @@ const (
 
 	Push // Push const_index
 	Pop
+	PopN // Pop count
 	Negate
-
-	OpenScope
-	CloseScope
 
 	Add
 	Sub
@@ -33,9 +31,8 @@ const (
 
 	Get      // Get name_index
 	Set      // Set name_index
-	GetLocal // GetLocal name_index
-	SetLocal // SetLocal name_index
-	Define   // Define name_index
+	GetLocal // GetLocal slot
+	SetLocal // SetLocal slot
 
 	NewFn     // NewFn arity start name_index
 	NewAnonFn // NewAnonFn arity start
@@ -74,14 +71,6 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 		sb.WriteString("Halt")
 		idx++
 
-	case OpenScope:
-		sb.WriteString("Open Scope")
-		idx++
-
-	case CloseScope:
-		sb.WriteString("Close Scope")
-		idx++
-
 	case Negate:
 		sb.WriteString("Negate")
 		idx++
@@ -93,6 +82,10 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 	case Pop:
 		sb.WriteString("Pop")
 		idx++
+
+	case PopN:
+		sb.WriteString(fmt.Sprintf("PopN<Count %d>", c.Instructions[idx+1]))
+		idx += 2
 
 	case Add:
 		sb.WriteString("Add")
@@ -143,15 +136,11 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 		idx += 2
 
 	case GetLocal:
-		sb.WriteString(fmt.Sprintf("GetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		sb.WriteString(fmt.Sprintf("GetLocal<%d>", c.Instructions[idx+1]))
 		idx += 2
 
 	case SetLocal:
-		sb.WriteString(fmt.Sprintf("SetLocal<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
-		idx += 2
-
-	case Define:
-		sb.WriteString(fmt.Sprintf("Define<ID '%s'>", c.Constants[c.Instructions[idx+1]].Inspect()))
+		sb.WriteString(fmt.Sprintf("SetLocal<%d>", c.Instructions[idx+1]))
 		idx += 2
 
 	case NewFn:
@@ -179,8 +168,8 @@ func (c *Chunk) PrintInstruction(sb *strings.Builder, index int, instructions []
 		idx += 2
 
 	case Return:
-		sb.WriteString(fmt.Sprintf("Return<Depth %d>", c.Instructions[idx+1]))
-		idx += 2
+		sb.WriteString("Return")
+		idx += 1
 
 	default:
 		sb.WriteString(fmt.Sprintf("Unknown<%d>", c.Instructions[idx]))
