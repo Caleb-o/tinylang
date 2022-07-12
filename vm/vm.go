@@ -18,6 +18,7 @@ const (
 type Frame struct {
 	ret_to      int
 	stack_start int
+	arity       int
 }
 
 type VM struct {
@@ -61,9 +62,7 @@ func (vm *VM) Run() {
 			vm.ip++
 
 		case compiler.PopN:
-			count := int(vm.chunk.Instructions[vm.ip+1])
-			vm.stack = vm.stack[:vm.sp-count]
-			vm.sp -= count
+			vm.sp -= int(vm.chunk.Instructions[vm.ip+1])
 			vm.ip += 2
 
 		case compiler.Add:
@@ -159,7 +158,7 @@ func (vm *VM) Run() {
 
 			var retValue runtime.Value = nil
 
-			if vm.sp > frame.stack_start {
+			if vm.sp > frame.stack_start+frame.arity {
 				retValue = vm.pop()
 			}
 
@@ -206,10 +205,10 @@ func (vm *VM) Run() {
 			switch text {
 			case "reset":
 				vm.ip = 0
-				vm.frames = make([]Frame, STACK_MAX)
-				vm.globals = make(map[string]runtime.Value, 32)
-				vm.newFrame(-1, 0)
 				vm.sp = 0
+				vm.frames = make([]Frame, 0, STACK_MAX)
+				vm.newFrame(-1, 0)
+				vm.globals = make(map[string]runtime.Value, 32)
 			case "exit":
 				return
 			}
@@ -280,7 +279,7 @@ func (vm *VM) newFrame(return_to int, arity int) {
 	if len(vm.frames) >= STACK_MAX {
 		vm.Report("Stack overflow")
 	}
-	vm.frames = append(vm.frames, Frame{return_to, vm.sp - arity})
+	vm.frames = append(vm.frames, Frame{return_to, vm.sp - arity, arity})
 }
 
 func (vm *VM) dropFrame() Frame {

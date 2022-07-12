@@ -8,9 +8,24 @@ import (
 	"tiny/runtime"
 )
 
+type local struct {
+	id    string
+	depth int
+}
+
 type scope struct {
-	ids     map[string]byte
+	locals  []local
 	counter byte
+}
+
+func (s *scope) findLocal(identifier string, depth int) int {
+	for idx, local := range s.locals {
+		if local.id == identifier && local.depth == depth {
+			return idx
+		}
+	}
+
+	return -1
 }
 
 type Compiler struct {
@@ -21,7 +36,7 @@ type Compiler struct {
 
 func NewCompiler() *Compiler {
 	ids := make([]*scope, 0, 8)
-	ids = append(ids, &scope{make(map[string]byte, 8), 0})
+	ids = append(ids, &scope{make([]local, 0, 8), 0})
 
 	return &Compiler{
 		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
@@ -35,14 +50,22 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 	return c.chunk
 }
 
-func (c *Compiler) begin(open bool) {
+func (c *Compiler) begin() {
 	c.depth++
-	c.ids = append(c.ids, &scope{make(map[string]byte, 8), 0})
+	c.ids = append(c.ids, &scope{make([]local, 0, 8), 0})
 }
 
-func (c *Compiler) end(close bool) {
+func (c *Compiler) end() {
+	locals := c.ids[len(c.ids)-1].counter
+
 	c.depth--
 	c.ids = c.ids[:len(c.ids)-1]
+
+	if locals == 1 {
+		c.chunk.addOp(Pop)
+	} else if locals > 1 {
+		c.chunk.addOps(PopN, locals)
+	}
 }
 
 func (c *Compiler) addVariable(identifier string) (byte, byte) {
@@ -61,20 +84,30 @@ func (c *Compiler) addVariable(identifier string) (byte, byte) {
 	}
 
 	scope := c.ids[c.depth]
-	id := scope.counter
 
-	scope.ids[identifier] = id
-	scope.counter += 1
+	if local_id := scope.findLocal(identifier, c.depth); local_id > -1 {
+		return byte(local_id), byte(index)
+	}
 
-	return id, byte(index)
+	scope.locals = append(scope.locals, local{identifier, c.depth})
+	return byte(len(scope.locals) - 1), byte(index)
 }
 
 func (c *Compiler) addVariableWithSlot(identifier string, slot byte) {
-	c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
+	found := false
 
-	scope := c.ids[c.depth]
-	scope.ids[identifier] = slot
-	scope.counter += 1
+	for _, constant := range c.chunk.Constants {
+		if constant.Inspect() == identifier {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
+		c.ids[c.depth].locals = append(c.ids[c.depth].locals, local{identifier, c.depth})
+		c.ids[c.depth].counter++
+	}
 }
 
 func (c *Compiler) getVariable(identifier string) byte {
@@ -92,8 +125,8 @@ func (c *Compiler) getVariable(identifier string) byte {
 
 func (c *Compiler) findVariableSlot(identifier string) byte {
 	for idx := c.depth; idx >= 0; idx-- {
-		if _, ok := c.ids[idx].ids[identifier]; ok {
-			return c.ids[idx].ids[identifier]
+		if index := c.ids[idx].findLocal(identifier, c.depth); index > -1 {
+			return byte(index)
 		}
 	}
 
@@ -112,7 +145,7 @@ func (c *Compiler) compileProgram(chunk *Chunk, program *ast.Program) {
 func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Block:
-		c.body(chunk, n, true)
+		c.body(chunk, n)
 
 	case *ast.FunctionDef:
 		c.functionDef(chunk, n)
@@ -156,12 +189,7 @@ func (c *Compiler) visit(chunk *Chunk, node ast.Node) {
 	}
 }
 
-func (c *Compiler) body(chunk *Chunk, block *ast.Block, newEnv bool) {
-	if newEnv {
-		c.begin(true)
-		defer c.end(true)
-	}
-
+func (c *Compiler) body(chunk *Chunk, block *ast.Block) {
 	for _, stmt := range block.Statements {
 		c.visit(chunk, stmt)
 	}
@@ -171,12 +199,12 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 	_, name_id := c.addVariable(def.GetToken().Lexeme)
 	defStart := c.chunk.addOps(Jump, 0)
 
-	c.begin(false)
+	c.begin()
 	for idx := len(def.Params) - 1; idx >= 0; idx-- {
 		c.addVariableWithSlot(def.Params[idx].Token.Lexeme, byte(idx))
 	}
-	c.body(chunk, def.Body, false)
-	c.end(false)
+	c.body(chunk, def.Body)
+	c.end()
 
 	c.chunk.addOp(Return)
 	c.chunk.upateOpPosNext(defStart)
@@ -186,12 +214,12 @@ func (c *Compiler) functionDef(chunk *Chunk, def *ast.FunctionDef) {
 func (c *Compiler) anonFunction(chunk *Chunk, anon *ast.AnonymousFunction) {
 	defStart := c.chunk.addOps(Jump, 0)
 
-	c.begin(false)
+	c.begin()
 	for idx := len(anon.Params) - 1; idx >= 0; idx-- {
 		c.addVariableWithSlot(anon.Params[idx].Token.Lexeme, byte(idx))
 	}
-	c.body(chunk, anon.Body, false)
-	c.end(false)
+	c.body(chunk, anon.Body)
+	c.end()
 
 	c.chunk.addOp(Return)
 
@@ -260,6 +288,8 @@ func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
 	} else {
 		c.chunk.addOps(Set, c.getVariable(assign.Token.Lexeme))
 	}
+
+	c.chunk.addOp(Pop)
 }
 
 func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
@@ -271,7 +301,7 @@ func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
 }
 
 func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
-	c.begin(true)
+	c.begin()
 
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
@@ -281,26 +311,27 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 
 	condition := c.chunk.addOps(JumpFalse, 0)
 
-	c.body(chunk, stmt.TrueBody, false)
+	c.body(chunk, stmt.TrueBody)
 
 	var end_of_stmt int
 	if stmt.FalseBody != nil {
+		c.end()
 		end_of_stmt = c.chunk.addOps(Jump, 0)
 	}
 
 	c.chunk.upateOpPosNext(condition)
 
+	if stmt.FalseBody == nil {
+		c.end()
+	}
+
 	if stmt.FalseBody != nil {
 		c.visit(chunk, stmt.FalseBody)
 		c.chunk.upateOpPosNext(end_of_stmt)
 	}
-
-	c.end(true)
 }
 
 func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
-	c.begin(true)
-
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
 	}
@@ -309,14 +340,12 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	c.visit(chunk, stmt.Condition)
 
 	false_expr := c.chunk.addOps(JumpFalse, 0)
-	c.body(chunk, stmt.Body, false)
+	c.body(chunk, stmt.Body)
 
 	if stmt.Increment != nil {
 		c.visit(chunk, stmt.Increment)
 	}
 
 	c.chunk.addOps(Jump, byte(condition))
-	c.end(true)
-
 	c.chunk.upateOpPosNext(false_expr)
 }
