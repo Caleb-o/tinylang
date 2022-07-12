@@ -46,7 +46,7 @@ func (vm *VM) Run() {
 		vm.chunk.Debug()
 	}
 
-	vm.newFrame(-1, 0)
+	vm.newFrame(0, 0)
 	defer vm.dropFrame()
 
 	for vm.ip < len(vm.chunk.Instructions) {
@@ -207,7 +207,7 @@ func (vm *VM) Run() {
 				vm.ip = 0
 				vm.sp = 0
 				vm.frames = make([]Frame, 0, STACK_MAX)
-				vm.newFrame(-1, 0)
+				vm.newFrame(0, 0)
 				vm.globals = make(map[string]runtime.Value, 32)
 			case "exit":
 				return
@@ -219,7 +219,7 @@ func (vm *VM) Run() {
 func (vm *VM) printStepInfo(last int) {
 	var sb strings.Builder
 
-	sb.WriteString("== General ==\n")
+	sb.WriteString("=== Instructions ===\n")
 	sb.WriteString("[Now]  ")
 	vm.chunk.PrintInstruction(&sb, last, vm.chunk.Instructions)
 
@@ -249,6 +249,18 @@ func (vm *VM) printStepInfo(last int) {
 		sb.WriteString(fmt.Sprintf("%d: '%s'\n", idx, constant.Inspect()))
 
 		if idx >= 20 {
+			sb.WriteString("...\n")
+			break
+		}
+	}
+	sb.WriteByte('\n')
+
+	sb.WriteString("=== Frames ===\n")
+	for idx := len(vm.frames) - 1; idx >= 0; idx-- {
+		frame := vm.frames[idx]
+		sb.WriteString(fmt.Sprintf("%d: Returns to %d | Stack start %d | Arity %d\n", idx, frame.ret_to, frame.stack_start, frame.arity))
+
+		if idx < len(vm.frames)-10 {
 			sb.WriteString("...\n")
 			break
 		}

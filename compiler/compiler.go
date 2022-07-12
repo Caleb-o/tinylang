@@ -151,8 +151,7 @@ func (c *Compiler) findVariableSlot(identifier string) byte {
 		}
 	}
 
-	// TODO: Report error or unreachable
-	fmt.Printf("Cannot find id '%s'\n", identifier)
+	// TODO: Report error or unreachable?
 	return 0
 }
 
