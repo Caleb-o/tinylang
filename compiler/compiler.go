@@ -14,8 +14,9 @@ type local struct {
 }
 
 type scope struct {
-	locals  []local
-	counter byte
+	locals      []local
+	counter     byte
+	local_depth int
 }
 
 func (s *scope) findLocal(identifier string, depth int) int {
@@ -36,7 +37,7 @@ type Compiler struct {
 
 func NewCompiler() *Compiler {
 	ids := make([]*scope, 0, 8)
-	ids = append(ids, &scope{make([]local, 0, 8), 0})
+	ids = append(ids, &scope{make([]local, 0, 8), 0, 0})
 
 	return &Compiler{
 		chunk: &Chunk{Constants: make([]runtime.Value, 0), Instructions: make([]byte, 0)},
@@ -52,20 +53,20 @@ func (c *Compiler) Compile(program *ast.Program) *Chunk {
 
 func (c *Compiler) begin() {
 	c.depth++
-	c.ids = append(c.ids, &scope{make([]local, 0, 8), 0})
+	c.ids = append(c.ids, &scope{make([]local, 0, 8), 0, 0})
 }
 
 func (c *Compiler) end() {
-	locals := c.ids[len(c.ids)-1].counter
-
 	c.depth--
 	c.ids = c.ids[:len(c.ids)-1]
+}
 
-	if locals == 1 {
-		c.chunk.addOp(Pop)
-	} else if locals > 1 {
-		c.chunk.addOps(PopN, locals)
-	}
+func (c *Compiler) open() {
+	c.ids[len(c.ids)-1].local_depth++
+}
+
+func (c *Compiler) close() {
+	c.ids[len(c.ids)-1].local_depth--
 }
 
 func (c *Compiler) addVariable(identifier string) (byte, byte) {
@@ -83,7 +84,7 @@ func (c *Compiler) addVariable(identifier string) (byte, byte) {
 		index = len(c.chunk.Constants) - 1
 	}
 
-	scope := c.ids[c.depth]
+	scope := c.ids[len(c.ids)-1]
 
 	if local_id := scope.findLocal(identifier, c.depth); local_id > -1 {
 		return byte(local_id), byte(index)
@@ -105,8 +106,10 @@ func (c *Compiler) addVariableWithSlot(identifier string, slot byte) {
 
 	if !found {
 		c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
-		c.ids[c.depth].locals = append(c.ids[c.depth].locals, local{identifier, c.depth})
-		c.ids[c.depth].counter++
+		scope := c.ids[len(c.ids)-1]
+
+		scope.locals = append(c.ids[len(c.ids)-1].locals, local{identifier, c.depth})
+		scope.counter++
 	}
 }
 
@@ -124,7 +127,7 @@ func (c *Compiler) getVariable(identifier string) byte {
 }
 
 func (c *Compiler) findVariableSlot(identifier string) byte {
-	for idx := c.depth; idx >= 0; idx-- {
+	for idx := len(c.ids) - 1; idx >= 0; idx-- {
 		if index := c.ids[idx].findLocal(identifier, c.depth); index > -1 {
 			return byte(index)
 		}
@@ -301,8 +304,6 @@ func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
 }
 
 func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
-	c.begin()
-
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
 	}
@@ -315,15 +316,10 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 
 	var end_of_stmt int
 	if stmt.FalseBody != nil {
-		c.end()
 		end_of_stmt = c.chunk.addOps(Jump, 0)
 	}
 
 	c.chunk.upateOpPosNext(condition)
-
-	if stmt.FalseBody == nil {
-		c.end()
-	}
 
 	if stmt.FalseBody != nil {
 		c.visit(chunk, stmt.FalseBody)
@@ -332,6 +328,8 @@ func (c *Compiler) ifStmt(chunk *Chunk, stmt *ast.If) {
 }
 
 func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
+	c.open()
+
 	if stmt.VarDec != nil {
 		c.variableDecl(chunk, stmt.VarDec)
 	}
@@ -347,5 +345,7 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	}
 
 	c.chunk.addOps(Jump, byte(condition))
+	c.close()
 	c.chunk.upateOpPosNext(false_expr)
+
 }
