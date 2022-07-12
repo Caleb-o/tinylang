@@ -32,6 +32,16 @@ func (s *scope) findLocal(identifier string) int {
 	return -1
 }
 
+func (s *scope) atCurrentDepth() int {
+	idx := 0
+	for _, local := range s.locals {
+		if local.depth == s.local_depth {
+			idx++
+		}
+	}
+	return idx
+}
+
 type Compiler struct {
 	chunk *Chunk
 	ids   []*scope
@@ -69,7 +79,18 @@ func (c *Compiler) open() {
 }
 
 func (c *Compiler) close() {
+	c.destroyLocals()
 	c.ids[len(c.ids)-1].local_depth--
+}
+
+func (c *Compiler) destroyLocals() {
+	current_locals := c.ids[len(c.ids)-1].atCurrentDepth()
+
+	if current_locals == 1 {
+		c.chunk.addOp(Pop)
+	} else if current_locals > 1 {
+		c.chunk.addOps(PopN, byte(current_locals))
+	}
 }
 
 func (c *Compiler) addVariable(identifier string) (byte, byte) {
@@ -85,10 +106,6 @@ func (c *Compiler) addVariable(identifier string) (byte, byte) {
 	if index == -1 {
 		c.chunk.Constants = append(c.chunk.Constants, &runtime.StringVal{identifier})
 		index = len(c.chunk.Constants) - 1
-	}
-
-	if c.depth == 0 {
-		return 0, byte(index)
 	}
 
 	scope := c.ids[c.depth]
@@ -135,6 +152,7 @@ func (c *Compiler) findVariableSlot(identifier string) byte {
 	}
 
 	// TODO: Report error or unreachable
+	fmt.Printf("Cannot find id '%s'\n", identifier)
 	return 0
 }
 
@@ -279,7 +297,7 @@ func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 	c.visit(chunk, decl.Expr)
 	slot, id := c.addVariable(decl.GetToken().Lexeme)
 
-	if c.depth > 0 {
+	if c.depth > 0 || c.ids[len(c.ids)-1].local_depth > 0 {
 		c.chunk.addOps(SetLocal, slot)
 	} else {
 		c.chunk.addOps(Set, id)
@@ -289,7 +307,7 @@ func (c *Compiler) variableDecl(chunk *Chunk, decl *ast.VariableDecl) {
 func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
 	c.visit(chunk, assign.Expr)
 
-	if c.depth > 0 {
+	if c.depth > 0 || c.ids[len(c.ids)-1].local_depth > 0 {
 		c.chunk.addOps(SetLocal, c.findVariableSlot(assign.Token.Lexeme))
 	} else {
 		c.chunk.addOps(Set, c.getVariable(assign.Token.Lexeme))
@@ -299,7 +317,7 @@ func (c *Compiler) variableAssign(chunk *Chunk, assign *ast.Assign) {
 }
 
 func (c *Compiler) getIdentifier(chunk *Chunk, identifier *ast.Identifier) {
-	if c.depth > 0 {
+	if c.depth > 0 || c.ids[len(c.ids)-1].local_depth > 0 {
 		c.chunk.addOps(GetLocal, c.findVariableSlot(identifier.Token.Lexeme))
 	} else {
 		c.chunk.addOps(Get, c.getVariable(identifier.Token.Lexeme))
@@ -344,7 +362,11 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	c.visit(chunk, stmt.Condition)
 
 	false_expr := c.chunk.addOps(JumpFalse, 0)
+
+	// Manually open and close rather than visiting and type switching
+	c.open()
 	c.body(chunk, stmt.Body)
+	c.close()
 
 	if stmt.Increment != nil {
 		c.visit(chunk, stmt.Increment)
@@ -353,5 +375,4 @@ func (c *Compiler) whileStmt(chunk *Chunk, stmt *ast.While) {
 	c.chunk.addOps(Jump, byte(condition))
 	c.close()
 	c.chunk.upateOpPosNext(false_expr)
-
 }
