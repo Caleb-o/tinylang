@@ -51,6 +51,7 @@ func (tiny *Tiny) Run() {
 		debug     bool
 		step      bool
 		test      bool
+		dump      bool
 		script    string
 	)
 
@@ -59,6 +60,7 @@ func (tiny *Tiny) Run() {
 	flag.BoolVar(&usevm, "vm", false, "Use the new VM to run code")
 	flag.BoolVar(&debug, "d", false, "Allow debugging features")
 	flag.BoolVar(&step, "s", false, "Step through each operation and view variables, stack etc. (VM Only)")
+	flag.BoolVar(&dump, "dump", false, "Dumps the AST in a lisp-like representation")
 	flag.StringVar(&script, "script", "", "Script to run")
 	flag.Parse()
 
@@ -82,6 +84,11 @@ func (tiny *Tiny) Run() {
 		}
 
 		if !analyser.Run(program.Body) {
+			return
+		}
+
+		if dump {
+			fmt.Println(program.Body.AsSExp())
 			return
 		}
 
