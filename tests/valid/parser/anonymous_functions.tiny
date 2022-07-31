@@ -1,12 +1,12 @@
 function call(x, y, fn) {
-	return fn(0: x, 1: y);
+	return fn(x, y);
 }
 
 var fn = function(a, b) { return a + b; };
-var value1 = call(x: 10, y: 20, fn: fn);
+var value1 = call(10, 20, fn);
 print(value1);
 
-var value2 = call(x: 30, y: 40, fn: function(a, b) {
+var value2 = call(30, 40, function(a, b) {
 	return a + b;
 });
 print(value2);

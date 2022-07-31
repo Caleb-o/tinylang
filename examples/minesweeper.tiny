@@ -40,13 +40,13 @@ namespace Game {
 			self.cursor_x = 0;
 			self.cursor_y = 0;
 
-			while var idx = 0; idx < width * height; idx += 1 {
+			while var idx = 0; idx < width * height; idx = idx + 1 {
 				self.tiles = self.tiles + [Tile(FREE)];
 			}
 		}
 
 		function initialise() {
-			while var idx = 0; idx < self.width * self.height; idx += 1 {
+			while var idx = 0; idx < self.width * self.height; idx = idx + 1 {
 				if !self.tiles[idx].open {
 					var state = FREE;
 
@@ -98,7 +98,7 @@ namespace Game {
 				}
 
 				if self.tiles[x + self.width * y].state == BOMB {
-					bombCount += 1;
+					bombCount = bombCount + 1;
 				}
 			};
 
@@ -168,6 +168,12 @@ namespace Game {
 		function open() {
 			let t = self.tiles[self.cursor_x + self.width * self.cursor_y];
 
+			# Initialise the field after the first attempt
+			if self.first {
+				self.first = false;
+				self.initialise();
+			}
+			
 			if !t.open {
 				t.open = true;
 
@@ -177,20 +183,14 @@ namespace Game {
 				}
 
 				t.neighbours = self.find_neighbours(self.cursor_x, self.cursor_y);
-				if !self.first && t.neighbours == 0 {
+				if t.neighbours == 0 {
 					self.open_free(self.cursor_x, self.cursor_y);
 				}
-			}
-
-			# Initialise the field after the first attempt
-			if self.first {
-				self.first = false;
-				self.initialise();
 			}
 		}
 
 		function open_all() {
-			while var idx = 0; idx < self.width * self.height; idx += 1 {
+			while var idx = 0; idx < self.width * self.height; idx = idx + 1 {
 				let t = self.tiles[idx];
 
 				if t.state == BOMB {
@@ -258,7 +258,7 @@ namespace Game {
 
 		function render_line() {
 			builtin.out("--");
-			while var idx = 0; idx < self.width; idx += 1 {
+			while var idx = 0; idx < self.width; idx = idx + 1 {
 				builtin.out("---");
 			}
 			builtin.out("--");
@@ -275,7 +275,7 @@ namespace Game {
 			self.render_line();
 
 			builtin.out("| ");
-			while var idx = 0; idx < self.width * self.height; idx += 1 {
+			while var idx = 0; idx < self.width * self.height; idx = idx + 1 {
 				if idx > 0 && builtin.mod(idx, self.width) == 0 {
 					builtin.out(" |");
 					print();
@@ -353,7 +353,7 @@ namespace Menu {
 
 		function render() {
 			print("Select Field Size");
-			while var idx = 0; idx < builtin.len(self.items); idx += 1 {
+			while var idx = 0; idx < builtin.len(self.items); idx = idx + 1 {
 				if self.idx == idx {
 					builtin.out("> ");
 				} else {
