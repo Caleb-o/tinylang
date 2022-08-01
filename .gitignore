@@ -1,6 +1,7 @@
 experimenting.tiny
 test.tiny
 temp/
+tinylang
 *.txt
 
 # Binaries for programs and plugins

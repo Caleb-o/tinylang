@@ -82,7 +82,7 @@ func TestAnonymousFunction(t *testing.T) {
 	parser := New(source, path, false)
 
 	result := parser.Parse().Body.AsSExp()
-	if !exprEq(result, "((function call (x, y, fn)((return fn(0: x, 1: y))))(mut fn (anon function (a, b)((return (+ a b)))))(mut value1 call(x: 10, y: 20, fn: fn))(print(value1))(mut value2 call(x: 30, y: 40, fn: (anon function (a, b)((return (+ a b))))))(print(value2)))") {
+	if !exprEq(result, "((function call (x, y, fn)((return fn(x, y))))(mut fn (anon function (a, b)((return (+ a b)))))(mut value1 call(10, 20, fn))(print(value1))(mut value2 call(30, 40, (anon function (a, b)((return (+ a b))))))(print(value2)))") {
 		t.Fatalf("Expression failed '%s'", result)
 	}
 }
