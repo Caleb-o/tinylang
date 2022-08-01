@@ -674,11 +674,11 @@ func (parser *Parser) forStmt(outer *ast.Block) ast.Node {
 	var node ast.Node
 	switch parser.current.Kind {
 	case lexer.STRING:
-		node = parser.primary(outer)
+		node = parser.primary(current_block)
 		current_block.Statements = append(current_block.Statements, ParseStr(fmt.Sprintf("let _collection_value = \"%s\";", node.AsSExp())))
 
-	case lexer.OPENSQUARE, lexer.IDENTIFIER:
-		node = parser.primary(outer)
+	default:
+		node = parser.expr(current_block)
 		current_block.Statements = append(current_block.Statements, ParseStr(fmt.Sprintf("let _collection_value = %s;", node.AsSExp())))
 	}
 

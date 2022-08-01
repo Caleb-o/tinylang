@@ -1,5 +1,3 @@
-# A simple method of writing an Iterator class, similar to Rust
-
 class Iterator {
 	var idx;
 	var length;
@@ -33,7 +31,8 @@ class Iterator {
 		var values = [];
 
 		while !self.done() {
-			values = values + [fn(self.next())];
+			let element = self.next();
+			values = values + [fn(element)];
 		}
 
 		self.arr = values;
@@ -46,11 +45,28 @@ class Iterator {
 		var values = [];
 
 		while !self.done() {
-			let value = self.next();
+			let element = self.next();
+			let result = fn(element);
 
-			if fn(value) {
-				values = values + [value];
+			builtin.assertm(builtin.type_name(result) == "bool", "Filter predicate must return a boolean");
+
+			if result {
+				values = values + [element];
 			}
+		}
+
+		self.arr = values;
+
+		return self;
+	}
+
+	function rev() {
+		self.refresh();
+		var values = [];
+
+		while !self.done() {
+			let element = self.next();
+			values = [element] + values;
 		}
 
 		self.arr = values;
@@ -68,6 +84,7 @@ let list = [1, 2, 3, 4, 5, 6, 7, 8];
 let list2 = Iterator(list)
 				.map(function(item) { return item * 3; })
 				.filter(function(item) { return builtin.mod(item, 2) == 0; })
+				.rev()
 				.collect();
 
 print(list2);
