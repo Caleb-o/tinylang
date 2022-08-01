@@ -395,7 +395,20 @@ func (v *ClassInstanceValue) Inspect() string {
 
 	switch t := v.Def.(type) {
 	case *ClassDefValue:
-		id = t.identifier
+		var sb strings.Builder
+
+		sb.WriteString(fmt.Sprintf("%s { ", t.identifier))
+		for idx, field := range t.fields {
+			sb.WriteString(fmt.Sprintf("%s: %s", field, v.fields[field].Inspect()))
+
+			if idx < len(v.fields)-1 {
+				sb.WriteString(", ")
+			}
+		}
+		sb.WriteString(" }")
+
+		return sb.String()
+
 	case *NativeClassDefValue:
 		id = t.Identifier
 	}
@@ -480,7 +493,19 @@ func (def *StructDefValue) Call(interpreter *Interpreter, values []Value) Value 
 
 func (v *StructInstanceValue) GetType() Type { return &StructInstanceType{} }
 func (v *StructInstanceValue) Inspect() string {
-	return fmt.Sprintf("<struct instance %s : %p>", v.def.identifier, v)
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("%s { ", v.def.identifier))
+	for idx, field := range v.def.fields {
+		sb.WriteString(fmt.Sprintf("%s: %s", field, v.fields[field].Inspect()))
+
+		if idx < len(v.fields)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteString(" }")
+
+	return sb.String()
 }
 
 // Copy semantics on structs
