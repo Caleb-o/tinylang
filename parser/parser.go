@@ -183,7 +183,7 @@ func (parser *Parser) call(outer *ast.Block) ast.Node {
 
 	for {
 		if _, ok := parser.match(lexer.OPENPAREN); ok {
-			return parser.functionCall(outer, node)
+			node = parser.functionCall(outer, node)
 		} else if _, ok := parser.match(lexer.OPENSQUARE); ok {
 			expr := parser.expr(outer)
 			parser.consume(lexer.CLOSESQUARE)

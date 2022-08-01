@@ -1,0 +1,73 @@
+# A simple method of writing an Iterator class, similar to Rust
+
+class Iterator {
+	var idx;
+	var length;
+	var arr;
+
+	function Iterator(arr) {
+		self.idx = 0;
+		self.length = builtin.len(arr);
+		self.arr = arr;
+	}
+
+	function next() {
+		self.idx = self.idx + 1;
+		if self.idx < self.length {
+			return self.arr[self.idx-1];
+		}
+		return self.arr[self.length-1];
+	}
+
+	function done() {
+		return self.idx >= self.length;
+	}
+
+	function refresh() {
+		self.idx = 0;
+		self.length = builtin.len(self.arr);
+	}
+
+	function map(fn) {
+		self.refresh();
+		var values = [];
+
+		while !self.done() {
+			values = values + [fn(self.next())];
+		}
+
+		self.arr = values;
+
+		return self;
+	}
+
+	function filter(fn) {
+		self.refresh();
+		var values = [];
+
+		while !self.done() {
+			let value = self.next();
+
+			if fn(value) {
+				values = values + [value];
+			}
+		}
+
+		self.arr = values;
+
+		return self;
+	}
+
+	function collect() {
+		return self.arr;
+	}
+}
+
+
+let list = [1, 2, 3, 4, 5, 6, 7, 8];
+let list2 = Iterator(list)
+				.map(function(item) { return item * 3; })
+				.filter(function(item) { return builtin.mod(item, 2) == 0; })
+				.collect();
+
+print(list2);
