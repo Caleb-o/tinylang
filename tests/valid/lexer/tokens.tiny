@@ -22,6 +22,7 @@ _Alt_Identifier22
 >= <= !=
 & && | ||
 
+while for in
 function class
 return self
 throw catch

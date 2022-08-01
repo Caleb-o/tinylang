@@ -37,6 +37,12 @@ func (parser *Parser) Parse() *ast.Program {
 	return program
 }
 
+func ParseStr(source string) ast.Node {
+	lex := lexer.New(source)
+	parser := &Parser{lex, lex.Next(), make([]ParserState, 0), make([]string, 0), false}
+	return parser.statement(ast.NewBlock(&lexer.Token{lexer.EOF, "...", 0, 0}))
+}
+
 // --- Private ---
 func report(msg string, args ...any) {
 	res := fmt.Sprintf(msg, args...)
@@ -655,6 +661,37 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 	return &ast.While{Token: ftoken, VarDec: varDecl, Condition: condition, Increment: increment, Body: parser.block()}
 }
 
+func (parser *Parser) forStmt(outer *ast.Block) ast.Node {
+	ftoken := parser.current
+	parser.consume(lexer.FOR)
+
+	current_block := ast.NewBlock(ftoken)
+
+	identifier := parser.current
+	parser.consume(lexer.IDENTIFIER)
+	parser.consume(lexer.IN)
+
+	var node ast.Node
+	switch parser.current.Kind {
+	case lexer.STRING:
+		node = parser.primary(outer)
+		current_block.Statements = append(current_block.Statements, ParseStr(fmt.Sprintf("let _collection_value = \"%s\";", node.AsSExp())))
+
+	case lexer.OPENSQUARE, lexer.IDENTIFIER:
+		node = parser.primary(outer)
+		current_block.Statements = append(current_block.Statements, ParseStr(fmt.Sprintf("let _collection_value = %s;", node.AsSExp())))
+	}
+
+	whileStmt := ParseStr(fmt.Sprintf("while var _loop_idx = 0; _loop_idx < builtin.len(_collection_value); _loop_idx = _loop_idx + 1 { let %s = _collection_value[_loop_idx]; }", identifier.Lexeme))
+
+	body := whileStmt.(*ast.While).Body
+	body.Statements = append(body.Statements, parser.block().Statements...)
+
+	current_block.Statements = append(current_block.Statements, whileStmt)
+
+	return current_block
+}
+
 // FIXME: Use a system similar to Lox so that parsing expression statements are simplified
 func (parser *Parser) statement(outer *ast.Block) ast.Node {
 	var node ast.Node = nil
@@ -678,6 +715,8 @@ func (parser *Parser) statement(outer *ast.Block) ast.Node {
 		node = parser.ifstmt(outer)
 	case lexer.WHILE:
 		node = parser.whilestmt(outer)
+	case lexer.FOR:
+		node = parser.forStmt(outer)
 	case lexer.THROW:
 		node = parser.throw(outer)
 		parser.consume(lexer.SEMICOLON)

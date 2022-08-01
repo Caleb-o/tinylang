@@ -67,6 +67,8 @@ const (
 	BREAK
 	CONTINUE
 	MATCH
+	FOR
+	IN
 
 	EOF
 	ERROR
@@ -98,6 +100,8 @@ var KeyWords = map[string]TokenKind{
 	"break":     BREAK,
 	"continue":  CONTINUE,
 	"match":     MATCH,
+	"for":       FOR,
+	"in":        IN,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,
