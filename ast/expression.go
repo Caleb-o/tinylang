@@ -104,6 +104,10 @@ type Block struct {
 	token      *lexer.Token
 }
 
+type NoOp struct {
+	Token *lexer.Token
+}
+
 func NewBlock(token *lexer.Token) *Block {
 	return &Block{Statements: make([]Node, 0, 4), token: token}
 }
@@ -394,4 +398,12 @@ func (block *Block) AsSExp() string {
 	sb.WriteByte(')')
 
 	return sb.String()
+}
+
+func (n *NoOp) GetToken() *lexer.Token {
+	return n.Token
+}
+
+func (n *NoOp) AsSExp() string {
+	return "noop"
 }

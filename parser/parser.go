@@ -404,11 +404,19 @@ func (parser *Parser) matchcase(outer *ast.Block) *ast.Match {
 	return &ast.Match{Token: ftoken, Expr: expr, Cases: cases, CatchAll: catchAll}
 }
 
-func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
+func (parser *Parser) importFile(outer *ast.Block) ast.Node {
 	parser.consume(lexer.IMPORT)
 
 	file := parser.current
 	parser.consume(lexer.STRING)
+
+	var into *lexer.Token = nil
+	if parser.current.Kind == lexer.INTO {
+		parser.consume(lexer.INTO)
+
+		into = parser.current
+		parser.consume(lexer.IDENTIFIER)
+	}
 
 	// FIXME: Check for extension
 
@@ -423,6 +431,15 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 	if !parser.fileExists(fileName) {
 		parser.pushState(fileName)
 
+		// Push into a namespace
+		if into != nil {
+			ns := ast.NewNamespace(into)
+			parser.outerStatements(ns.Body)
+			parser.popState()
+			return ns
+		}
+
+		// Include into current scope
 		program := ast.New()
 		parser.outerStatements(program.Body)
 		outer.Statements = append(outer.Statements, program.Body.Statements...)
@@ -430,7 +447,7 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 		parser.popState()
 	}
 
-	return &ast.Import{Token: file}
+	return &ast.NoOp{into}
 }
 
 func (parser *Parser) namespace(outer *ast.Block) *ast.NameSpace {

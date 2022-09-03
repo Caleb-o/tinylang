@@ -64,6 +64,7 @@ const (
 	MATCH
 	FOR
 	IN
+	INTO
 
 	EOF
 	ERROR
@@ -97,6 +98,7 @@ var KeyWords = map[string]TokenKind{
 	"match":     MATCH,
 	"for":       FOR,
 	"in":        IN,
+	"into":      INTO,
 	// These will be temporary, they will become a value later?
 	"true":  BOOL,
 	"false": BOOL,

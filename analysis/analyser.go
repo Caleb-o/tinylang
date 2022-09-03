@@ -196,6 +196,7 @@ func (an *Analyser) visit(node ast.Node) {
 	case *ast.Unit:
 	case *ast.Literal:
 	case *ast.Import:
+	case *ast.NoOp:
 
 	default:
 		an.report("Unhandled node in analysis '%s':'%s'", n.GetToken().Lexeme, n.GetToken().Kind.Name())

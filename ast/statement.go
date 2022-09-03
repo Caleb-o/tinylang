@@ -101,6 +101,10 @@ func NewVarDecl(token *lexer.Token, mutable bool, expr Node) *VariableDecl {
 	return &VariableDecl{token: token, Mutable: mutable, Expr: expr}
 }
 
+func NewNamespace(token *lexer.Token) *NameSpace {
+	return &NameSpace{token, NewBlock(token)}
+}
+
 func (decl *VariableDecl) GetToken() *lexer.Token {
 	return decl.token
 }
