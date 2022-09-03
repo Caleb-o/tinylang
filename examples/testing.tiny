@@ -9,6 +9,8 @@ foo();
 test "Doing Things" {
 	foo();
 
+	builtin.rand_seed_init();
+
 	if builtin.rand_range(0, 10) <= 5 {
 		throw "Random Bug";
 	}
@@ -17,7 +19,9 @@ test "Doing Things" {
 test "Doing Things More!!" {
 	foo();
 
-	while var idx = 0; idx < 10; idx += 1 {
+	builtin.rand_seed_init();
+
+	while var idx = 0; idx < 10; idx = idx + 1 {
 		if builtin.rand_range(0, 100) <= 10 {
 			throw "Random Bug Again";
 		}

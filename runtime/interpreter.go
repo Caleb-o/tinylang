@@ -106,7 +106,7 @@ func (interpreter *Interpreter) pop() {
 // --- Private ---
 func (interpreter *Interpreter) Report(msg string, args ...any) {
 	if interpreter.in_test {
-		interpreter.ReportTest(msg, nil)
+		interpreter.ReportTestF(msg, args)
 	} else {
 		res := fmt.Sprintf(msg, args...)
 		shared.ReportErrFatal("Runtime: " + res)
@@ -129,6 +129,10 @@ func (interpreter *Interpreter) ReportTest(msg string, token *lexer.Token) {
 	} else {
 		log.Printf("Runtime - Test: %s [%d:%d]\n", msg, token.Line, token.Column)
 	}
+}
+
+func (interpreter *Interpreter) ReportTestF(msg string, args ...any) {
+	log.Printf("Test: %s", fmt.Sprintf(msg, args...))
 }
 
 func (interpreter *Interpreter) Visit(node ast.Node) Value {

@@ -10,11 +10,6 @@ const (
 	EQUAL
 	BANG
 
-	PLUS_EQUAL
-	MINUS_EQUAL
-	STAR_EQUAL
-	SLASH_EQUAL
-
 	NOT_EQUAL
 	EQUAL_EQUAL
 	GREATER
@@ -154,20 +149,12 @@ func (kind TokenKind) Name() string {
 		return "]"
 	case PLUS:
 		return "+"
-	case PLUS_EQUAL:
-		return "+="
 	case MINUS:
 		return "-"
-	case MINUS_EQUAL:
-		return "-="
 	case STAR:
 		return "*"
-	case STAR_EQUAL:
-		return "*="
 	case SLASH:
 		return "/"
-	case SLASH_EQUAL:
-		return "/="
 	case EQUAL:
 		return "="
 	case DOT:

@@ -297,7 +297,7 @@ func (parser *Parser) or(outer *ast.Block) ast.Node {
 func (parser *Parser) assignment(outer *ast.Block) ast.Node {
 	node := parser.or(outer)
 
-	if operator, ok := parser.match(lexer.EQUAL, lexer.PLUS_EQUAL, lexer.MINUS_EQUAL, lexer.STAR_EQUAL, lexer.SLASH_EQUAL); ok {
+	if operator, ok := parser.match(lexer.EQUAL); ok {
 		switch t := node.(type) {
 		case *ast.Get:
 			return &ast.Set{Token: t.Token, Caller: t.Expr, Expr: parser.or(outer)}
