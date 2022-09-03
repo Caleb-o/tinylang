@@ -410,6 +410,8 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 	file := parser.current
 	parser.consume(lexer.STRING)
 
+	// FIXME: Check for extension
+
 	fileName, err := filepath.Abs(file.Lexeme + ".tiny")
 	if err != nil {
 		report("Could not resolve path '%s'", fileName)
@@ -422,7 +424,7 @@ func (parser *Parser) importFile(outer *ast.Block) *ast.Import {
 		parser.pushState(fileName)
 
 		program := ast.New()
-		parser.statementList(program.Body, lexer.EOF)
+		parser.outerStatements(program.Body)
 		outer.Statements = append(outer.Statements, program.Body.Statements...)
 
 		parser.popState()
