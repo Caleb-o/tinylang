@@ -103,6 +103,8 @@ func (tiny *Tiny) Run() {
 			}
 
 			if usevm {
+				fmt.Println("Warning: The VM is experimental and is not fully featured.")
+
 				compiler := compiler.NewCompiler()
 				chunk := compiler.Compile(program)
 
