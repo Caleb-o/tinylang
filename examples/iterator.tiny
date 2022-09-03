@@ -4,6 +4,11 @@ class Iterator {
 	var arr;
 
 	function Iterator(arr) {
+		builtin.assertm(
+			builtin.type_name(arr) == "list" ||
+			builtin.type_name(arr) == "string",
+			"Iterators can only be used on lists and strings"
+		);
 		self.idx = 0;
 		self.length = builtin.len(arr);
 		self.arr = arr;
@@ -79,6 +84,16 @@ class Iterator {
 	}
 }
 
+class Person {
+	var name;
+	var age;
+
+	function Person(name, age) {
+		self.name = name;
+		self.age = age;
+	}
+}
+
 
 let list = [1, 2, 3, 4, 5, 6, 7, 8];
 let list2 = Iterator(list)
@@ -88,3 +103,28 @@ let list2 = Iterator(list)
 				.collect();
 
 print(list2);
+
+
+let plist = [
+	Person("Bob", 42),
+	Person("Dave", 21),
+	Person("Dingle", 8),
+	Person("Bill", 36),
+	Person("Tyler", 14),
+	Person("Tim", 18),
+	Person("John", 83),
+	Person("Pat", 5),
+];
+
+let children = Iterator(plist)
+				.filter(function(item) { return item.age > 25; })
+				.collect();
+
+print(children);
+
+
+let words = Iterator(["Hello", "Cat", "Dog", "Bread", "Cake", "Can", "Chicken", "Whale", "Cow"])
+				.filter(function(item) { return builtin.len(item) == 3; })
+				.collect();
+
+print(words);
