@@ -40,7 +40,7 @@ func (parser *Parser) Parse() *ast.Program {
 func ParseStr(source string) ast.Node {
 	lex := lexer.New(source)
 	parser := &Parser{lex, lex.Next(), make([]ParserState, 0), make([]string, 0), false}
-	return parser.statement(ast.NewBlock(&lexer.Token{lexer.EOF, "...", 0, 0}))
+	return parser.statement(ast.NewBlock(&lexer.Token{Kind: lexer.EOF, Lexeme: "...", Line: 0, Column: 0}))
 }
 
 // --- Private ---
@@ -331,7 +331,7 @@ func (parser *Parser) collectParameters() []*ast.Parameter {
 	return params
 }
 
-func (parser *Parser) functionDef(outer *ast.Block) *ast.FunctionDef {
+func (parser *Parser) functionDef(_ *ast.Block) *ast.FunctionDef {
 	parser.consume(lexer.FUNCTION)
 
 	identifier := parser.current
@@ -341,7 +341,7 @@ func (parser *Parser) functionDef(outer *ast.Block) *ast.FunctionDef {
 	return ast.NewFnDef(identifier, parser.collectParameters(), parser.block())
 }
 
-func (parser *Parser) anonymousFunction(outer *ast.Block) *ast.AnonymousFunction {
+func (parser *Parser) anonymousFunction(_ *ast.Block) *ast.AnonymousFunction {
 	ftoken := parser.current
 	parser.consume(lexer.FUNCTION)
 
@@ -447,10 +447,10 @@ func (parser *Parser) importFile(outer *ast.Block) ast.Node {
 		parser.popState()
 	}
 
-	return &ast.NoOp{into}
+	return &ast.NoOp{Token: into}
 }
 
-func (parser *Parser) namespace(outer *ast.Block) *ast.NameSpace {
+func (parser *Parser) namespace(_ *ast.Block) *ast.NameSpace {
 	parser.consume(lexer.NAMESPACE)
 
 	identifer := parser.current
@@ -459,7 +459,7 @@ func (parser *Parser) namespace(outer *ast.Block) *ast.NameSpace {
 	return &ast.NameSpace{Token: identifer, Body: parser.namespaced()}
 }
 
-func (parser *Parser) testblock(outer *ast.Block) *ast.Test {
+func (parser *Parser) testblock(_ *ast.Block) *ast.Test {
 	parser.consume(lexer.TEST)
 
 	identifier := parser.current
@@ -521,7 +521,7 @@ func (parser *Parser) classDef(outer *ast.Block) *ast.ClassDef {
 	return &ast.ClassDef{Token: identifier, Base: baseClass, Constructor: nil, Fields: fields, Methods: methods}
 }
 
-func (parser *Parser) structDef(outer *ast.Block) *ast.StructDef {
+func (parser *Parser) structDef(_ *ast.Block) *ast.StructDef {
 	parser.consume(lexer.STRUCT)
 
 	identifier := parser.current
@@ -680,7 +680,7 @@ func (parser *Parser) whilestmt(outer *ast.Block) *ast.While {
 	return &ast.While{Token: ftoken, VarDec: varDecl, Condition: condition, Increment: increment, Body: parser.block()}
 }
 
-func (parser *Parser) forStmt(outer *ast.Block) ast.Node {
+func (parser *Parser) forStmt(_ *ast.Block) ast.Node {
 	ftoken := parser.current
 	parser.consume(lexer.FOR)
 

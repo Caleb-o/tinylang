@@ -28,7 +28,7 @@ class Cell {
 function make_board() {
 	var board = [];
 
-	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+	while var idx = 0; idx < SIZE * SIZE; idx = idx + 1 {
 		let alive = builtin.rand_range(0, 100) < INIT_SPAWN_CHANCE;
 		board = board + [Cell(alive)];
 	}
@@ -56,7 +56,7 @@ function check_neighbours(board, x, y) {
 		}
 
 		if board[xreal + yreal * SIZE].alive {
-			aliveCount += 1;
+			aliveCount = aliveCount + 1;
 		}
 	};
 
@@ -75,7 +75,7 @@ function check_neighbours(board, x, y) {
 function iterate(board) {
 	builtin.assertm(builtin.type_name(board) == "list", "Board must be a list");
 
-	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+	while var idx = 0; idx < SIZE * SIZE; idx = idx + 1 {
 		var x = idx / SIZE;
 		var y = builtin.mod(idx, SIZE);
 
@@ -99,7 +99,7 @@ function iterate(board) {
 }
 
 function set_board_state(board) {
-	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+	while var idx = 0; idx < SIZE * SIZE; idx = idx + 1 {
 		board[idx].toggle();
 	}
 }
@@ -107,7 +107,7 @@ function set_board_state(board) {
 function print_board(board) {
 	builtin.assertm(builtin.type_name(board) == "list", "Board must be a list");
 
-	while var idx = 0; idx < SIZE * SIZE; idx += 1 {
+	while var idx = 0; idx < SIZE * SIZE; idx = idx + 1 {
 		if idx > 0 && builtin.mod(idx, SIZE) == 0 {
 			print();
 		}

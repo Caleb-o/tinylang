@@ -6,7 +6,7 @@ function str_to_list(string) {
 
 	var list = [];
 
-	while var idx = 0; idx < builtin.len(string); idx += 1 {
+	while var idx = 0; idx < builtin.len(string); idx = idx + 1 {
 		list = list + [string[idx]];
 	}
 

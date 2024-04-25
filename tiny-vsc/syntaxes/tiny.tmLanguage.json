@@ -1,0 +1,96 @@
+{
+    "name": "tinylang",
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#type-name"
+        },
+        {
+            "include": "#function-name"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#identifiers"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#strings-single"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "begin": "#",
+                    "end": "\n",
+                    "name": "comment.line.double-slash"
+                }
+            ]
+        },
+        "function-name": {
+            "patterns": [
+                {
+                    "name": "support.function",
+                    "match": "(?<=(function ))([a-zA-Z0-9_]+)"
+                },
+                {
+                    "name": "support.function",
+                    "match": "(([a-zA-Z0-9_]+)(\\s)?(!?\\())"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.tinylang",
+                    "match": "\\b(var|let|print|function|self|class|struct|return|while|if|else|throw|catch|import|namespace|test|break|continue|match|for|in|into|true|false)\\b"
+                }
+            ]
+        },
+        "identifiers": {
+            "patterns": [
+                {
+                    "match": "([[:alpha:]0-9_]+)",
+                    "captures": {
+                        "0": {
+                            "name": "entity.name.tinylang"
+                        }
+                    }
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric",
+                    "match": "[0-9]"
+                },
+                {
+                    "name": "constant.numeric.float",
+                    "match": "[0-9]+(\\.[0-9]+)"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.tinylang",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.tinylang",
+                    "match": "\\\\."
+                }
+            ]
+        }
+    },
+    "scopeName": "source.tinylang"
+}
